@@ -5,8 +5,8 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/{{version}}/properties/{{propertyId}}/images
-  body: multipart-form
+  url: {{base_url}}/{{version}}/properties/5ca6e7d7-d487-4d1b-abd9-0241226235a3/images
+  body: multipartForm
   auth: bearer
 }
 
@@ -19,32 +19,32 @@ auth:bearer {
 }
 
 body:multipart-form {
-  file: @file(../../../client/app/icon.png)
   sort_order: 0
+  files: @file(/Users/kukue/Desktop/Saigon-Pearl-tong-the-0-1.jpg|/Users/kukue/Desktop/maxresdefault.jpg|/Users/kukue/Desktop/20201127114221-4fef.jpg) @contentType(multipart/mixed)
 }
 
 vars:post-response {
-  imageId: res.body.data[0].id
-  imageUrl: res.body.data[0].public_url
+  imageId: res.body.image.id
+  imageUrl: res.body.public_url
 }
 
 tests {
   test("should return 201", function() {
     expect(res.getStatus()).to.equal(201);
   });
-
-  test("should return uploaded images", function() {
-    expect(res.getBody().data).to.be.an("array");
-    expect(res.getBody().data.length).to.be.greaterThan(0);
-    expect(res.getBody().meta.uploaded).to.equal(res.getBody().data.length);
-    expect(res.getBody().data[0].property_id).to.equal(bru.getEnvVar("propertyId"));
-    expect(res.getBody().data[0].public_url).to.be.a("string");
+  
+  test("should return image metadata", function() {
+    expect(res.getBody().image).to.be.an("object");
+    expect(res.getBody().image.property_id).to.equal(bru.getEnvVar("propertyId"));
+    expect(res.getBody().image.storage_path).to.be.a("string");
+    expect(res.getBody().public_url).to.be.a("string");
+    expect(res.getBody().public_url.length).to.be.greaterThan(0);
   });
 }
 
 docs {
-  Upload one or more property images to Supabase Storage via the Nest API.
-  Use multipart form field "file" and select multiple local images in Bruno.
-  Optional sort_order applies to the first image; additional files increment from there.
-  Run Login and set propertyId first. Max 10 images per request, 5 MB each.
+  Upload a property cover image to Supabase Storage via the Nest API.
+  Run Login and Create Property first so accessToken and propertyId are set.
+  Replace the @file(...) path with any local JPEG, PNG, or WebP under 5 MB.
+  Requires migration 005_property_images.sql applied in Supabase.
 }

@@ -2,10 +2,12 @@ import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AccessToken } from './decorators/access-token.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthGuard } from './guards/auth.guard';
 import type { AuthUser } from './interfaces/auth-user.interface';
 import type {
+  ChangePasswordResponse,
   LoginResponse,
   LogoutResponse,
   MeResponse,
@@ -33,5 +35,14 @@ export class AuthController {
     @AccessToken() accessToken: string,
   ): Promise<MeResponse> {
     return this.authService.getMe(user.id, accessToken);
+  }
+
+  @Post('change-password')
+  @UseGuards(AuthGuard)
+  changePassword(
+    @AccessToken() accessToken: string,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<ChangePasswordResponse> {
+    return this.authService.changePassword(accessToken, dto);
   }
 }

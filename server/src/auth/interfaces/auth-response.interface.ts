@@ -22,3 +22,7 @@ export interface MeResponse {
 export interface LogoutResponse {
   message: string;
 }
+
+export interface ChangePasswordResponse {
+  message: string;
+}

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -7,9 +8,11 @@ import { Inject } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../supabase/supabase.constants';
 import { SupabaseService } from '../supabase/supabase.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { StaffRole } from './enums/staff-role.enum';
 import {
+  ChangePasswordResponse,
   LoginResponse,
   LogoutResponse,
   MeResponse,
@@ -65,6 +68,53 @@ export class AuthService {
     }
 
     return { message: 'Logged out successfully' };
+  }
+
+  async changePassword(
+    accessToken: string,
+    dto: ChangePasswordDto,
+  ): Promise<ChangePasswordResponse> {
+    if (dto.current_password === dto.new_password) {
+      throw new BadRequestException(
+        'New password must be different from current password',
+      );
+    }
+
+    const supabase = this.supabaseService.getClient(accessToken);
+
+    const { data: userData, error: userError } =
+      await supabase.auth.getUser(accessToken);
+
+    if (userError || !userData.user?.email) {
+      throw new UnauthorizedException('Invalid or expired access token');
+    }
+
+    const { data: signInData, error: verifyError } =
+      await this.supabase.auth.signInWithPassword({
+        email: userData.user.email,
+        password: dto.current_password,
+      });
+
+    if (verifyError || !signInData?.session) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    // `updateUser` requires an active auth session. The initial accessToken
+    // header isn't guaranteed to hydrate the auth client session, so we set it.
+    await this.supabase.auth.setSession({
+      access_token: signInData.session.access_token,
+      refresh_token: signInData.session.refresh_token,
+    });
+
+    const { error: updateError } = await this.supabase.auth.updateUser({
+      password: dto.new_password,
+    });
+
+    if (updateError) {
+      throw new BadRequestException(updateError.message);
+    }
+
+    return { message: 'Password updated successfully' };
   }
 
   async getMe(userId: string, accessToken: string): Promise<MeResponse> {

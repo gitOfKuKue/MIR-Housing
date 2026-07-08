@@ -81,6 +81,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
   const [utilityBillsExpanded, setUtilityBillsExpanded] = useState(true);
   const router = useRouter();
   const authUser = getAuthUser();
+  const canEdit = Boolean(authUser);
   const canDelete = authUser?.role === 'admin';
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -113,13 +114,24 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
 
   return (
     <div className="p-6 sm:p-8">
-      <Link
-        href="/properties"
-        className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-[#6b7280] transition hover:text-[#1e4636]"
-      >
-        <BackIcon />
-        Back to properties
-      </Link>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <Link
+          href="/properties"
+          className="inline-flex items-center gap-2 text-sm font-medium text-[#6b7280] transition hover:text-[#1e4636]"
+        >
+          <BackIcon />
+          Back to properties
+        </Link>
+
+        {canEdit ? (
+          <Link
+            href={`/properties/${property.id}/edit`}
+            className="rounded-md bg-[#1e4636] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#163829]"
+          >
+            Edit
+          </Link>
+        ) : null}
+      </div>
 
       <div className="overflow-hidden rounded-xl bg-[#353f4b] shadow-[0_20px_50px_rgba(15,23,42,0.12)]">
         <div className="relative h-64 w-full sm:h-80">

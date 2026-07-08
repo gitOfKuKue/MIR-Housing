@@ -79,6 +79,24 @@ export async function logout() {
   return apiFetch<{ message: string }>('/auth/logout', { method: 'POST' });
 }
 
+export interface ChangePasswordPayload {
+  current_password: string;
+  new_password: string;
+}
+
+export interface ChangePasswordResponse {
+  message: string;
+}
+
+export async function changePassword(
+  payload: ChangePasswordPayload,
+): Promise<ChangePasswordResponse> {
+  return apiFetch<ChangePasswordResponse>('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getProperties(params?: {
   page?: number;
   limit?: number;
@@ -172,6 +190,43 @@ export async function createProperty(
 ): Promise<Property> {
   return apiFetch<Property>('/properties', {
     method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export type UpdatePropertyPayload = Partial<
+  Omit<CreatePropertyPayload, 'name' | 'address_line1' | 'city' | 'province'>
+> & {
+  name?: string;
+  address_line1?: string;
+  city?: string;
+  province?: string;
+  address_line2?: string | null;
+  postal_code?: string | null;
+  room_type?: string | null;
+  floor?: string | null;
+  description?: string | null;
+  internal_notes?: string | null;
+  toilet_type?: Property['toilet_type'] | null;
+  parking_type?: Property['parking_type'] | null;
+  main_gate_lock?: Property['main_gate_lock'] | null;
+  drying_area?: Property['drying_area'] | null;
+  rent_amount?: number | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  area_sqm?: number | null;
+  max_occupants?: number | null;
+  max_bikes?: number | null;
+  deposit_months?: number | null;
+  holding_deposit?: number | null;
+};
+
+export async function updateProperty(
+  id: string,
+  payload: UpdatePropertyPayload,
+): Promise<Property> {
+  return apiFetch<Property>(`/properties/${id}`, {
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 }

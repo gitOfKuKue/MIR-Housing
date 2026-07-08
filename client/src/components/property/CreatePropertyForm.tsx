@@ -2,13 +2,16 @@
 
 import {
   createProperty,
+  updateProperty,
   uploadPropertyImages,
   type CreatePropertyPayload,
+  type UpdatePropertyPayload,
 } from '@/src/lib/api';
 import type {
   DryingAreaType,
   MainGateLockType,
   ParkingType,
+  Property,
   PropertyStatus,
   PropertyType,
   ToiletType,
@@ -140,7 +143,24 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function CreatePropertyForm() {
+function formatInitialCurrency(value: number | null): string {
+  if (value === null || value === undefined) return '';
+  return formatCurrencyInput(String(value));
+}
+
+function formatInitialNumber(value: number | null): string {
+  if (value === null || value === undefined) return '';
+  return String(value);
+}
+
+interface CreatePropertyFormProps {
+  property?: Property;
+}
+
+export default function CreatePropertyForm({
+  property,
+}: CreatePropertyFormProps = {}) {
+  const isEdit = Boolean(property);
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -148,32 +168,64 @@ export default function CreatePropertyForm() {
   const [imageError, setImageError] = useState('');
   const [images, setImages] = useState<ImagePreview[]>([]);
 
-  const [name, setName] = useState('');
-  const [propertyType, setPropertyType] = useState<PropertyType>('apartment');
-  const [status, setStatus] = useState<PropertyStatus>('available');
-  const [addressLine1, setAddressLine1] = useState('');
-  const [addressLine2, setAddressLine2] = useState('');
-  const [city, setCity] = useState('Ho Chi Minh City');
-  const [province, setProvince] = useState('Ho Chi Minh');
-  const [postalCode, setPostalCode] = useState('');
-  const [country, setCountry] = useState('VN');
-  const [rentAmount, setRentAmount] = useState('');
-  const [rentCurrency, setRentCurrency] = useState('VND');
-  const [bedrooms, setBedrooms] = useState('');
-  const [bathrooms, setBathrooms] = useState('');
-  const [areaSqm, setAreaSqm] = useState('');
-  const [roomType, setRoomType] = useState('');
-  const [toiletType, setToiletType] = useState<ToiletType | ''>('');
-  const [parkingType, setParkingType] = useState<ParkingType | ''>('');
-  const [mainGateLock, setMainGateLock] = useState<MainGateLockType | ''>('');
-  const [maxOccupants, setMaxOccupants] = useState('');
-  const [maxBikes, setMaxBikes] = useState('');
-  const [floor, setFloor] = useState('');
-  const [dryingArea, setDryingArea] = useState<DryingAreaType | ''>('');
-  const [depositMonths, setDepositMonths] = useState('');
-  const [holdingDeposit, setHoldingDeposit] = useState('');
-  const [description, setDescription] = useState('');
-  const [internalNotes, setInternalNotes] = useState('');
+  const [name, setName] = useState(property?.name ?? '');
+  const [propertyType, setPropertyType] = useState<PropertyType>(
+    property?.property_type ?? 'apartment',
+  );
+  const [status, setStatus] = useState<PropertyStatus>(
+    property?.status ?? 'available',
+  );
+  const [addressLine1, setAddressLine1] = useState(property?.address_line1 ?? '');
+  const [addressLine2, setAddressLine2] = useState(property?.address_line2 ?? '');
+  const [city, setCity] = useState(property?.city ?? 'Ho Chi Minh City');
+  const [province, setProvince] = useState(property?.province ?? 'Ho Chi Minh');
+  const [postalCode, setPostalCode] = useState(property?.postal_code ?? '');
+  const [country, setCountry] = useState(property?.country ?? 'VN');
+  const [rentAmount, setRentAmount] = useState(
+    formatInitialCurrency(property?.rent_amount ?? null),
+  );
+  const [rentCurrency, setRentCurrency] = useState(
+    property?.rent_currency ?? 'VND',
+  );
+  const [bedrooms, setBedrooms] = useState(
+    formatInitialNumber(property?.bedrooms ?? null),
+  );
+  const [bathrooms, setBathrooms] = useState(
+    formatInitialNumber(property?.bathrooms ?? null),
+  );
+  const [areaSqm, setAreaSqm] = useState(
+    formatInitialNumber(property?.area_sqm ?? null),
+  );
+  const [roomType, setRoomType] = useState(property?.room_type ?? '');
+  const [toiletType, setToiletType] = useState<ToiletType | ''>(
+    property?.toilet_type ?? '',
+  );
+  const [parkingType, setParkingType] = useState<ParkingType | ''>(
+    property?.parking_type ?? '',
+  );
+  const [mainGateLock, setMainGateLock] = useState<MainGateLockType | ''>(
+    property?.main_gate_lock ?? '',
+  );
+  const [maxOccupants, setMaxOccupants] = useState(
+    formatInitialNumber(property?.max_occupants ?? null),
+  );
+  const [maxBikes, setMaxBikes] = useState(
+    formatInitialNumber(property?.max_bikes ?? null),
+  );
+  const [floor, setFloor] = useState(property?.floor ?? '');
+  const [dryingArea, setDryingArea] = useState<DryingAreaType | ''>(
+    property?.drying_area ?? '',
+  );
+  const [depositMonths, setDepositMonths] = useState(
+    formatInitialNumber(property?.deposit_months ?? null),
+  );
+  const [holdingDeposit, setHoldingDeposit] = useState(
+    formatInitialCurrency(property?.holding_deposit ?? null),
+  );
+  const [description, setDescription] = useState(property?.description ?? '');
+  const [internalNotes, setInternalNotes] = useState(
+    property?.internal_notes ?? '',
+  );
 
   useEffect(() => {
     return () => {
@@ -194,9 +246,10 @@ export default function CreatePropertyForm() {
     const incoming = Array.from(fileList);
     const nextImages = [...images];
     const rejectionMessages: string[] = [];
+    const existingCount = property?.images.length ?? 0;
 
     for (const file of incoming) {
-      if (nextImages.length >= MAX_IMAGE_COUNT) {
+      if (existingCount + nextImages.length >= MAX_IMAGE_COUNT) {
         rejectionMessages.push(`You can upload up to ${MAX_IMAGE_COUNT} images.`);
         break;
       }
@@ -260,7 +313,7 @@ export default function CreatePropertyForm() {
     setSubmitting(true);
 
     try {
-      const payload: CreatePropertyPayload = {
+      const basePayload = {
         name: name.trim(),
         property_type: propertyType,
         status,
@@ -269,42 +322,71 @@ export default function CreatePropertyForm() {
         province: province.trim(),
         country: country.trim() || 'VN',
         rent_currency: rentCurrency.trim() || 'VND',
+        address_line2: addressLine2.trim() || null,
+        postal_code: postalCode.trim() || null,
+        room_type: roomType.trim() || null,
+        floor: floor.trim() || null,
+        description: description.trim() || null,
+        internal_notes: internalNotes.trim() || null,
+        toilet_type: toiletType || null,
+        parking_type: parkingType || null,
+        main_gate_lock: mainGateLock || null,
+        drying_area: dryingArea || null,
+        rent_amount: parseOptionalNumber(rentAmount) ?? null,
+        bedrooms: parseOptionalInt(bedrooms) ?? null,
+        bathrooms: parseOptionalNumber(bathrooms) ?? null,
+        area_sqm: parseOptionalNumber(areaSqm) ?? null,
+        max_occupants: parseOptionalInt(maxOccupants) ?? null,
+        max_bikes: parseOptionalInt(maxBikes) ?? null,
+        deposit_months: parseOptionalInt(depositMonths) ?? null,
+        holding_deposit: parseOptionalNumber(holdingDeposit) ?? null,
       };
 
-      if (addressLine2.trim()) payload.address_line2 = addressLine2.trim();
-      if (postalCode.trim()) payload.postal_code = postalCode.trim();
-      if (roomType.trim()) payload.room_type = roomType.trim();
-      if (floor.trim()) payload.floor = floor.trim();
-      if (description.trim()) payload.description = description.trim();
-      if (internalNotes.trim()) payload.internal_notes = internalNotes.trim();
-      if (toiletType) payload.toilet_type = toiletType;
-      if (parkingType) payload.parking_type = parkingType;
-      if (mainGateLock) payload.main_gate_lock = mainGateLock;
-      if (dryingArea) payload.drying_area = dryingArea;
+      if (isEdit && property) {
+        const payload: UpdatePropertyPayload = basePayload;
+        await updateProperty(property.id, payload);
 
-      const rent = parseOptionalNumber(rentAmount);
-      if (rent !== undefined) payload.rent_amount = rent;
+        if (images.length > 0) {
+          await uploadPropertyImages(
+            property.id,
+            images.map((image) => image.file),
+            property.images.length,
+          );
+        }
 
-      const beds = parseOptionalInt(bedrooms);
-      if (beds !== undefined) payload.bedrooms = beds;
+        router.push(`/properties/${property.id}`);
+        return;
+      }
 
-      const baths = parseOptionalNumber(bathrooms);
-      if (baths !== undefined) payload.bathrooms = baths;
+      const payload: CreatePropertyPayload = {
+        name: basePayload.name,
+        property_type: basePayload.property_type,
+        status: basePayload.status,
+        address_line1: basePayload.address_line1,
+        city: basePayload.city,
+        province: basePayload.province,
+        country: basePayload.country,
+        rent_currency: basePayload.rent_currency,
+      };
 
-      const area = parseOptionalNumber(areaSqm);
-      if (area !== undefined) payload.area_sqm = area;
-
-      const occupants = parseOptionalInt(maxOccupants);
-      if (occupants !== undefined) payload.max_occupants = occupants;
-
-      const bikes = parseOptionalInt(maxBikes);
-      if (bikes !== undefined) payload.max_bikes = bikes;
-
-      const deposit = parseOptionalInt(depositMonths);
-      if (deposit !== undefined) payload.deposit_months = deposit;
-
-      const holding = parseOptionalNumber(holdingDeposit);
-      if (holding !== undefined) payload.holding_deposit = holding;
+      if (basePayload.address_line2) payload.address_line2 = basePayload.address_line2;
+      if (basePayload.postal_code) payload.postal_code = basePayload.postal_code;
+      if (basePayload.room_type) payload.room_type = basePayload.room_type;
+      if (basePayload.floor) payload.floor = basePayload.floor;
+      if (basePayload.description) payload.description = basePayload.description;
+      if (basePayload.internal_notes) payload.internal_notes = basePayload.internal_notes;
+      if (basePayload.toilet_type) payload.toilet_type = basePayload.toilet_type;
+      if (basePayload.parking_type) payload.parking_type = basePayload.parking_type;
+      if (basePayload.main_gate_lock) payload.main_gate_lock = basePayload.main_gate_lock;
+      if (basePayload.drying_area) payload.drying_area = basePayload.drying_area;
+      if (basePayload.rent_amount !== null) payload.rent_amount = basePayload.rent_amount;
+      if (basePayload.bedrooms !== null) payload.bedrooms = basePayload.bedrooms;
+      if (basePayload.bathrooms !== null) payload.bathrooms = basePayload.bathrooms;
+      if (basePayload.area_sqm !== null) payload.area_sqm = basePayload.area_sqm;
+      if (basePayload.max_occupants !== null) payload.max_occupants = basePayload.max_occupants;
+      if (basePayload.max_bikes !== null) payload.max_bikes = basePayload.max_bikes;
+      if (basePayload.deposit_months !== null) payload.deposit_months = basePayload.deposit_months;
+      if (basePayload.holding_deposit !== null) payload.holding_deposit = basePayload.holding_deposit;
 
       const created = await createProperty(payload);
 
@@ -319,7 +401,11 @@ export default function CreatePropertyForm() {
       router.push(`/properties/${created.id}`);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to create property',
+        err instanceof Error
+          ? err.message
+          : isEdit
+            ? 'Failed to update property'
+            : 'Failed to create property',
       );
       setSubmitting(false);
     }
@@ -328,17 +414,21 @@ export default function CreatePropertyForm() {
   return (
     <div className="p-6 sm:p-8">
       <Link
-        href="/properties"
+        href={isEdit && property ? `/properties/${property.id}` : '/properties'}
         className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-[#6b7280] transition hover:text-[#1e4636]"
       >
         <BackIcon />
-        Back to properties
+        {isEdit ? 'Back to property' : 'Back to properties'}
       </Link>
 
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-[#1a1a1a]">Create property</h1>
+        <h1 className="text-2xl font-semibold text-[#1a1a1a]">
+          {isEdit ? 'Edit property' : 'Create property'}
+        </h1>
         <p className="mt-2 text-sm text-[#6b7280]">
-          Fill in the details below to add a new property listing.
+          {isEdit
+            ? 'Update any property details below and save your changes.'
+            : 'Fill in the details below to add a new property listing.'}
         </p>
       </div>
 
@@ -408,14 +498,47 @@ export default function CreatePropertyForm() {
             <div>
               <h2 className="text-lg font-semibold text-[#1a1a1a]">Images</h2>
               <p className="mt-1 text-sm text-[#6b7280]">
-                Upload up to {MAX_IMAGE_COUNT} images (JPEG, PNG, or WebP). Max
-                5 MB each.
+                {isEdit
+                  ? 'Existing images are shown below. Upload more images if needed.'
+                  : `Upload up to ${MAX_IMAGE_COUNT} images (JPEG, PNG, or WebP). Max 5 MB each.`}
               </p>
             </div>
             <p className="text-sm font-medium text-[#6b7280]">
-              {images.length}/{MAX_IMAGE_COUNT} selected
+              {isEdit
+                ? `${(property?.images.length ?? 0) + images.length}/${MAX_IMAGE_COUNT} total`
+                : `${images.length}/${MAX_IMAGE_COUNT} selected`}
             </p>
           </div>
+
+          {isEdit && property && property.images.length > 0 ? (
+            <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {property.images.map((image, index) => (
+                <li
+                  key={image.id}
+                  className="overflow-hidden rounded-lg border border-[#e8e4dc] bg-white"
+                >
+                  <div className="relative aspect-[4/3] bg-[#f3f4f6]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={image.public_url}
+                      alt={`Existing image ${index + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    {index === 0 ? (
+                      <span className="absolute left-2 top-2 rounded-md bg-[#1e4636] px-2 py-1 text-[11px] font-semibold text-white">
+                        Cover
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs font-medium text-[#6b7280]">
+                      Existing image
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : null}
 
           <div className="mt-4">
             <input
@@ -875,7 +998,7 @@ export default function CreatePropertyForm() {
 
         <div className="flex flex-wrap items-center justify-end gap-3 border-t border-[#f3f4f6] pt-6">
           <Link
-            href="/properties"
+            href={isEdit && property ? `/properties/${property.id}` : '/properties'}
             className="inline-flex rounded-lg border border-[#e5e7eb] px-5 py-2.5 text-sm font-semibold text-[#4b5563] transition hover:border-[#1e4636] hover:text-[#1e4636]"
           >
             Cancel
@@ -885,7 +1008,13 @@ export default function CreatePropertyForm() {
             disabled={submitting}
             className="inline-flex rounded-lg bg-[#1e4636] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#163828] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {submitting ? 'Creating...' : 'Create property'}
+            {submitting
+              ? isEdit
+                ? 'Saving...'
+                : 'Creating...'
+              : isEdit
+                ? 'Save changes'
+                : 'Create property'}
           </button>
         </div>
       </form>

@@ -32,6 +32,31 @@ function PropertiesIcon() {
   );
 }
 
+function SettingsIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1.1.62 1.8 1.8 0 0 0-.3 1.16V21a2 2 0 0 1-4 0v-.22a1.8 1.8 0 0 0-.3-1.16 1.8 1.8 0 0 0-1.1-.62 1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.8 1.8 0 0 0 4.6 15a1.8 1.8 0 0 0-.62-1.1 1.8 1.8 0 0 0-1.16-.3H3a2 2 0 0 1 0-4h.22a1.8 1.8 0 0 0 1.16-.3 1.8 1.8 0 0 0 .62-1.1 1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.8 1.8 0 0 0 9 4.6c.42 0 .83-.17 1.1-.62.2-.26.3-.65.3-1.16V3a2 2 0 0 1 4 0v.22c0 .51.1.9.3 1.16.27.45.68.62 1.1.62a1.8 1.8 0 0 0 1.98-.36l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06c-.48.48-.6 1.25-.36 1.98.08.26.17.42.36.62.26.27.65.3 1.16.3H21a2 2 0 0 1 0 4h-.22c-.51 0-.9.03-1.16.3-.19.2-.28.36-.36.62Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function ChevronIcon({ collapsed }: { collapsed: boolean }) {
   return (
     <svg
@@ -59,6 +84,12 @@ const navItems: NavItem[] = [
     href: '/properties',
     icon: <PropertiesIcon />,
     isActive: (pathname) => pathname.startsWith('/properties'),
+  },
+  {
+    label: 'Settings',
+    href: '/settings',
+    icon: <SettingsIcon />,
+    isActive: (pathname) => pathname.startsWith('/settings'),
   },
 ];
 

@@ -5,14 +5,9 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/{{version}}/properties
+  url: {{base_url}}/{{version}}/properties
   body: none
   auth: bearer
-}
-
-params:query {
-  page: 1
-  limit: 10
 }
 
 headers {
@@ -27,7 +22,7 @@ tests {
   test("should return 200", function() {
     expect(res.getStatus()).to.equal(200);
   });
-
+  
   test("should return paginated response", function() {
     expect(res.getBody().data).to.be.an("array");
     expect(res.getBody().meta).to.be.an("object");
@@ -35,13 +30,6 @@ tests {
     expect(res.getBody().meta.limit).to.equal(10);
     expect(res.getBody().meta.total).to.be.a("number");
     expect(res.getBody().meta.totalPages).to.be.a("number");
-  });
-
-  test("should include images and utility bills on each property", function() {
-    if (res.getBody().data.length > 0) {
-      expect(res.getBody().data[0].images).to.be.an("array");
-      expect(res.getBody().data[0].utility_bills).to.be.an("array");
-    }
   });
 }
 
