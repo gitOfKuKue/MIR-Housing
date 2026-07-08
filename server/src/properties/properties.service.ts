@@ -114,7 +114,7 @@ export class PropertiesService {
     userId: string,
     accessToken: string,
   ): Promise<Property> {
-    const supabase = this.supabaseService.getClient(accessToken);
+    const supabase = this.supabaseService.getServiceClient();
 
     const { data, error } = await supabase
       .from(PROPERTIES_TABLE)
@@ -274,10 +274,10 @@ export class PropertiesService {
       );
     }
 
-    const supabase = this.supabaseService.getClient(accessToken);
+    const serviceClient = this.supabaseService.getServiceClient();
     const storagePath = `${propertyId}/${randomUUID()}.${resolvedImage.extension}`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await serviceClient.storage
       .from(PROPERTY_IMAGES_BUCKET)
       .upload(storagePath, fileBuffer, {
         contentType: resolvedImage.mimeType,
@@ -288,7 +288,7 @@ export class PropertiesService {
       this.handleStorageError(uploadError);
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await serviceClient
       .from(PROPERTY_IMAGES_TABLE)
       .insert({
         property_id: propertyId,
@@ -299,15 +299,18 @@ export class PropertiesService {
       .single();
 
     if (error) {
-      await supabase.storage.from(PROPERTY_IMAGES_BUCKET).remove([storagePath]);
+      await serviceClient.storage
+        .from(PROPERTY_IMAGES_BUCKET)
+        .remove([storagePath]);
       this.handleSupabaseError(error);
     }
 
     const image = data as PropertyImage;
+    const readClient = this.supabaseService.getClient(accessToken);
 
     return {
       ...image,
-      public_url: this.getPublicImageUrl(supabase, storagePath),
+      public_url: this.getPublicImageUrl(readClient, storagePath),
     };
   }
 

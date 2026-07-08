@@ -4,7 +4,10 @@ import type { Property } from '@/src/types/property';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import PropertyImageLightbox from './PropertyImageLightbox';
+import { deleteProperty } from '@/src/lib/api';
+import { getAuthUser } from '@/src/lib/auth';
 import {
   formatAddress,
   formatBillStatus,
@@ -76,6 +79,37 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [furnishingsExpanded, setFurnishingsExpanded] = useState(true);
   const [utilityBillsExpanded, setUtilityBillsExpanded] = useState(true);
+  const router = useRouter();
+  const authUser = getAuthUser();
+  const canDelete = authUser?.role === 'admin';
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  function openDeleteConfirm() {
+    if (!canDelete) return;
+    setDeleteError(null);
+    setDeleteConfirmOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!canDelete) return;
+
+    setDeleting(true);
+    setDeleteError(null);
+
+    try {
+      await deleteProperty(property.id);
+      router.push('/properties');
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : 'Failed to delete property',
+      );
+    } finally {
+      setDeleting(false);
+      setDeleteConfirmOpen(false);
+    }
+  }
 
   return (
     <div className="p-6 sm:p-8">
@@ -569,7 +603,27 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
         ) : null}
 
         <section className="rounded-xl border border-[#e8e4dc] bg-white p-6 lg:col-span-3">
-          <h2 className="text-lg font-semibold text-[#1a1a1a]">Record info</h2>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h2 className="text-lg font-semibold text-[#1a1a1a]">Record info</h2>
+
+            {canDelete ? (
+              <button
+                type="button"
+                onClick={openDeleteConfirm}
+                disabled={deleting}
+                className="rounded-md bg-[#b91c1c] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#991b1b] disabled:cursor-not-allowed disabled:opacity-60"
+                aria-busy={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete property'}
+              </button>
+            ) : null}
+          </div>
+
+          {deleteError ? (
+            <p className="mt-3 text-sm font-medium text-[#b91c1c]">
+              {deleteError}
+            </p>
+          ) : null}
           <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
             <div>
               <dt className="font-medium text-[#9ca3af]">Property ID</dt>
@@ -591,6 +645,60 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
             </div>
           </dl>
         </section>
+
+        {deleteConfirmOpen ? (
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 sm:p-8"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Delete property confirmation"
+            onClick={() => {
+              if (!deleting) setDeleteConfirmOpen(false);
+            }}
+          >
+            <div
+              className="w-full max-w-md rounded-xl bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.25)]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold text-[#1a1a1a]">
+                Delete this property?
+              </h3>
+              <p className="mt-2 text-sm text-[#6b7280]">
+                This action cannot be undone. Property ID:{' '}
+                <span className="font-mono text-xs text-[#1a1a1a]">
+                  {property.id}
+                </span>
+              </p>
+
+              {deleteError ? (
+                <p className="mt-4 text-sm font-medium text-[#b91c1c]">
+                  {deleteError}
+                </p>
+              ) : null}
+
+              <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!deleting) setDeleteConfirmOpen(false);
+                  }}
+                  disabled={deleting}
+                  className="rounded-md border border-[#e5e7eb] bg-white px-4 py-2 text-sm font-semibold text-[#1a1a1a] transition hover:bg-[#f9fafb] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                  className="rounded-md bg-[#b91c1c] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#991b1b] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

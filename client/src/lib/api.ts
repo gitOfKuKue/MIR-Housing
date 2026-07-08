@@ -176,6 +176,20 @@ export async function createProperty(
   });
 }
 
+export interface DeletePropertyResponse {
+  id: string;
+  deleted_at: string;
+  message: string;
+}
+
+export async function deleteProperty(
+  id: string,
+): Promise<DeletePropertyResponse> {
+  return apiFetch<DeletePropertyResponse>(`/properties/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 export interface UploadPropertyImagesResponse {
   data: Property['images'];
   meta: { uploaded: number };
