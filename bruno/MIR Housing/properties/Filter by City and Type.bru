@@ -1,0 +1,34 @@
+meta {
+  name: Filter by City and Type
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/{{version}}/properties
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should match city and property type filters", function() {
+    const properties = res.getBody().data;
+    properties.forEach(function(property) {
+      expect(property.city.toLowerCase()).to.include("bangkok");
+      expect(property.property_type).to.equal("condo");
+      expect(property.bedrooms).to.equal(2);
+    });
+  });
+}

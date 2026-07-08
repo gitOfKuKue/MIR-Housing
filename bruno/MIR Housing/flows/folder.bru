@@ -1,0 +1,26 @@
+meta {
+  name: CRUD Flow
+  seq: 3
+}
+
+docs {
+  Recommended test order:
+  1. Health
+  2. Login
+  3. Get Me
+  4. Logout (optional — invalidates accessToken for later requests)
+  5. Create Property (or Bulk Create Properties / npm run seed:properties)
+  5. Get Property
+  6. Update Property
+  7. List Properties
+  8. Filter by Status
+  9. Delete Property (admin only)
+  10. Upload Property Image (requires migration 005_property_images.sql)
+  11. List Property Images
+  12. Create Property Utility Bill
+  13. List Property Utility Bills
+  14. Update Property Utility Bill
+  15. Delete Property Utility Bill
+
+  Set email and password in the local environment before running.
+}

@@ -1,0 +1,58 @@
+meta {
+  name: Create Property Utility Bill
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/{{version}}/properties/{{propertyId}}/utility-bills
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "bill_type": "electricity",
+    "billing_period_start": "2026-03-01",
+    "billing_period_end": "2026-03-31",
+    "amount": 1200000,
+    "currency": "VND",
+    "due_date": "2026-04-10",
+    "status": "unpaid",
+    "provider_name": "EVN HCMC",
+    "account_number": "PE12345678",
+    "notes": "March electricity bill"
+  }
+}
+
+vars:post-response {
+  utilityBillId: res.body.id
+}
+
+tests {
+  test("should return 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return created utility bill", function() {
+    expect(res.getBody().id).to.be.a("string");
+    expect(res.getBody().property_id).to.equal(bru.getEnvVar("propertyId"));
+    expect(res.getBody().bill_type).to.equal("electricity");
+    expect(res.getBody().amount).to.equal(1200000);
+  });
+}
+
+docs {
+  Create a utility bill for a property.
+  bill_type: electricity | water | bike_parking | management | wifi | washing_machine | service
+  status: unpaid | paid | waived
+}

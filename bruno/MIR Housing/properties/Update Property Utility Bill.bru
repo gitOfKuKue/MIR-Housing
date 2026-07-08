@@ -1,0 +1,42 @@
+meta {
+  name: Update Property Utility Bill
+  type: http
+  seq: 14
+}
+
+patch {
+  url: {{baseUrl}}/{{version}}/properties/{{propertyId}}/utility-bills/{{utilityBillId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "status": "paid",
+    "notes": "Paid via company bank transfer"
+  }
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return updated utility bill", function() {
+    expect(res.getBody().status).to.equal("paid");
+    expect(res.getBody().paid_at).to.be.a("string");
+  });
+}
+
+docs {
+  Update a utility bill. Run Create Property Utility Bill first.
+}

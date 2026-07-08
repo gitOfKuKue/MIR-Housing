@@ -1,0 +1,25 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies & build output (safety net for monorepo root)
+node_modules/
+dist/
+.next/
+out/
+build/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp

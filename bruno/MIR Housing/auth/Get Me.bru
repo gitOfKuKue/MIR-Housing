@@ -1,0 +1,36 @@
+meta {
+  name: Get Me
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/{{version}}/auth/me
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return current user", function() {
+    expect(res.getBody().user).to.be.an("object");
+    expect(res.getBody().user.id).to.be.a("string");
+    expect(res.getBody().user.email).to.equal(bru.getEnvVar("email"));
+    expect(res.getBody().user.role).to.be.oneOf(["staff", "admin"]);
+  });
+}
+
+docs {
+  Returns the authenticated user profile. Run Login first.
+}

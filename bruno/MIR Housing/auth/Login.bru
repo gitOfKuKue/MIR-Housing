@@ -1,0 +1,49 @@
+meta {
+  name: Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/{{version}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "password": "{{password}}"
+  }
+}
+
+vars:post-response {
+  accessToken: res.body.access_token
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return access token", function() {
+    expect(res.getBody().access_token).to.be.a("string");
+    expect(res.getBody().access_token.length).to.be.greaterThan(0);
+  });
+  
+  test("should return user with role", function() {
+    expect(res.getBody().user).to.be.an("object");
+    expect(res.getBody().user.email).to.equal(bru.getEnvVar("email"));
+    expect(res.getBody().user.role).to.be.oneOf(["staff", "admin"]);
+  });
+}
+
+docs {
+  Sign in with email and password. Saves access_token to accessToken.
+  Set email and password in the local environment before running.
+}

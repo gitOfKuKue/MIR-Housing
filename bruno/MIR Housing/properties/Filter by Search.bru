@@ -1,0 +1,29 @@
+meta {
+  name: Filter by Search
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/{{version}}/properties
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return matching search results", function() {
+    expect(res.getBody().data).to.be.an("array");
+  });
+}

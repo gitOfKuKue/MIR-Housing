@@ -1,0 +1,35 @@
+meta {
+  name: Filter by Rent Range
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/{{version}}/properties
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return properties within rent range", function() {
+    const properties = res.getBody().data;
+    properties.forEach(function(property) {
+      if (property.rent_amount !== null) {
+        expect(property.rent_amount).to.be.at.least(10000);
+        expect(property.rent_amount).to.be.at.most(50000);
+      }
+    });
+  });
+}

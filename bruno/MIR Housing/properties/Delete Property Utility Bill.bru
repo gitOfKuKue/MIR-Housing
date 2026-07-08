@@ -1,0 +1,33 @@
+meta {
+  name: Delete Property Utility Bill
+  type: http
+  seq: 15
+}
+
+delete {
+  url: {{baseUrl}}/{{version}}/properties/{{propertyId}}/utility-bills/{{utilityBillId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return delete message", function() {
+    expect(res.getBody().message).to.equal("Utility bill deleted successfully");
+  });
+}
+
+docs {
+  Delete a utility bill. Run Create Property Utility Bill first.
+}

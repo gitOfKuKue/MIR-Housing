@@ -1,0 +1,38 @@
+meta {
+  name: Filter by Status
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/{{version}}/properties
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 1
+  limit: 10
+  status: available
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should only return available properties", function() {
+    const properties = res.getBody().data;
+    properties.forEach(function(property) {
+      expect(property.status).to.equal("available");
+    });
+  });
+}

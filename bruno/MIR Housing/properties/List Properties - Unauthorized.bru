@@ -1,0 +1,21 @@
+meta {
+  name: List Properties - Unauthorized
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/{{version}}/properties
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("should return 401 without token", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

@@ -1,0 +1,44 @@
+meta {
+  name: Get Property
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/{{version}}/properties/{{propertyId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return property with images and utility bills", function() {
+    expect(res.getBody().id).to.be.a("string");
+    expect(res.getBody().name).to.be.a("string");
+    expect(res.getBody().images).to.be.an("array");
+    expect(res.getBody().utility_bills).to.be.an("array");
+    if (res.getBody().images.length > 0) {
+      expect(res.getBody().images[0].public_url).to.be.a("string");
+    }
+    if (res.getBody().utility_bills.length > 0) {
+      expect(res.getBody().utility_bills[0].bill_type).to.be.a("string");
+      expect(res.getBody().utility_bills[0].amount).to.be.a("number");
+    }
+  });
+}
+
+docs {
+  Get a single property by UUID, including images and utility_bills.
+  Set propertyId in the local environment or replace it in the URL.
+}

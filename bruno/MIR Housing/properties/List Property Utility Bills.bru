@@ -1,0 +1,39 @@
+meta {
+  name: List Property Utility Bills
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/{{version}}/properties/{{propertyId}}/utility-bills
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~bill_type: electricity
+  ~status: unpaid
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return utility bills array", function() {
+    expect(res.getBody().data).to.be.an("array");
+  });
+}
+
+docs {
+  List utility bills for a property. Optional filters: bill_type, status.
+  bill_type values: electricity, water, bike_parking, management, wifi, washing_machine, service
+}

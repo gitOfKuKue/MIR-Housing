@@ -1,0 +1,21 @@
+meta {
+  name: Get Me - Unauthorized
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/{{version}}/auth/me
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("should return 401 without token", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

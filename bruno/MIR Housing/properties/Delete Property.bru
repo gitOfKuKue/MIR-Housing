@@ -1,0 +1,23 @@
+meta {
+  name: Delete Property
+  type: http
+  seq: 10
+}
+
+delete {
+  url: {{base_url}}/{{version}}/properties/8fa84eaa-a52f-4fa8-9008-a9d6150daa6c
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+docs {
+  Soft-deletes a property. Response: { id, deleted_at, message }
+}

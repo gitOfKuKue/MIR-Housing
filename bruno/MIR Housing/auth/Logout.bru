@@ -1,0 +1,38 @@
+meta {
+  name: Logout
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/{{version}}/auth/logout
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+vars:post-response {
+  accessToken:
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return logout message", function() {
+    expect(res.getBody().message).to.equal("Logged out successfully");
+  });
+}
+
+docs {
+  Signs out the current session and clears accessToken. Run Login first.
+  After this request, Get Me should return 401 with the same token.
+}

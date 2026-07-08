@@ -1,0 +1,36 @@
+meta {
+  name: List Property Images
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/{{version}}/properties/{{propertyId}}/images
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return image list", function() {
+    expect(res.getBody().data).to.be.an("array");
+    if (res.getBody().data.length > 0) {
+      expect(res.getBody().data[0].public_url).to.be.a("string");
+    }
+  });
+}
+
+docs {
+  Lists uploaded images for a property. Run Upload Property Image first.
+}

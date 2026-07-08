@@ -1,0 +1,50 @@
+meta {
+  name: Upload Property Image
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/{{version}}/properties/{{propertyId}}/images
+  body: multipart-form
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:multipart-form {
+  file: @file(../../../client/app/icon.png)
+  sort_order: 0
+}
+
+vars:post-response {
+  imageId: res.body.data[0].id
+  imageUrl: res.body.data[0].public_url
+}
+
+tests {
+  test("should return 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return uploaded images", function() {
+    expect(res.getBody().data).to.be.an("array");
+    expect(res.getBody().data.length).to.be.greaterThan(0);
+    expect(res.getBody().meta.uploaded).to.equal(res.getBody().data.length);
+    expect(res.getBody().data[0].property_id).to.equal(bru.getEnvVar("propertyId"));
+    expect(res.getBody().data[0].public_url).to.be.a("string");
+  });
+}
+
+docs {
+  Upload one or more property images to Supabase Storage via the Nest API.
+  Use multipart form field "file" and select multiple local images in Bruno.
+  Optional sort_order applies to the first image; additional files increment from there.
+  Run Login and set propertyId first. Max 10 images per request, 5 MB each.
+}

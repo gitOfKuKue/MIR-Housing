@@ -1,0 +1,25 @@
+meta {
+  name: Get Property - Not Found
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/{{version}}/properties/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("should return 404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
