@@ -5,6 +5,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { readFileSync, unlinkSync } from 'node:fs';
 import { PostgrestError } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
 import {
@@ -252,12 +253,33 @@ export class PropertiesService {
   ): Promise<PropertyImageWithUrl> {
     const resolvedImage = resolveImageFile(file);
 
+    const fileBuffer =
+      file.buffer ??
+      (file.path ? (() => {
+        try {
+          return readFileSync(file.path);
+        } finally {
+          // Best-effort cleanup for disk uploads.
+          try {
+            unlinkSync(file.path);
+          } catch {
+            // ignore
+          }
+        }
+      })() : undefined);
+
+    if (!fileBuffer) {
+      throw new BadRequestException(
+        'Uploaded image buffer is missing (check multer configuration).',
+      );
+    }
+
     const supabase = this.supabaseService.getClient(accessToken);
     const storagePath = `${propertyId}/${randomUUID()}.${resolvedImage.extension}`;
 
     const { error: uploadError } = await supabase.storage
       .from(PROPERTY_IMAGES_BUCKET)
-      .upload(storagePath, file.buffer, {
+      .upload(storagePath, fileBuffer, {
         contentType: resolvedImage.mimeType,
         upsert: false,
       });

@@ -82,6 +82,9 @@ export async function logout() {
 export async function getProperties(params?: {
   page?: number;
   limit?: number;
+  search?: string;
+  status?: string;
+  property_type?: string;
 }): Promise<PaginatedResponse<Property>> {
   const searchParams = new URLSearchParams();
 
@@ -91,6 +94,18 @@ export async function getProperties(params?: {
 
   if (params?.limit) {
     searchParams.set('limit', String(params.limit));
+  }
+
+  if (params?.search) {
+    searchParams.set('search', params.search);
+  }
+
+  if (params?.status) {
+    searchParams.set('status', params.status);
+  }
+
+  if (params?.property_type) {
+    searchParams.set('property_type', params.property_type);
   }
 
   const query = searchParams.toString();
@@ -121,6 +136,88 @@ export async function getAllProperties(): Promise<Property[]> {
 
 export async function getProperty(id: string): Promise<Property> {
   return apiFetch<Property>(`/properties/${id}`);
+}
+
+export type CreatePropertyPayload = {
+  name: string;
+  address_line1: string;
+  city: string;
+  province: string;
+  property_type?: Property['property_type'];
+  status?: Property['status'];
+  address_line2?: string;
+  postal_code?: string;
+  country?: string;
+  rent_amount?: number;
+  rent_currency?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  area_sqm?: number;
+  room_type?: string;
+  toilet_type?: Property['toilet_type'];
+  parking_type?: Property['parking_type'];
+  main_gate_lock?: Property['main_gate_lock'];
+  max_occupants?: number;
+  max_bikes?: number;
+  floor?: string;
+  drying_area?: Property['drying_area'];
+  deposit_months?: number;
+  holding_deposit?: number;
+  description?: string;
+  internal_notes?: string;
+};
+
+export async function createProperty(
+  payload: CreatePropertyPayload,
+): Promise<Property> {
+  return apiFetch<Property>('/properties', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export interface UploadPropertyImagesResponse {
+  data: Property['images'];
+  meta: { uploaded: number };
+}
+
+export async function uploadPropertyImages(
+  propertyId: string,
+  files: File[],
+  sortOrder = 0,
+): Promise<UploadPropertyImagesResponse> {
+  if (files.length === 0) {
+    return { data: [], meta: { uploaded: 0 } };
+  }
+
+  const formData = new FormData();
+  files.forEach((file) => {
+    formData.append('file', file);
+  });
+  formData.append('sort_order', String(sortOrder));
+
+  const token = getAccessToken();
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}/properties/${propertyId}/images`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+  } catch {
+    throw new Error(
+      'Cannot reach the server. Make sure the API is running on port 8000.',
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response));
+  }
+
+  return (await response.json()) as UploadPropertyImagesResponse;
 }
 
 export async function apiFetch<T>(

@@ -92,7 +92,7 @@ export default function Header({ className }: { className?: string }) {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="rounded-full border border-[#e5e7eb] px-4 py-2 text-sm font-medium text-[#1a1a1a] transition hover:border-[#1e4636] hover:text-[#1e4636]"
+                className="rounded-lg border border-[#e5e7eb] px-4 py-2 text-sm font-medium text-[#1a1a1a] transition hover:border-[#1e4636] hover:text-[#1e4636]"
               >
                 Log out
               </button>
@@ -100,7 +100,7 @@ export default function Header({ className }: { className?: string }) {
           ) : authReady ? (
             <Link
               href="/login"
-              className="rounded-full bg-[#1e4636] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#163828]"
+              className="rounded-lg bg-[#1e4636] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#163828]"
             >
               Log in
             </Link>

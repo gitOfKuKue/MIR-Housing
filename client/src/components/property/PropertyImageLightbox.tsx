@@ -88,7 +88,7 @@ export default function PropertyImageLightbox({
       <button
         type="button"
         onClick={onClose}
-        className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-8 sm:top-8"
+        className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 sm:right-8 sm:top-8"
         aria-label="Close image viewer"
       >
         <CloseIcon />
@@ -101,7 +101,7 @@ export default function PropertyImageLightbox({
             event.stopPropagation();
             onNavigate(activeIndex - 1);
           }}
-          className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:left-8"
+          className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 sm:left-8"
           aria-label="Previous image"
         >
           <ChevronLeftIcon />
@@ -115,7 +115,7 @@ export default function PropertyImageLightbox({
             event.stopPropagation();
             onNavigate(activeIndex + 1);
           }}
-          className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-8"
+          className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 sm:right-8"
           aria-label="Next image"
         >
           <span className="rotate-180">

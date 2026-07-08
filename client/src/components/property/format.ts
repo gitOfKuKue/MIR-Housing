@@ -135,3 +135,34 @@ export function formatDepositMonths(months: number | null | undefined): string |
   if (months === null || months === undefined) return null;
   return months === 1 ? '1 month' : `${months} months`;
 }
+
+export function formatFurnishingIncluded(
+  value: boolean | null | undefined,
+): string {
+  if (value === true) return 'Included';
+  if (value === false) return 'Not included';
+  return '—';
+}
+
+export function formatWashingMachine(
+  value: 'private' | 'shared' | 'not_available' | null | undefined,
+): string {
+  if (value === 'private') return 'Private';
+  if (value === 'shared') return 'Shared';
+  if (value === 'not_available') return 'N/A';
+  return '—';
+}
+
+export function formatLandlordInBuilding(
+  value: boolean | null | undefined,
+): string {
+  if (value === true) return 'Same building';
+  if (value === false) return 'Not same building';
+  return '—';
+}
+
+export function furnishingStatusStyles(included: boolean | null | undefined): string {
+  if (included === true) return 'bg-[#e8f3ed] text-[#1e4636]';
+  if (included === false) return 'bg-[#fee2e2] text-[#b91c1c]';
+  return 'bg-[#f3f4f6] text-[#6b7280]';
+}

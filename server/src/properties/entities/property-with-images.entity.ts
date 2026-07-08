@@ -1,4 +1,5 @@
 import { Property } from './property.entity';
+import { PropertyFurnishings } from './property-furnishings.entity';
 import { PropertyImage } from './property-image.entity';
 import { PropertyUtilityBill } from './property-utility-bill.entity';
 
@@ -9,6 +10,7 @@ export interface PropertyImageWithUrl extends PropertyImage {
 export interface PropertyWithImages extends Property {
   images: PropertyImageWithUrl[];
   utility_bills: PropertyUtilityBill[];
+  furnishings: PropertyFurnishings | null;
 }
 
 interface PropertyRowWithRelations extends Property {
@@ -16,6 +18,20 @@ interface PropertyRowWithRelations extends Property {
   property_images?: PropertyImage[] | null;
   utility_bills?: PropertyUtilityBill[] | null;
   property_utility_bills?: PropertyUtilityBill[] | null;
+  furnishings?: PropertyFurnishings | PropertyFurnishings[] | null;
+  property_furnishings?: PropertyFurnishings | PropertyFurnishings[] | null;
+}
+
+function resolveFurnishings(
+  row: PropertyRowWithRelations,
+): PropertyFurnishings | null {
+  const furnishings = row.furnishings ?? row.property_furnishings ?? null;
+
+  if (!furnishings) {
+    return null;
+  }
+
+  return Array.isArray(furnishings) ? (furnishings[0] ?? null) : furnishings;
 }
 
 export function mapPropertyWithImages(
@@ -30,6 +46,8 @@ export function mapPropertyWithImages(
     property_images: _propertyImages,
     utility_bills: _utilityBills,
     property_utility_bills: _propertyUtilityBills,
+    furnishings: _furnishings,
+    property_furnishings: _propertyFurnishings,
     ...property
   } = row;
 
@@ -58,5 +76,6 @@ export function mapPropertyWithImages(
 
       return a.bill_type.localeCompare(b.bill_type);
     }),
+    furnishings: resolveFurnishings(row),
   };
 }

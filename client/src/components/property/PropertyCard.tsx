@@ -28,7 +28,7 @@ function BookmarkIcon({ filled }: { filled?: boolean }) {
   );
 }
 
-function StarIcon() {
+function BedIcon() {
   return (
     <svg
       width="14"
@@ -38,9 +38,10 @@ function StarIcon() {
       aria-hidden="true"
     >
       <path
-        d="M12 3.5l2.55 5.17 5.7.83-4.12 4.02.97 5.67L12 16.9l-5.1 2.68.97-5.67-4.12-4.02 5.7-.83L12 3.5z"
+        d="M3 13v5a1 1 0 001 1h16a1 1 0 001-1v-5M3 13h18M3 13V9a2 2 0 012-2h3v6H3zM21 13V9a2 2 0 00-2-2h-3v6h5z"
         stroke="currentColor"
         strokeWidth="1.6"
+        strokeLinecap="round"
         strokeLinejoin="round"
       />
     </svg>
@@ -78,18 +79,18 @@ export default function PropertyCard({
 
   const tags = [
     property.bedrooms !== null
-      ? { icon: <StarIcon />, label: `${property.bedrooms} Bed` }
+      ? { icon: <BedIcon />, label: `${property.bedrooms} Bed` }
       : null,
     { label: formatPropertyType(property.property_type) },
     { label: formatStatus(property.status) },
   ].filter(Boolean) as Array<{ icon?: React.ReactNode; label: string }>;
 
   const actionClassName =
-    'mt-5 flex w-full items-center justify-center rounded-full bg-white py-3.5 text-sm font-bold text-[#1a1a1a] transition hover:bg-[#f3f4f6]';
+    'mt-5 flex w-full items-center justify-center rounded-lg bg-white py-3.5 text-sm font-bold text-[#1a1a1a] transition hover:bg-[#f3f4f6]';
 
   return (
     <article
-      className={`flex w-full max-w-sm flex-col overflow-hidden rounded-[28px] bg-[#353f4b] shadow-[0_20px_50px_rgba(15,23,42,0.18)] ${className ?? ''}`}
+      className={`flex w-full max-w-sm flex-col overflow-hidden rounded-xl bg-[#353f4b] shadow-[0_20px_50px_rgba(15,23,42,0.18)] ${className ?? ''}`}
     >
       <div className="relative h-56 w-full shrink-0">
         {resolvedImageUrl ? (
@@ -97,6 +98,7 @@ export default function PropertyCard({
             src={resolvedImageUrl}
             alt={imageAlt ?? property.name}
             fill
+            loading="lazy"
             className="object-cover"
             sizes="(max-width: 640px) 100vw, 384px"
           />
@@ -111,7 +113,7 @@ export default function PropertyCard({
             type="button"
             onClick={onBookmark}
             aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark property'}
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/25 text-white backdrop-blur-sm transition hover:bg-black/40"
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-lg bg-black/25 text-white backdrop-blur-sm transition hover:bg-black/40"
           >
             <BookmarkIcon filled={bookmarked} />
           </button>
@@ -124,7 +126,7 @@ export default function PropertyCard({
             {property.name}
           </h3>
           {rent ? (
-            <span className="shrink-0 rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white">
+            <span className="shrink-0 rounded-md bg-white/15 px-3 py-1 text-sm font-semibold text-white">
               {rent}
             </span>
           ) : null}
@@ -138,7 +140,7 @@ export default function PropertyCard({
           {tags.map((tag) => (
             <span
               key={tag.label}
-              className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90"
+              className="inline-flex items-center gap-1.5 rounded-md bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90"
             >
               {tag.icon}
               {tag.label}

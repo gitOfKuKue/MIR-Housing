@@ -104,7 +104,7 @@ export default function Sidebar({ className }: { className?: string }) {
               key={item.href}
               href={item.href}
               title={collapsed ? item.label : undefined}
-              className={`flex items-center rounded-xl py-2.5 text-sm font-medium transition ${
+              className={`flex items-center rounded-lg py-2.5 text-sm font-medium transition ${
                 collapsed ? 'justify-center px-2' : 'gap-3 px-3'
               } ${
                 active
@@ -129,7 +129,7 @@ export default function Sidebar({ className }: { className?: string }) {
           onClick={toggleCollapsed}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className={`flex w-full items-center rounded-xl py-2.5 text-sm font-medium text-[#6b7280] transition hover:bg-[#f7f4ef] hover:text-[#1e4636] ${
+          className={`flex w-full items-center rounded-lg py-2.5 text-sm font-medium text-[#6b7280] transition hover:bg-[#f7f4ef] hover:text-[#1e4636] ${
             collapsed ? 'justify-center px-2' : 'gap-3 px-3'
           }`}
         >

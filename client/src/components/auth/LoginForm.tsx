@@ -182,7 +182,7 @@ export default function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="hello@example.com"
-              className="w-full rounded-full border border-transparent bg-white py-3.5 pl-11 pr-4 text-sm text-[#1a1a1a] outline-none ring-1 ring-[#e5e7eb] placeholder:text-[#9ca3af] focus:ring-2 focus:ring-[#1e4636]"
+              className="w-full rounded-lg border border-transparent bg-white py-3.5 pl-11 pr-4 text-sm text-[#1a1a1a] outline-none ring-1 ring-[#e5e7eb] placeholder:text-[#9ca3af] focus:ring-2 focus:ring-[#1e4636]"
             />
           </div>
         </div>
@@ -214,7 +214,7 @@ export default function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter password"
-              className="w-full rounded-full border border-transparent bg-white py-3.5 pl-11 pr-12 text-sm text-[#1a1a1a] outline-none ring-1 ring-[#e5e7eb] placeholder:text-[#9ca3af] focus:ring-2 focus:ring-[#1e4636]"
+              className="w-full rounded-lg border border-transparent bg-white py-3.5 pl-11 pr-12 text-sm text-[#1a1a1a] outline-none ring-1 ring-[#e5e7eb] placeholder:text-[#9ca3af] focus:ring-2 focus:ring-[#1e4636]"
             />
             <button
               type="button"
@@ -228,7 +228,7 @@ export default function LoginForm() {
         </div>
 
         {error ? (
-          <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+          <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
             {error}
           </p>
         ) : null}
@@ -236,7 +236,7 @@ export default function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-full bg-[#1e4636] py-3.5 text-sm font-semibold text-white transition hover:bg-[#163828] disabled:cursor-not-allowed disabled:opacity-70"
+          className="w-full rounded-lg bg-[#1e4636] py-3.5 text-sm font-semibold text-white transition hover:bg-[#163828] disabled:cursor-not-allowed disabled:opacity-70"
         >
           {loading ? 'Signing in...' : 'Sign in'}
         </button>

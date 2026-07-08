@@ -1,11 +1,12 @@
 -- MIR Housing — full seed: 20 HCMC properties + room info + utility bills + image metadata
--- Prerequisites: migrations 001–006 and 008 applied; at least one auth.users row exists
+-- Prerequisites: migrations 001–006, 008, and 010 applied; at least one auth.users row exists
 -- Run in Supabase Dashboard → SQL Editor
 --
 -- Creates:
 --   • 20 properties (fixed UUIDs)
 --   • 3 property_images rows per property (60 total) — metadata only
 --   • 7 utility bill types per property for March 2026 (140 total)
+--   • Furnishings: run seed/010_property_furnishings_mock.sql after this script
 --
 -- Images: metadata is inserted here. SQL cannot upload binary files to Storage.
 -- After this script, run from server/:
