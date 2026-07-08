@@ -25,7 +25,10 @@ export type UtilityBillType =
   | 'washing_machine'
   | 'service';
 
-export type UtilityBillStatus = 'unpaid' | 'paid' | 'waived';
+export type UtilityBillStatus =
+  | 'needs_payment'
+  | 'no_payment_needed'
+  | 'waived';
 
 export interface PropertyUtilityBill {
   id: string;

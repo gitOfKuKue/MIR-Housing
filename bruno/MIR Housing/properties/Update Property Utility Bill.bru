@@ -21,7 +21,7 @@ auth:bearer {
 
 body:json {
   {
-    "status": "paid",
+    "status": "no_payment_needed",
     "notes": "Paid via company bank transfer"
   }
 }
@@ -32,7 +32,7 @@ tests {
   });
 
   test("should return updated utility bill", function() {
-    expect(res.getBody().status).to.equal("paid");
+    expect(res.getBody().status).to.equal("no_payment_needed");
     expect(res.getBody().paid_at).to.be.a("string");
   });
 }

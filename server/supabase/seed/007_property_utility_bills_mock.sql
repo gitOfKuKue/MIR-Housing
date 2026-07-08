@@ -35,13 +35,13 @@ select
 from public.properties p
 cross join (
   values
-    ('electricity', '2026-03-01', '2026-03-31', 1850000, '2026-04-10', '2026-04-05 09:30:00+00', 'paid', 'EVN HCMC', 'PE12003456', 'March electricity usage'),
-    ('water', '2026-03-01', '2026-03-31', 420000, '2026-04-10', '2026-04-06 11:15:00+00', 'paid', 'Saigon Water Corp', 'SW90887766', 'March water bill'),
-    ('management', '2026-03-01', '2026-03-31', 3200000, '2026-04-05', '2026-04-04 14:00:00+00', 'paid', 'Saigon Pearl Management', null, 'Monthly building management fee'),
-    ('bike_parking', '2026-03-01', '2026-03-31', 150000, '2026-04-10', null, 'unpaid', 'Saigon Pearl Parking', 'BP-12A-02', 'Motorbike parking slot B2-45'),
-    ('wifi', '2026-03-01', '2026-03-31', 299000, '2026-04-10', '2026-04-07 08:00:00+00', 'paid', 'VNPT Fiber', 'VNPT-882211', '100 Mbps internet package'),
-    ('washing_machine', '2026-03-01', '2026-03-31', 80000, '2026-04-10', null, 'unpaid', 'Building Laundry', null, 'Shared laundry card top-up'),
-    ('service', '2026-03-01', '2026-03-31', 250000, '2026-04-10', null, 'unpaid', 'Saigon Pearl Concierge', null, 'Unit cleaning service')
+    ('electricity', '2026-03-01', '2026-03-31', 1850000, '2026-04-10', '2026-04-05 09:30:00+00', 'no_payment_needed', 'EVN HCMC', 'PE12003456', 'March electricity usage'),
+    ('water', '2026-03-01', '2026-03-31', 420000, '2026-04-10', '2026-04-06 11:15:00+00', 'no_payment_needed', 'Saigon Water Corp', 'SW90887766', 'March water bill'),
+    ('management', '2026-03-01', '2026-03-31', 3200000, '2026-04-05', '2026-04-04 14:00:00+00', 'no_payment_needed', 'Saigon Pearl Management', null, 'Monthly building management fee'),
+    ('bike_parking', '2026-03-01', '2026-03-31', 150000, '2026-04-10', null, 'needs_payment', 'Saigon Pearl Parking', 'BP-12A-02', 'Motorbike parking slot B2-45'),
+    ('wifi', '2026-03-01', '2026-03-31', 299000, '2026-04-10', '2026-04-07 08:00:00+00', 'no_payment_needed', 'VNPT Fiber', 'VNPT-882211', '100 Mbps internet package'),
+    ('washing_machine', '2026-03-01', '2026-03-31', 80000, '2026-04-10', null, 'needs_payment', 'Building Laundry', null, 'Shared laundry card top-up'),
+    ('service', '2026-03-01', '2026-03-31', 250000, '2026-04-10', null, 'needs_payment', 'Saigon Pearl Concierge', null, 'Unit cleaning service')
 ) as v(
   bill_type,
   billing_period_start,
@@ -90,10 +90,10 @@ select
 from public.properties p
 cross join (
   values
-    ('electricity', '2026-02-01', '2026-02-28', 2100000, '2026-03-10', '2026-03-08 10:00:00+00', 'paid', 'EVN HCMC', 'PE25058899', 'February electricity'),
-    ('water', '2026-02-01', '2026-02-28', 510000, '2026-03-10', '2026-03-09 16:20:00+00', 'paid', 'Saigon Water Corp', 'SW77112233', 'February water'),
-    ('management', '2026-02-01', '2026-02-28', 4500000, '2026-03-05', '2026-03-04 09:00:00+00', 'paid', 'Vinhomes Central Park', null, 'February management fee'),
-    ('wifi', '2026-02-01', '2026-02-28', 350000, '2026-03-10', '2026-03-07 12:00:00+00', 'paid', 'FPT Telecom', 'FPT-250501', 'Premium wifi package')
+    ('electricity', '2026-02-01', '2026-02-28', 2100000, '2026-03-10', '2026-03-08 10:00:00+00', 'no_payment_needed', 'EVN HCMC', 'PE25058899', 'February electricity'),
+    ('water', '2026-02-01', '2026-02-28', 510000, '2026-03-10', '2026-03-09 16:20:00+00', 'no_payment_needed', 'Saigon Water Corp', 'SW77112233', 'February water'),
+    ('management', '2026-02-01', '2026-02-28', 4500000, '2026-03-05', '2026-03-04 09:00:00+00', 'no_payment_needed', 'Vinhomes Central Park', null, 'February management fee'),
+    ('wifi', '2026-02-01', '2026-02-28', 350000, '2026-03-10', '2026-03-07 12:00:00+00', 'no_payment_needed', 'FPT Telecom', 'FPT-250501', 'Premium wifi package')
 ) as v(
   bill_type,
   billing_period_start,
@@ -142,9 +142,9 @@ select
 from public.properties p
 cross join (
   values
-    ('electricity', '2026-03-01', '2026-03-31', 1320000, '2026-04-10', null, 'unpaid', 'EVN HCMC', 'PE15087721', 'Awaiting payment'),
-    ('water', '2026-03-01', '2026-03-31', 280000, '2026-04-10', '2026-04-02 13:45:00+00', 'paid', 'Saigon Water Corp', 'SW55443322', 'Paid early'),
-    ('management', '2026-03-01', '2026-03-31', 2800000, '2026-04-05', null, 'unpaid', 'Masteri Thao Dien', null, 'Q1 management invoice'),
+    ('electricity', '2026-03-01', '2026-03-31', 1320000, '2026-04-10', null, 'needs_payment', 'EVN HCMC', 'PE15087721', 'Awaiting payment'),
+    ('water', '2026-03-01', '2026-03-31', 280000, '2026-04-10', '2026-04-02 13:45:00+00', 'no_payment_needed', 'Saigon Water Corp', 'SW55443322', 'Paid early'),
+    ('management', '2026-03-01', '2026-03-31', 2800000, '2026-04-05', null, 'needs_payment', 'Masteri Thao Dien', null, 'Q1 management invoice'),
     ('service', '2026-03-01', '2026-03-31', 180000, '2026-04-10', null, 'waived', 'Masteri Thao Dien', null, 'Waived as move-in promotion')
 ) as v(
   bill_type,
@@ -194,11 +194,11 @@ select
 from public.properties p
 cross join (
   values
-    ('electricity', '2026-03-01', '2026-03-31', 5200000, '2026-04-10', '2026-04-01 08:30:00+00', 'paid', 'EVN HCMC', 'PE77001234', 'Large villa electricity usage'),
-    ('water', '2026-03-01', '2026-03-31', 980000, '2026-04-10', '2026-04-01 08:30:00+00', 'paid', 'Saigon Water Corp', 'SW99001122', 'Garden irrigation included'),
-    ('management', '2026-03-01', '2026-03-31', 8500000, '2026-04-05', '2026-04-03 15:00:00+00', 'paid', 'Phu My Hung Management', null, 'Villa estate management'),
+    ('electricity', '2026-03-01', '2026-03-31', 5200000, '2026-04-10', '2026-04-01 08:30:00+00', 'no_payment_needed', 'EVN HCMC', 'PE77001234', 'Large villa electricity usage'),
+    ('water', '2026-03-01', '2026-03-31', 980000, '2026-04-10', '2026-04-01 08:30:00+00', 'no_payment_needed', 'Saigon Water Corp', 'SW99001122', 'Garden irrigation included'),
+    ('management', '2026-03-01', '2026-03-31', 8500000, '2026-04-05', '2026-04-03 15:00:00+00', 'no_payment_needed', 'Phu My Hung Management', null, 'Villa estate management'),
     ('bike_parking', '2026-03-01', '2026-03-31', 0, '2026-04-10', null, 'waived', null, null, 'Parking included in lease'),
-    ('wifi', '2026-03-01', '2026-03-31', 650000, '2026-04-10', '2026-04-02 09:00:00+00', 'paid', 'Viettel', 'VT-PH0888', 'Business fiber line')
+    ('wifi', '2026-03-01', '2026-03-31', 650000, '2026-04-10', '2026-04-02 09:00:00+00', 'no_payment_needed', 'Viettel', 'VT-PH0888', 'Business fiber line')
 ) as v(
   bill_type,
   billing_period_start,

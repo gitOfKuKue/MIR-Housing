@@ -361,7 +361,7 @@ export class PropertiesService {
     this.validateBillingPeriod(dto.billing_period_start, dto.billing_period_end);
 
     const supabase = this.supabaseService.getClient(accessToken);
-    const status = dto.status ?? UtilityBillStatus.Unpaid;
+    const status = dto.status ?? UtilityBillStatus.NeedsPayment;
 
     const { data, error } = await supabase
       .from(PROPERTY_UTILITY_BILLS_TABLE)
@@ -374,7 +374,10 @@ export class PropertiesService {
         currency: dto.currency ?? 'VND',
         due_date: dto.due_date ?? null,
         status,
-        paid_at: status === UtilityBillStatus.Paid ? new Date().toISOString() : null,
+        paid_at:
+          status === UtilityBillStatus.NoPaymentNeeded
+            ? new Date().toISOString()
+            : null,
         provider_name: dto.provider_name ?? null,
         account_number: dto.account_number ?? null,
         notes: dto.notes ?? null,
@@ -405,11 +408,11 @@ export class PropertiesService {
     const supabase = this.supabaseService.getClient(accessToken);
     const updatePayload: Record<string, unknown> = { ...dto };
 
-    if (dto.status === UtilityBillStatus.Paid) {
+    if (dto.status === UtilityBillStatus.NoPaymentNeeded) {
       updatePayload.paid_at = new Date().toISOString();
     }
 
-    if (dto.status === UtilityBillStatus.Unpaid) {
+    if (dto.status === UtilityBillStatus.NeedsPayment) {
       updatePayload.paid_at = null;
     }
 

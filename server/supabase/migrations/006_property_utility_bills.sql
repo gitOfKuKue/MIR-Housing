@@ -16,8 +16,8 @@ create type public.utility_bill_type as enum (
 );
 
 create type public.utility_bill_status as enum (
-  'unpaid',
-  'paid',
+  'needs_payment',
+  'no_payment_needed',
   'waived'
 );
 
@@ -35,7 +35,7 @@ create table if not exists public.property_utility_bills (
   currency text not null default 'VND',
   due_date date,
   paid_at timestamptz,
-  status public.utility_bill_status not null default 'unpaid',
+  status public.utility_bill_status not null default 'needs_payment',
   provider_name text,
   account_number text,
   notes text,

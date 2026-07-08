@@ -77,19 +77,28 @@ export function formatBillType(
   return UTILITY_BILL_TYPE_LABELS[billType];
 }
 
+const UTILITY_BILL_STATUS_LABELS: Record<
+  Property['utility_bills'][number]['status'],
+  string
+> = {
+  needs_payment: 'Needs payment',
+  no_payment_needed: 'No payment needed',
+  waived: 'Waived',
+};
+
 export function formatBillStatus(
   status: Property['utility_bills'][number]['status'],
 ): string {
-  return status.charAt(0).toUpperCase() + status.slice(1);
+  return UTILITY_BILL_STATUS_LABELS[status];
 }
 
 export function utilityBillStatusStyles(
   status: Property['utility_bills'][number]['status'],
 ): string {
   switch (status) {
-    case 'paid':
+    case 'no_payment_needed':
       return 'bg-[#e8f3ed] text-[#1e4636]';
-    case 'unpaid':
+    case 'needs_payment':
       return 'bg-[#fee2e2] text-[#b91c1c]';
     case 'waived':
       return 'bg-[#f3f4f6] text-[#6b7280]';
