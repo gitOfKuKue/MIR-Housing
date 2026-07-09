@@ -2,7 +2,7 @@
 
 **An internal property management system for MIR Housing staff.**
 
-MIR Housing is a private web application — not a public rental marketplace. It helps your team keep all company-owned rental properties, photos, room details, and utility bills in one secure place.
+MIR Housing is a private web application — not a public rental marketplace. It helps your team keep company-owned rental properties, photos, room details, furnishings, and utility bills in one secure place.
 
 ---
 
@@ -13,11 +13,15 @@ MIR Housing is a private web application — not a public rental marketplace. It
 Think of MIR Housing as a **digital filing cabinet** for your rental properties. Instead of spreadsheets, chat messages, and scattered photos, staff can:
 
 - **Sign in** with a company email and password
-- **Browse** all properties in one dashboard
+- **Browse** all properties in a searchable, filterable dashboard (card or list view)
+- **Create** new property listings with photos
+- **Edit** any property details from the browser
 - **Open any property** to see full details on a single page
-- **View photos** in a gallery
+- **View photos** in a gallery with full-screen lightbox
 - **Check utility bills** (electricity, water, Wi‑Fi, management fees, and more)
-- **See room and building info** — bedrooms, bathrooms, parking, deposit terms, and similar details
+- **See room, furnishing, and building info** — bedrooms, parking, deposits, and similar details
+- **Change password** from the Settings page
+- **Delete properties** (admins only)
 
 Only people with a login can see property data. Nothing is shown to the public without signing in.
 
@@ -25,37 +29,35 @@ Only people with a login can see property data. Nothing is shown to the public w
 
 | Audience | How they use it |
 |----------|-----------------|
-| **Office / operations staff** | Look up properties, rent, status, and notes during daily work |
-| **Managers** | Review the portfolio at a glance and confirm details before decisions |
-| **Developers / IT** | Install, configure, and maintain the system (see [For developers](#for-developers) below) |
+| **Office / operations staff** | Look up, create, and update properties during daily work |
+| **Managers / admins** | Review the portfolio, manage listings, and delete properties |
+| **Developers / IT** | Install, configure, deploy, and maintain the system (see [For developers](#for-developers) below) |
 
 ### Typical day-to-day flow
 
 1. Open the website in your browser
 2. Click **Login** and enter your company credentials
-3. You land on the **Properties** page — a grid of property cards
-4. Click **View details** on any property
-5. On the detail page you can read the description, location, photo gallery, utility bills table, and room information
-6. Click **Logout** in the header when you are done
+3. You land on the **Properties** page — search, filter, and paginate results
+4. Click **Create New** to add a property, or open an existing one
+5. On the detail page, review description, location, gallery, utility bills, furnishings, and room info
+6. Click **Edit** to update a property, or go to **Settings** to change your password
+7. Click **Logout** in the header when you are done
 
-### Property statuses (what the labels mean)
+### Property statuses
 
 | Status | Meaning |
 |--------|---------|
 | **Available** | Ready to rent |
 | **Rented** | Currently occupied |
 | **Maintenance** | Under repair or not ready for tenants |
-| **Inactive** | Not in active use (archived from day-to-day operations) |
+| **Inactive** | Not in active use |
 
-### What’s included today
+### User roles
 
-- Secure login and logout
-- Property list and detail pages
-- Property photos (uploaded via the API; displayed in the app)
-- Utility bill records per property
-- Room and amenity fields (bedrooms, toilet type, parking, deposits, etc.)
-
-Planned improvements (not all built yet) include a public landing page, and in-app forms to add or edit properties directly from the browser. See [`docs/purpose.md`](docs/purpose.md) for the full roadmap.
+| Role | Capabilities |
+|------|----------------|
+| **staff** | View, create, and edit properties |
+| **admin** | Everything staff can do, plus delete properties |
 
 ---
 
@@ -85,8 +87,6 @@ MIR Housing/
 
 ### Prerequisites
 
-Install these on your machine before setting up locally:
-
 - **Node.js** 20 or newer ([nodejs.org](https://nodejs.org))
 - **npm** (comes with Node.js)
 - A **Supabase** project (free tier is fine for development)
@@ -101,8 +101,7 @@ cd "MIR Housing"
 ### 2. Set up Supabase
 
 1. Create a project at [supabase.com](https://supabase.com)
-2. In the Supabase dashboard, open **SQL Editor**
-3. Run each migration file **in order** from `server/supabase/migrations/`:
+2. Open **SQL Editor** and run each migration **in order** from `server/supabase/migrations/`:
    - `001_phase1.sql`
    - `002_fix_properties_rls.sql`
    - `003_soft_delete_rpc.sql`
@@ -110,9 +109,13 @@ cd "MIR Housing"
    - `005_property_images.sql`
    - `006_property_utility_bills.sql`
    - `008_property_room_info.sql`
-4. (Optional) Run seed scripts in `server/supabase/seed/` for sample data
-5. Create at least one user under **Authentication → Users** (email + password)
-6. Copy your **Project URL** and **anon public key** from **Project Settings → API**
+   - `009_rename_utility_bill_status.sql`
+   - `010_property_furnishings.sql`
+   - `011_fix_storage_rls.sql` *(run if image upload fails with RLS errors)*
+3. (Optional) Run seed scripts in `server/supabase/seed/` for sample data
+4. Create at least one user under **Authentication → Users**
+5. Set the user's role to `admin` in `public.profiles` if they need delete access
+6. Copy keys from **Project Settings → API** (URL, anon key, service role key)
 
 ### 3. Configure environment variables
 
@@ -121,30 +124,28 @@ cd "MIR Housing"
 ```env
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 CLIENT_URL=http://localhost:3000
 API_PREFIX=api
 API_VERSION=v1
 PORT=8000
 ```
 
-**Client** — create `client/.env.local` (optional; defaults work for local dev):
+`SUPABASE_SERVICE_ROLE_KEY` is required for property creation with images and for image uploads on the API.
+
+**Client** — create `client/.env.local`:
 
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
 ```
 
-> **Important:** Never commit real `.env` files to GitHub. They are already listed in `.gitignore`.
+> **Important:** Never commit real `.env` files to GitHub. They are listed in `.gitignore`.
 
 ### 4. Install dependencies
 
 ```bash
-# API
-cd server
-npm install
-
-# Website
-cd ../client
-npm install
+cd server && npm install
+cd ../client && npm install
 ```
 
 ### 5. Run locally
@@ -165,37 +166,40 @@ cd client
 npm run dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000).
 
 - API base URL: `http://localhost:8000/api/v1`
-- Health check: `GET http://localhost:8000/api/v1` (or your configured prefix)
+- Health check: `GET http://localhost:8000/api/v1`
 
 ### 6. Test the API with Bruno
 
 1. Install [Bruno](https://www.usebruno.com/)
 2. Open the collection at `bruno/MIR Housing/`
 3. Select the **local** environment
-4. Run **Auth → Login** first, then other property requests
-
-Environment variables in `bruno/MIR Housing/environments/local.bru` include `baseUrl`, `email`, `password`, and IDs saved after create requests.
+4. Set `email`, `password`, and `newPassword` in `bruno/MIR Housing/environments/local.bru`
+5. Run **Auth → Login** first, then other requests
 
 ### Main API endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/auth/login` | Sign in |
-| `POST` | `/auth/logout` | Sign out |
-| `GET` | `/auth/me` | Current user profile |
-| `GET` | `/properties` | List properties (paginated, filterable) |
-| `GET` | `/properties/:id` | Single property with images and utility bills |
-| `POST` | `/properties` | Create property |
-| `PATCH` | `/properties/:id` | Update property |
-| `DELETE` | `/properties/:id` | Delete property |
-| `POST` | `/properties/:id/images` | Upload images (JPG, PNG, WebP) |
-| `GET` | `/properties/:id/utility-bills` | List utility bills |
-| `POST` | `/properties/:id/utility-bills` | Add utility bill |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/auth/login` | No | Sign in |
+| `POST` | `/auth/logout` | Yes | Sign out |
+| `GET` | `/auth/me` | Yes | Current user profile |
+| `POST` | `/auth/change-password` | Yes | Change password |
+| `GET` | `/properties` | Yes | List properties (paginated, filterable) |
+| `GET` | `/properties/:id` | Yes | Single property with images, bills, furnishings |
+| `POST` | `/properties` | Yes | Create property |
+| `PATCH` | `/properties/:id` | Yes | Update property |
+| `DELETE` | `/properties/:id` | Admin | Soft-delete property |
+| `GET` | `/properties/:id/images` | Yes | List property images |
+| `POST` | `/properties/:id/images` | Yes | Upload images (JPG, PNG, WebP) |
+| `GET` | `/properties/:id/utility-bills` | Yes | List utility bills |
+| `POST` | `/properties/:id/utility-bills` | Yes | Add utility bill |
+| `PATCH` | `/properties/:id/utility-bills/:billId` | Yes | Update utility bill |
+| `DELETE` | `/properties/:id/utility-bills/:billId` | Yes | Delete utility bill |
 
-All property routes require a valid `Authorization: Bearer <access_token>` header from login.
+All authenticated routes require `Authorization: Bearer <access_token>` from login.
 
 ### Production build
 
@@ -211,12 +215,67 @@ npm run build
 npm run start
 ```
 
-Deploy the client and server to your hosting provider of choice (e.g. Vercel for the client, Railway/Fly/Render for the API). Point environment variables to your production Supabase project and URLs.
+---
 
-### Pushing to GitHub
+## Deploying the API to Render
 
-1. Create a new repository on GitHub (private recommended — this is internal tooling)
-2. Ensure secrets are not tracked:
+1. Push your code to GitHub
+2. On [Render](https://render.com) → **New +** → **Web Service** → connect your repo
+3. Use these settings:
+
+| Setting | Value |
+|--------|--------|
+| **Root Directory** | `server` |
+| **Build Command** | `npm install && npm run build` |
+| **Start Command** | `npm run start:prod` |
+| **Node version** | `20` (set env var `NODE_VERSION=20`) |
+
+4. Add environment variables in Render:
+
+| Key | Value |
+|-----|--------|
+| `SUPABASE_URL` | Your Supabase project URL |
+| `SUPABASE_ANON_KEY` | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
+| `CLIENT_URL` | Your production frontend URL (for CORS) |
+| `API_PREFIX` | `api` |
+| `API_VERSION` | `v1` |
+
+Do **not** set `PORT` — Render provides it automatically.
+
+5. After deploy, your API will be at e.g. `https://your-service.onrender.com/api/v1`
+
+6. Update the client:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=https://your-service.onrender.com/api/v1
+```
+
+### Common Render issues
+
+| Problem | Fix |
+|--------|-----|
+| `Cannot find module dist/main` | Ensure `start:prod` runs `node dist/src/main` (already set in `package.json`) |
+| Build succeeds but app won't start | Check Render logs; confirm all env vars are set |
+| CORS errors | Set `CLIENT_URL` to your exact frontend URL |
+| Image upload fails | Add `SUPABASE_SERVICE_ROLE_KEY` |
+
+---
+
+## Deploying the client
+
+Deploy `client/` to [Vercel](https://vercel.com), Render, or similar. Set:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=https://your-api.onrender.com/api/v1
+```
+
+---
+
+## Pushing to GitHub
+
+1. Create a private repository on GitHub
+2. Confirm secrets are not tracked:
 
    ```bash
    git status
@@ -228,7 +287,7 @@ Deploy the client and server to your hosting provider of choice (e.g. Vercel for
 
    ```bash
    git add .
-   git commit -m "Initial commit: MIR Housing property management app"
+   git commit -m "Your commit message"
    git remote add origin <your-github-repo-url>
    git push -u origin main
    ```
