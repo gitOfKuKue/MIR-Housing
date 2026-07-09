@@ -1,4 +1,4 @@
-import { getAccessToken } from './auth';
+import { getAccessToken, handleSessionExpired, isSessionExpired } from './auth';
 import type { Property } from '@/src/types/property';
 
 const API_BASE_URL =
@@ -243,6 +243,12 @@ export async function uploadPropertyImages(
   formData.append('sort_order', String(sortOrder));
 
   const token = getAccessToken();
+
+  if (isSessionExpired()) {
+    handleSessionExpired();
+    throw new Error('Session expired. Please sign in again.');
+  }
+
   let response: Response;
 
   try {
@@ -260,16 +266,30 @@ export async function uploadPropertyImages(
   }
 
   if (!response.ok) {
-    throw new Error(await parseErrorMessage(response));
+    await handleUnauthorized(response, Boolean(token));
   }
 
   return (await response.json()) as UploadPropertyImagesResponse;
+}
+
+async function handleUnauthorized(response: Response, hadToken: boolean): Promise<never> {
+  if (response.status === 401 && hadToken) {
+    handleSessionExpired();
+    throw new Error('Session expired. Please sign in again.');
+  }
+
+  throw new Error(await parseErrorMessage(response));
 }
 
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  if (isSessionExpired()) {
+    handleSessionExpired();
+    throw new Error('Session expired. Please sign in again.');
+  }
+
   const token = getAccessToken();
 
   let response: Response;
@@ -290,7 +310,7 @@ export async function apiFetch<T>(
   }
 
   if (!response.ok) {
-    throw new Error(await parseErrorMessage(response));
+    await handleUnauthorized(response, Boolean(token));
   }
 
   return (await response.json()) as T;

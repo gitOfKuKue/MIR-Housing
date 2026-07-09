@@ -14,11 +14,19 @@ export interface AuthSession {
 const ACCESS_TOKEN_KEY = 'mir_housing_access_token';
 const REFRESH_TOKEN_KEY = 'mir_housing_refresh_token';
 const USER_KEY = 'mir_housing_user';
+const SESSION_EXPIRES_AT_KEY = 'mir_housing_session_expires_at';
 
-export function setSession(session: AuthSession): void {
+export function setSession(session: AuthSession, expiresInSeconds?: number): void {
   localStorage.setItem(ACCESS_TOKEN_KEY, session.access_token);
   localStorage.setItem(REFRESH_TOKEN_KEY, session.refresh_token);
   localStorage.setItem(USER_KEY, JSON.stringify(session.user));
+
+  if (expiresInSeconds) {
+    localStorage.setItem(
+      SESSION_EXPIRES_AT_KEY,
+      String(Date.now() + expiresInSeconds * 1000),
+    );
+  }
 }
 
 export function getAccessToken(): string | null {
@@ -42,6 +50,25 @@ export function clearSession(): void {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(SESSION_EXPIRES_AT_KEY);
+}
+
+export function isSessionExpired(): boolean {
+  if (typeof window === 'undefined') return false;
+
+  const expiresAt = localStorage.getItem(SESSION_EXPIRES_AT_KEY);
+  if (!expiresAt) return false;
+
+  return Date.now() >= Number(expiresAt);
+}
+
+export function handleSessionExpired(): void {
+  clearSession();
+
+  if (typeof window === 'undefined') return;
+  if (window.location.pathname === '/login') return;
+
+  window.location.replace('/login');
 }
 
 // backwards compatibility

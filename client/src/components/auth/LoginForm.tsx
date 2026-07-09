@@ -126,11 +126,14 @@ export default function LoginForm() {
 
     try {
       const response = await login(email, password);
-      setSession({
-        access_token: response.access_token,
-        refresh_token: response.refresh_token,
-        user: response.user,
-      });
+      setSession(
+        {
+          access_token: response.access_token,
+          refresh_token: response.refresh_token,
+          user: response.user,
+        },
+        response.expires_in,
+      );
       router.replace('/properties');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
