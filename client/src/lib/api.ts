@@ -194,32 +194,9 @@ export async function createProperty(
   });
 }
 
-export type UpdatePropertyPayload = Partial<
-  Omit<CreatePropertyPayload, 'name' | 'address_line1' | 'city' | 'province'>
-> & {
-  name?: string;
-  address_line1?: string;
-  city?: string;
-  province?: string;
-  address_line2?: string | null;
-  postal_code?: string | null;
-  room_type?: string | null;
-  floor?: string | null;
-  description?: string | null;
-  internal_notes?: string | null;
-  toilet_type?: Property['toilet_type'] | null;
-  parking_type?: Property['parking_type'] | null;
-  main_gate_lock?: Property['main_gate_lock'] | null;
-  drying_area?: Property['drying_area'] | null;
-  rent_amount?: number | null;
-  bedrooms?: number | null;
-  bathrooms?: number | null;
-  area_sqm?: number | null;
-  max_occupants?: number | null;
-  max_bikes?: number | null;
-  deposit_months?: number | null;
-  holding_deposit?: number | null;
-};
+export type UpdatePropertyPayload = Partial<{
+  [K in keyof CreatePropertyPayload]: CreatePropertyPayload[K] | null;
+}>;
 
 export async function updateProperty(
   id: string,
