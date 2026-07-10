@@ -20,6 +20,7 @@ Think of MIR Housing as a **digital filing cabinet** for your rental properties.
 - **View photos** in a gallery with full-screen lightbox
 - **Check utility bills** (electricity, water, Wi‑Fi, management fees, and more)
 - **See room, furnishing, and building info** — bedrooms, parking, deposits, and similar details
+- **Switch language** between English (EN) and Vietnamese (VN)
 - **Change password** from the Settings page
 - **Delete properties** (admins only)
 
@@ -38,19 +39,29 @@ Only people with a login can see property data. Nothing is shown to the public w
 1. Open the website in your browser
 2. Click **Login** and enter your company credentials
 3. You land on the **Properties** page — search, filter, and paginate results
-4. Click **Create New** to add a property, or open an existing one
-5. On the detail page, review description, location, gallery, utility bills, furnishings, and room info
-6. Click **Edit** to update a property, or go to **Settings** to change your password
-7. Click **Logout** in the header when you are done
+4. Optionally switch **EN / VN** in the header (or under **Settings → Language**)
+5. Click **Create New** to add a property, or open an existing one
+6. On the detail page, review description, location, gallery, utility bills, furnishings, and room info
+7. Click **Edit** to update a property, or go to **Settings** to change your password
+8. Click **Logout** in the header when you are done
+
+### Languages
+
+| Code | Language |
+|------|----------|
+| **EN** | English |
+| **VN** | Vietnamese (Tiếng Việt) |
+
+Your language choice is saved in the browser and applied across the app (navigation, forms, property details, settings, and more).
 
 ### Property statuses
 
-| Status | Meaning |
-|--------|---------|
-| **Available** | Ready to rent |
-| **Rented** | Currently occupied |
-| **Maintenance** | Under repair or not ready for tenants |
-| **Inactive** | Not in active use |
+| Status (EN) | Status (VN) | Meaning |
+|-------------|-------------|---------|
+| **Available** | Còn trống | Ready to rent |
+| **Rented** | Đã thuê | Currently occupied |
+| **Maintenance** | Bảo trì | Under repair or not ready for tenants |
+| **Inactive** | Ngưng hoạt động | Not in active use |
 
 ### User roles
 
@@ -58,6 +69,10 @@ Only people with a login can see property data. Nothing is shown to the public w
 |------|----------------|
 | **staff** | View, create, and edit properties |
 | **admin** | Everything staff can do, plus delete properties |
+
+### Session security
+
+Access tokens from login are valid for about **1 hour** (Supabase default JWT expiry). When the token expires, the app **logs you out automatically** and sends you back to the login page.
 
 ---
 
@@ -70,19 +85,25 @@ Only people with a login can see property data. Nothing is shown to the public w
 | **Website (frontend)** | Next.js 16, React 19, Tailwind CSS 4, TypeScript |
 | **API (backend)** | NestJS 11, TypeScript |
 | **Database & auth** | [Supabase](https://supabase.com) (PostgreSQL, Auth, Storage) |
+| **i18n** | Custom React context + EN/VN dictionaries in `client/src/i18n/` |
 | **API testing** | [Bruno](https://www.usebruno.com/) collection in `bruno/` |
 
 ### Project structure
 
 ```
 MIR Housing/
-├── client/          # Next.js web app (what staff see in the browser)
-├── server/          # NestJS REST API
+├── client/                 # Next.js web app
+│   └── src/
+│       ├── components/     # UI components
+│       ├── i18n/           # EN/VN dictionaries + LanguageProvider
+│       ├── lib/            # API client + auth helpers
+│       └── types/          # Shared TypeScript types
+├── server/                 # NestJS REST API
 │   └── supabase/
-│       ├── migrations/   # SQL to set up the database (run in order)
-│       └── seed/         # Optional sample data
-├── bruno/           # API request collection for manual testing
-└── docs/            # Planning and technical notes
+│       ├── migrations/     # SQL to set up the database (run in order)
+│       └── seed/           # Optional sample data
+├── bruno/                  # API request collection for manual testing
+└── docs/                   # Planning and technical notes
 ```
 
 ### Prerequisites
@@ -201,6 +222,14 @@ Open [http://localhost:3000](http://localhost:3000).
 
 All authenticated routes require `Authorization: Bearer <access_token>` from login.
 
+### Frontend i18n notes
+
+- Dictionaries: `client/src/i18n/dictionaries/en.ts` and `vn.ts`
+- Provider: `LanguageProvider` (wrapped in `client/src/components/Providers.tsx`)
+- Switcher: header + Settings page
+- Preference key in `localStorage`: `mir_housing_locale` (`en` or `vn`)
+- To add a new string: add the key to **both** dictionaries, then use `t('your.key')` via `useTranslations()`
+
 ### Production build
 
 ```bash
@@ -214,6 +243,8 @@ cd client
 npm run build
 npm run start
 ```
+
+> **Note:** `start:prod` runs `node dist/src/main` (Nest outputs to `dist/src/`, not `dist/main`).
 
 ---
 
@@ -237,7 +268,7 @@ npm run start
 | `SUPABASE_URL` | Your Supabase project URL |
 | `SUPABASE_ANON_KEY` | Supabase anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
-| `CLIENT_URL` | Your production frontend URL (for CORS) |
+| `CLIENT_URL` | Your production frontend URL (for CORS), e.g. `https://mir-housing.vercel.app` |
 | `API_PREFIX` | `api` |
 | `API_VERSION` | `v1` |
 
@@ -245,30 +276,35 @@ Do **not** set `PORT` — Render provides it automatically.
 
 5. After deploy, your API will be at e.g. `https://your-service.onrender.com/api/v1`
 
-6. Update the client:
-
-```env
-NEXT_PUBLIC_API_BASE_URL=https://your-service.onrender.com/api/v1
-```
-
 ### Common Render issues
 
 | Problem | Fix |
 |--------|-----|
 | `Cannot find module dist/main` | Ensure `start:prod` runs `node dist/src/main` (already set in `package.json`) |
 | Build succeeds but app won't start | Check Render logs; confirm all env vars are set |
-| CORS errors | Set `CLIENT_URL` to your exact frontend URL |
+| CORS errors | Set `CLIENT_URL` to your exact frontend URL (no trailing slash) |
 | Image upload fails | Add `SUPABASE_SERVICE_ROLE_KEY` |
 
 ---
 
-## Deploying the client
+## Deploying the client (Vercel)
 
-Deploy `client/` to [Vercel](https://vercel.com), Render, or similar. Set:
+1. Deploy the `client/` folder to [Vercel](https://vercel.com)
+2. In **Settings → Environment Variables**, set:
 
 ```env
 NEXT_PUBLIC_API_BASE_URL=https://your-api.onrender.com/api/v1
 ```
+
+3. **Redeploy** after adding or changing `NEXT_PUBLIC_*` variables (they are baked in at build time)
+
+### Common Vercel issues
+
+| Problem | Fix |
+|--------|-----|
+| `Cannot reach the server… port 8000` | `NEXT_PUBLIC_API_BASE_URL` is missing or still pointing at localhost — set the Render URL and redeploy |
+| CORS blocked | On Render, set `CLIENT_URL` to your Vercel URL |
+| TypeScript build fails on `UpdatePropertyPayload` | Ensure client is on the latest code that allows `null` on update fields |
 
 ---
 
