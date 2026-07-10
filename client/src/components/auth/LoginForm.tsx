@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from '@/src/i18n';
 import { login } from '@/src/lib/api';
 import { getAccessToken, setSession } from '@/src/lib/auth';
 import Image from 'next/image';
@@ -106,6 +107,7 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 export default function LoginForm() {
+  const t = useTranslations();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -136,7 +138,7 @@ export default function LoginForm() {
       );
       router.replace('/properties');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : t('auth.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -158,10 +160,10 @@ export default function LoginForm() {
 
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold tracking-tight text-[#1a1a1a]">
-          Sign In
+          {t('auth.signIn')}
         </h1>
         <p className="mt-2 text-sm text-[#6b7280]">
-          Welcome back! Please enter your details to continue
+          {t('auth.signInSubtitle')}
         </p>
       </div>
 
@@ -171,7 +173,7 @@ export default function LoginForm() {
             htmlFor="email"
             className="mb-2 block text-sm font-semibold text-[#1a1a1a]"
           >
-            Email <span className="text-red-500">*</span>
+            {t('auth.email')} <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2">
@@ -196,13 +198,13 @@ export default function LoginForm() {
               htmlFor="password"
               className="text-sm font-semibold text-[#1a1a1a]"
             >
-              Password <span className="text-red-500">*</span>
+              {t('auth.password')} <span className="text-red-500">*</span>
             </label>
             <Link
               href="#"
               className="text-sm font-medium text-[#2d6a4f] hover:underline"
             >
-              Forgot password?
+              {t('auth.forgotPassword')}
             </Link>
           </div>
           <div className="relative">
@@ -223,7 +225,9 @@ export default function LoginForm() {
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#6b7280]"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-label={
+                showPassword ? t('auth.hidePassword') : t('auth.showPassword')
+              }
             >
               <EyeIcon open={showPassword} />
             </button>
@@ -241,7 +245,7 @@ export default function LoginForm() {
           disabled={loading}
           className="w-full rounded-lg bg-[#1e4636] py-3.5 text-sm font-semibold text-white transition hover:bg-[#163828] disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {loading ? 'Signing in...' : 'Sign in'}
+          {loading ? t('auth.signingIn') : t('auth.signIn')}
         </button>
       </form>
     </div>

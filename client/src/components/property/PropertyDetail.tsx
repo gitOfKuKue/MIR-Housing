@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from '@/src/i18n';
+import type { TranslationKey } from '@/src/i18n';
 import type { Property } from '@/src/types/property';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,19 +12,9 @@ import { deleteProperty } from '@/src/lib/api';
 import { getAuthUser } from '@/src/lib/auth';
 import {
   formatAddress,
-  formatBillStatus,
-  formatBillType,
   formatBillingPeriod,
   formatDate,
-  formatDepositMonths,
-  formatFurnishingIncluded,
-  formatLandlordInBuilding,
-  formatMainGateLock,
-  formatPrivateShared,
-  formatPropertyType,
   formatRent,
-  formatStatus,
-  formatWashingMachine,
   furnishingStatusStyles,
   statusStyles,
   utilityBillStatusStyles,
@@ -69,11 +61,69 @@ function CollapseIcon({ expanded }: { expanded: boolean }) {
   );
 }
 
+type TranslateFn = (
+  key: TranslationKey,
+  params?: Record<string, string | number>,
+) => string;
+
+function translatePrivateShared(
+  t: TranslateFn,
+  value: 'private' | 'shared' | null | undefined,
+): string | null {
+  if (!value) return null;
+  return value === 'private' ? t('value.private') : t('value.shared');
+}
+
+function translateMainGateLock(
+  t: TranslateFn,
+  value: 'standard' | 'none' | null | undefined,
+): string | null {
+  if (!value) return null;
+  return value === 'standard' ? t('value.standard') : t('value.none');
+}
+
+function translateDepositMonths(
+  t: TranslateFn,
+  months: number | null | undefined,
+): string | null {
+  if (months === null || months === undefined) return null;
+  return months === 1 ? t('value.month') : t('value.months', { count: months });
+}
+
+function translateFurnishingIncluded(
+  t: TranslateFn,
+  value: boolean | null | undefined,
+): string {
+  if (value === true) return t('value.included');
+  if (value === false) return t('value.notIncluded');
+  return '—';
+}
+
+function translateWashingMachine(
+  t: TranslateFn,
+  value: 'private' | 'shared' | 'not_available' | null | undefined,
+): string {
+  if (value === 'private') return t('value.private');
+  if (value === 'shared') return t('value.shared');
+  if (value === 'not_available') return t('value.notAvailable');
+  return '—';
+}
+
+function translateLandlordInBuilding(
+  t: TranslateFn,
+  value: boolean | null | undefined,
+): string {
+  if (value === true) return t('value.sameBuilding');
+  if (value === false) return t('value.notSameBuilding');
+  return '—';
+}
+
 interface PropertyDetailProps {
   property: Property;
 }
 
 export default function PropertyDetail({ property }: PropertyDetailProps) {
+  const t = useTranslations();
   const rent = formatRent(property.rent_amount, property.rent_currency);
   const coverImage = property.images?.[0]?.public_url;
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -104,7 +154,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
       router.push('/properties');
     } catch (err) {
       setDeleteError(
-        err instanceof Error ? err.message : 'Failed to delete property',
+        err instanceof Error ? err.message : t('detail.deleteFailed'),
       );
     } finally {
       setDeleting(false);
@@ -120,7 +170,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
           className="inline-flex items-center gap-2 text-sm font-medium text-[#6b7280] transition hover:text-[#1e4636]"
         >
           <BackIcon />
-          Back to properties
+          {t('detail.backToProperties')}
         </Link>
 
         {canEdit ? (
@@ -128,7 +178,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
             href={`/properties/${property.id}/edit`}
             className="rounded-md bg-[#1e4636] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#163829]"
           >
-            Edit
+            {t('common.edit')}
           </Link>
         ) : null}
       </div>
@@ -155,7 +205,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
                 <span
                   className={`inline-flex rounded-md px-3 py-1 text-xs font-semibold ${statusStyles(property.status)}`}
                 >
-                  {formatStatus(property.status)}
+                  {t(`status.${property.status}` as TranslationKey)}
                 </span>
                 <h1 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
                   {property.name}
@@ -168,7 +218,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
               {rent ? (
                 <div className="rounded-lg bg-white/15 px-4 py-3 text-right backdrop-blur-sm">
                   <p className="text-xs font-medium uppercase tracking-wider text-white/70">
-                    Monthly rent
+                    {t('properties.monthlyRent')}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-white">{rent}</p>
                 </div>
@@ -179,11 +229,14 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
 
         <div className="grid gap-4 p-6 sm:grid-cols-2 sm:p-8 lg:grid-cols-4">
           {[
-            { label: 'Property type', value: formatPropertyType(property.property_type) },
-            { label: 'Bedrooms', value: property.bedrooms },
-            { label: 'Bathrooms', value: property.bathrooms },
             {
-              label: 'Area',
+              label: t('detail.propertyType'),
+              value: t(`type.${property.property_type}` as TranslationKey),
+            },
+            { label: t('properties.bedrooms'), value: property.bedrooms },
+            { label: t('properties.bathrooms'), value: property.bathrooms },
+            {
+              label: t('detail.area'),
               value: property.area_sqm !== null ? `${property.area_sqm} sqm` : null,
             },
           ].map((item) => (
@@ -204,34 +257,42 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
         <section className="rounded-xl border border-[#e8e4dc] bg-white p-6 lg:col-span-2">
-          <h2 className="text-lg font-semibold text-[#1a1a1a]">Description</h2>
+          <h2 className="text-lg font-semibold text-[#1a1a1a]">
+            {t('detail.description')}
+          </h2>
           <p className="mt-3 leading-relaxed text-[#6b7280]">
-            {property.description ?? 'No description provided for this property.'}
+            {property.description ?? t('detail.noDescription')}
           </p>
         </section>
 
         <section className="rounded-xl border border-[#e8e4dc] bg-white p-6">
-          <h2 className="text-lg font-semibold text-[#1a1a1a]">Location</h2>
+          <h2 className="text-lg font-semibold text-[#1a1a1a]">
+            {t('detail.location')}
+          </h2>
           <dl className="mt-4 space-y-4 text-sm">
             <div>
-              <dt className="font-medium text-[#9ca3af]">Address</dt>
+              <dt className="font-medium text-[#9ca3af]">{t('detail.address')}</dt>
               <dd className="mt-1 text-[#1a1a1a]">{property.address_line1}</dd>
               {property.address_line2 ? (
                 <dd className="text-[#1a1a1a]">{property.address_line2}</dd>
               ) : null}
             </div>
             <div>
-              <dt className="font-medium text-[#9ca3af]">City / Province</dt>
+              <dt className="font-medium text-[#9ca3af]">
+                {t('detail.cityProvince')}
+              </dt>
               <dd className="mt-1 text-[#1a1a1a]">
                 {property.city}, {property.province}
               </dd>
             </div>
             <div>
-              <dt className="font-medium text-[#9ca3af]">Postal code</dt>
+              <dt className="font-medium text-[#9ca3af]">
+                {t('detail.postalCode')}
+              </dt>
               <dd className="mt-1 text-[#1a1a1a]">{property.postal_code ?? '—'}</dd>
             </div>
             <div>
-              <dt className="font-medium text-[#9ca3af]">Country</dt>
+              <dt className="font-medium text-[#9ca3af]">{t('detail.country')}</dt>
               <dd className="mt-1 text-[#1a1a1a]">{property.country}</dd>
             </div>
           </dl>
@@ -239,7 +300,9 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
 
         {property.internal_notes ? (
           <section className="rounded-xl border border-[#fde68a] bg-[#fffbeb] p-6 lg:col-span-3">
-            <h2 className="text-lg font-semibold text-[#92400e]">Internal notes</h2>
+            <h2 className="text-lg font-semibold text-[#92400e]">
+              {t('detail.internalNotes')}
+            </h2>
             <p className="mt-3 leading-relaxed text-[#a16207]">
               {property.internal_notes}
             </p>
@@ -248,42 +311,48 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
 
         <section className="rounded-xl border border-[#e8e4dc] bg-white p-6 lg:col-span-3">
           <h2 className="text-lg font-semibold text-[#1a1a1a]">
-            Room info &amp; amenities
+            {t('detail.roomInfo')}
           </h2>
           <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
             {[
-              { label: 'Room type', value: property.room_type },
-              { label: 'Toilet', value: formatPrivateShared(property.toilet_type) },
-              { label: 'Parking', value: formatPrivateShared(property.parking_type) },
+              { label: t('detail.roomType'), value: property.room_type },
               {
-                label: 'Main gate lock',
-                value: formatMainGateLock(property.main_gate_lock),
-              },
-              { label: 'Number of occupants', value: property.max_occupants },
-              { label: 'Number of bikes (max)', value: property.max_bikes },
-              { label: 'Floor', value: property.floor },
-              {
-                label: 'Drying area',
-                value: formatPrivateShared(property.drying_area),
+                label: t('detail.toilet'),
+                value: translatePrivateShared(t, property.toilet_type),
               },
               {
-                label: 'Deposit for',
-                value: formatDepositMonths(property.deposit_months),
+                label: t('detail.parking'),
+                value: translatePrivateShared(t, property.parking_type),
               },
               {
-                label: 'Area',
+                label: t('detail.mainGateLock'),
+                value: translateMainGateLock(t, property.main_gate_lock),
+              },
+              { label: t('detail.maxOccupants'), value: property.max_occupants },
+              { label: t('detail.maxBikes'), value: property.max_bikes },
+              { label: t('detail.floor'), value: property.floor },
+              {
+                label: t('detail.dryingArea'),
+                value: translatePrivateShared(t, property.drying_area),
+              },
+              {
+                label: t('detail.depositFor'),
+                value: translateDepositMonths(t, property.deposit_months),
+              },
+              {
+                label: t('detail.area'),
                 value:
                   property.area_sqm !== null ? `${property.area_sqm} sqm` : null,
               },
               {
-                label: 'Holding deposit',
+                label: t('detail.holdingDeposit'),
                 value: formatRent(
                   property.holding_deposit,
                   property.rent_currency,
                 ),
               },
-              { label: 'Number of bedrooms', value: property.bedrooms },
-              { label: 'Number of bathrooms', value: property.bathrooms },
+              { label: t('properties.bedrooms'), value: property.bedrooms },
+              { label: t('properties.bathrooms'), value: property.bathrooms },
             ].map((item) => (
               <div key={item.label}>
                 <dt className="font-medium text-[#9ca3af]">{item.label}</dt>
@@ -303,7 +372,9 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
               aria-expanded={furnishingsExpanded}
               className="flex w-full items-center justify-between gap-3 text-left"
             >
-              <h2 className="text-lg font-semibold text-[#1a1a1a]">Furnishings</h2>
+              <h2 className="text-lg font-semibold text-[#1a1a1a]">
+                {t('detail.furnishings')}
+              </h2>
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#1a1a1a]">
                 <CollapseIcon expanded={furnishingsExpanded} />
               </span>
@@ -313,13 +384,15 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
                 <table className="min-w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-[#e8e4dc] text-xs uppercase tracking-wider text-[#9ca3af]">
-                      <th className="px-3 py-3 font-semibold">Item</th>
-                      <th className="px-3 py-3 font-semibold">Status</th>
-                      <th className="hidden px-3 py-3 font-semibold sm:table-cell">
-                        Item
+                      <th className="px-3 py-3 font-semibold">{t('detail.item')}</th>
+                      <th className="px-3 py-3 font-semibold">
+                        {t('detail.status')}
                       </th>
                       <th className="hidden px-3 py-3 font-semibold sm:table-cell">
-                        Status
+                        {t('detail.item')}
+                      </th>
+                      <th className="hidden px-3 py-3 font-semibold sm:table-cell">
+                        {t('detail.status')}
                       </th>
                     </tr>
                   </thead>
@@ -327,134 +400,153 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
                     {(() => {
                       const items = [
                         {
-                          label: 'Loft',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.loft'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_loft,
                           ),
                           included: property.furnishings.has_loft,
                         },
                         {
-                          label: 'Window',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.window'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_window,
                           ),
                           included: property.furnishings.has_window,
                         },
                         {
-                          label: 'Balcony',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.balcony'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_balcony,
                           ),
                           included: property.furnishings.has_balcony,
                         },
                         {
-                          label: 'Fridge',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.fridge'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_fridge,
                           ),
                           included: property.furnishings.has_fridge,
                         },
                         {
-                          label: 'TV',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.tv'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_tv,
                           ),
                           included: property.furnishings.has_tv,
                         },
                         {
-                          label: 'Air conditioner',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.airConditioner'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_air_conditioner,
                           ),
                           included: property.furnishings.has_air_conditioner,
                         },
                         {
-                          label: 'Washing machine',
-                          value: formatWashingMachine(
+                          label: t('furnishing.washingMachine'),
+                          value: translateWashingMachine(
+                            t,
                             property.furnishings.washing_machine,
                           ),
                           included: null,
                         },
                         {
-                          label: 'Kitchen staff',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.kitchenStaff'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_kitchen_staff,
                           ),
                           included: property.furnishings.has_kitchen_staff,
                         },
                         {
-                          label: 'Hot water',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.hotWater'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_hot_water,
                           ),
                           included: property.furnishings.has_hot_water,
                         },
                         {
-                          label: 'Bed',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.bed'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_bed,
                           ),
                           included: property.furnishings.has_bed,
                         },
                         {
-                          label: 'Mattress',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.mattress'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_mattress,
                           ),
                           included: property.furnishings.has_mattress,
                         },
                         {
-                          label: 'Wardrobe',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.wardrobe'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_wardrobe,
                           ),
                           included: property.furnishings.has_wardrobe,
                         },
                         {
-                          label: 'Pillow',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.pillow'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_pillow,
                           ),
                           included: property.furnishings.has_pillow,
                         },
                         {
-                          label: 'Blanket',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.blanket'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_blanket,
                           ),
                           included: property.furnishings.has_blanket,
                         },
                         {
-                          label: 'Landlord',
-                          value: formatLandlordInBuilding(
+                          label: t('furnishing.landlord'),
+                          value: translateLandlordInBuilding(
+                            t,
                             property.furnishings.landlord_in_building,
                           ),
                           included: null,
                         },
                         {
-                          label: 'Elevator',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.elevator'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_elevator,
                           ),
                           included: property.furnishings.has_elevator,
                         },
                         {
-                          label: 'Security guard',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.securityGuard'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_security_guard,
                           ),
                           included: property.furnishings.has_security_guard,
                         },
                         {
-                          label: 'Skylight',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.skylight'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_skylight,
                           ),
                           included: property.furnishings.has_skylight,
                         },
                         {
-                          label: 'Pool',
-                          value: formatFurnishingIncluded(
+                          label: t('furnishing.pool'),
+                          value: translateFurnishingIncluded(
+                            t,
                             property.furnishings.has_pool,
                           ),
                           included: property.furnishings.has_pool,
@@ -516,7 +608,9 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
               aria-expanded={utilityBillsExpanded}
               className="flex w-full items-center justify-between gap-3 text-left"
             >
-              <h2 className="text-lg font-semibold text-[#1a1a1a]">Utility bills</h2>
+              <h2 className="text-lg font-semibold text-[#1a1a1a]">
+                {t('detail.utilityBills')}
+              </h2>
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#1a1a1a]">
                 <CollapseIcon expanded={utilityBillsExpanded} />
               </span>
@@ -526,12 +620,22 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
                 <table className="min-w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-[#e8e4dc] text-xs uppercase tracking-wider text-[#9ca3af]">
-                      <th className="px-3 py-3 font-semibold">Type</th>
-                      <th className="px-3 py-3 font-semibold">Period</th>
-                      <th className="px-3 py-3 font-semibold">Amount</th>
-                      <th className="px-3 py-3 font-semibold">Status</th>
-                      <th className="px-3 py-3 font-semibold">Provider</th>
-                      <th className="px-3 py-3 font-semibold">Due date</th>
+                      <th className="px-3 py-3 font-semibold">{t('detail.type')}</th>
+                      <th className="px-3 py-3 font-semibold">
+                        {t('detail.period')}
+                      </th>
+                      <th className="px-3 py-3 font-semibold">
+                        {t('detail.amount')}
+                      </th>
+                      <th className="px-3 py-3 font-semibold">
+                        {t('detail.status')}
+                      </th>
+                      <th className="px-3 py-3 font-semibold">
+                        {t('detail.provider')}
+                      </th>
+                      <th className="px-3 py-3 font-semibold">
+                        {t('detail.dueDate')}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -541,7 +645,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
                         className="border-b border-[#f3f4f6] last:border-b-0"
                       >
                         <td className="px-3 py-4 font-medium text-[#1a1a1a]">
-                          {formatBillType(bill.bill_type)}
+                          {t(`bill.${bill.bill_type}` as TranslationKey)}
                         </td>
                         <td className="px-3 py-4 text-[#6b7280]">
                           {formatBillingPeriod(
@@ -556,7 +660,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
                           <span
                             className={`inline-flex rounded-md px-2.5 py-1 text-xs font-semibold ${utilityBillStatusStyles(bill.status)}`}
                           >
-                            {formatBillStatus(bill.status)}
+                            {t(`bill.${bill.status}` as TranslationKey)}
                           </span>
                         </td>
                         <td className="px-3 py-4 text-[#6b7280]">
@@ -576,7 +680,9 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
 
         {property.images.length > 1 ? (
           <section className="rounded-xl border border-[#e8e4dc] bg-white p-6 lg:col-span-3">
-            <h2 className="text-lg font-semibold text-[#1a1a1a]">Gallery</h2>
+            <h2 className="text-lg font-semibold text-[#1a1a1a]">
+              {t('detail.gallery')}
+            </h2>
             <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {property.images.map((image, index) => (
                 <button
@@ -584,7 +690,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
                   type="button"
                   onClick={() => setLightboxIndex(index)}
                   className="group relative aspect-[4/3] overflow-hidden rounded-lg bg-[#f3f4f6] text-left"
-                  aria-label={`Show image ${index + 1} in full`}
+                  aria-label={`${t('detail.showInFull')} ${index + 1}`}
                 >
                   <Image
                     src={image.public_url}
@@ -595,7 +701,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
                   />
                   <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition duration-300 group-hover:bg-black/35">
                     <span className="rounded-md bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#1a1a1a] opacity-0 transition duration-300 group-hover:opacity-100">
-                      Show in full
+                      {t('detail.showInFull')}
                     </span>
                   </span>
                 </button>
@@ -616,7 +722,9 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
 
         <section className="rounded-xl border border-[#e8e4dc] bg-white p-6 lg:col-span-3">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold text-[#1a1a1a]">Record info</h2>
+            <h2 className="text-lg font-semibold text-[#1a1a1a]">
+              {t('detail.recordInfo')}
+            </h2>
 
             {canDelete ? (
               <button
@@ -626,7 +734,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
                 className="rounded-md bg-[#b91c1c] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#991b1b] disabled:cursor-not-allowed disabled:opacity-60"
                 aria-busy={deleting}
               >
-                {deleting ? 'Deleting...' : 'Delete property'}
+                {deleting ? t('common.deleting') : t('detail.deleteProperty')}
               </button>
             ) : null}
           </div>
@@ -638,19 +746,23 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
           ) : null}
           <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
             <div>
-              <dt className="font-medium text-[#9ca3af]">Property ID</dt>
+              <dt className="font-medium text-[#9ca3af]">
+                {t('detail.propertyId')}
+              </dt>
               <dd className="mt-1 break-all font-mono text-xs text-[#1a1a1a]">
                 {property.id}
               </dd>
             </div>
             <div>
-              <dt className="font-medium text-[#9ca3af]">Created</dt>
+              <dt className="font-medium text-[#9ca3af]">{t('detail.created')}</dt>
               <dd className="mt-1 text-[#1a1a1a]">
                 {formatDate(property.created_at)}
               </dd>
             </div>
             <div>
-              <dt className="font-medium text-[#9ca3af]">Last updated</dt>
+              <dt className="font-medium text-[#9ca3af]">
+                {t('detail.lastUpdated')}
+              </dt>
               <dd className="mt-1 text-[#1a1a1a]">
                 {formatDate(property.updated_at)}
               </dd>
@@ -663,7 +775,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
             className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 sm:p-8"
             role="dialog"
             aria-modal="true"
-            aria-label="Delete property confirmation"
+            aria-label={t('detail.deleteConfirmTitle')}
             onClick={() => {
               if (!deleting) setDeleteConfirmOpen(false);
             }}
@@ -673,10 +785,10 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-lg font-semibold text-[#1a1a1a]">
-                Delete this property?
+                {t('detail.deleteConfirmTitle')}
               </h3>
               <p className="mt-2 text-sm text-[#6b7280]">
-                This action cannot be undone. Property ID:{' '}
+                {t('detail.deleteConfirmBody')}{' '}
                 <span className="font-mono text-xs text-[#1a1a1a]">
                   {property.id}
                 </span>
@@ -697,7 +809,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
                   disabled={deleting}
                   className="rounded-md border border-[#e5e7eb] bg-white px-4 py-2 text-sm font-semibold text-[#1a1a1a] transition hover:bg-[#f9fafb] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="button"
@@ -705,7 +817,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
                   disabled={deleting}
                   className="rounded-md bg-[#b91c1c] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#991b1b] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {deleting ? 'Deleting...' : 'Delete'}
+                  {deleting ? t('common.deleting') : t('common.delete')}
                 </button>
               </div>
             </div>

@@ -1,7 +1,8 @@
 'use client';
 
+import { useTranslations } from '@/src/i18n';
+import type { TranslationKey } from '@/src/i18n';
 import type { PropertyStatus, PropertyType } from '@/src/types/property';
-import { formatPropertyType, formatStatus } from './format';
 
 export type PropertyViewMode = 'card' | 'list';
 
@@ -97,16 +98,6 @@ function ListIcon() {
   );
 }
 
-function formatFilterLabel(
-  value: PropertyStatus | PropertyType | 'all',
-): string {
-  if (value === 'all') return 'All';
-  if (value === 'available' || value === 'rented' || value === 'maintenance' || value === 'inactive') {
-    return formatStatus(value);
-  }
-  return formatPropertyType(value);
-}
-
 export default function PropertyToolbar({
   filters,
   viewMode,
@@ -116,8 +107,20 @@ export default function PropertyToolbar({
   onFiltersChange,
   onViewModeChange,
 }: PropertyToolbarProps) {
+  const t = useTranslations();
+
   function updateFilters(patch: Partial<PropertyFilters>) {
     onFiltersChange({ ...filters, ...patch });
+  }
+
+  function statusLabel(status: PropertyStatus | 'all') {
+    if (status === 'all') return t('properties.allStatuses');
+    return t(`status.${status}` as TranslationKey);
+  }
+
+  function typeLabel(type: PropertyType | 'all') {
+    if (type === 'all') return t('properties.allTypes');
+    return t(`type.${type}` as TranslationKey);
   }
 
   return (
@@ -131,14 +134,14 @@ export default function PropertyToolbar({
             type="search"
             value={filters.search}
             onChange={(event) => updateFilters({ search: event.target.value })}
-            placeholder="Search by name, address, or city..."
+            placeholder={t('properties.searchPlaceholder')}
             className="w-full rounded-lg border border-[#e5e7eb] bg-[#fafaf9] py-3 pl-11 pr-4 text-sm text-[#1a1a1a] outline-none transition placeholder:text-[#9ca3af] focus:border-[#1e4636] focus:bg-white focus:ring-2 focus:ring-[#1e4636]/10"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-sm text-[#6b7280]">
-            <span className="sr-only">Filter by status</span>
+            <span className="sr-only">{t('properties.filterStatus')}</span>
             <select
               value={filters.status}
               onChange={(event) =>
@@ -150,26 +153,27 @@ export default function PropertyToolbar({
             >
               {PROPERTY_STATUSES.map((status) => (
                 <option key={status} value={status}>
-                  {status === 'all' ? 'All statuses' : formatFilterLabel(status)}
+                  {statusLabel(status)}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="flex items-center gap-2 text-sm text-[#6b7280]">
-            <span className="sr-only">Filter by property type</span>
+            <span className="sr-only">{t('properties.filterType')}</span>
             <select
               value={filters.propertyType}
               onChange={(event) =>
                 updateFilters({
-                  propertyType: event.target.value as PropertyFilters['propertyType'],
+                  propertyType: event.target
+                    .value as PropertyFilters['propertyType'],
                 })
               }
               className="rounded-lg border border-[#e5e7eb] bg-[#fafaf9] px-3 py-2.5 text-sm font-medium text-[#1a1a1a] outline-none transition focus:border-[#1e4636] focus:ring-2 focus:ring-[#1e4636]/10"
             >
               {PROPERTY_TYPES.map((type) => (
                 <option key={type} value={type}>
-                  {type === 'all' ? 'All types' : formatFilterLabel(type)}
+                  {typeLabel(type)}
                 </option>
               ))}
             </select>
@@ -191,7 +195,7 @@ export default function PropertyToolbar({
               }`}
             >
               <GridIcon />
-              <span className="hidden sm:inline">Card</span>
+              <span className="hidden sm:inline">{t('properties.card')}</span>
             </button>
             <button
               type="button"
@@ -204,7 +208,7 @@ export default function PropertyToolbar({
               }`}
             >
               <ListIcon />
-              <span className="hidden sm:inline">List</span>
+              <span className="hidden sm:inline">{t('properties.list')}</span>
             </button>
           </div>
         </div>
@@ -212,8 +216,12 @@ export default function PropertyToolbar({
 
       <p className="mt-4 text-sm text-[#6b7280]">
         {total === 0
-          ? '0 properties found'
-          : `Showing ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} of ${total} properties`}
+          ? t('properties.foundZero')
+          : t('properties.showing', {
+              from: (page - 1) * pageSize + 1,
+              to: Math.min(page * pageSize, total),
+              total,
+            })}
       </p>
     </section>
   );

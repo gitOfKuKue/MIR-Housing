@@ -9,6 +9,7 @@ import {
   type PropertyFilters,
   type PropertyViewMode,
 } from '@/src/components/property';
+import { useTranslations } from '@/src/i18n';
 import { getProperties, type PaginationMeta } from '@/src/lib/api';
 import { getAuthUser } from '@/src/lib/auth';
 import type { Property } from '@/src/types/property';
@@ -45,6 +46,7 @@ function PlusIcon() {
 }
 
 export default function PropertiesPage() {
+  const t = useTranslations();
   const [userName, setUserName] = useState<string | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({
@@ -104,7 +106,7 @@ export default function PropertiesPage() {
       } catch (err) {
         if (!cancelled) {
           setError(
-            err instanceof Error ? err.message : 'Failed to load properties',
+            err instanceof Error ? err.message : t('properties.loadFailed'),
           );
           setProperties([]);
           setMeta({
@@ -148,9 +150,13 @@ export default function PropertiesPage() {
     <div className="p-6 sm:p-8">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-[#1a1a1a]">Properties</h1>
+          <h1 className="text-2xl font-semibold text-[#1a1a1a]">
+            {t('properties.title')}
+          </h1>
           {userName ? (
-            <p className="mt-2 text-[#6b7280]">Welcome back, {userName}.</p>
+            <p className="mt-2 text-[#6b7280]">
+              {t('properties.welcomeBack', { name: userName })}
+            </p>
           ) : null}
         </div>
 
@@ -159,7 +165,7 @@ export default function PropertiesPage() {
           className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#1e4636] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#163828]"
         >
           <PlusIcon />
-          Create New
+          {t('properties.createNew')}
         </Link>
       </div>
 
@@ -203,15 +209,15 @@ export default function PropertiesPage() {
             {filters.search ||
             filters.status !== 'all' ||
             filters.propertyType !== 'all'
-              ? 'No matching properties'
-              : 'No properties yet'}
+              ? t('properties.emptyMatching')
+              : t('properties.emptyNone')}
           </p>
           <p className="mt-2 text-sm text-[#6b7280]">
             {filters.search ||
             filters.status !== 'all' ||
             filters.propertyType !== 'all'
-              ? 'Try adjusting your search or filters.'
-              : 'Properties will appear here once they are added to the system.'}
+              ? t('properties.emptyHint')
+              : t('properties.emptyNoneHint')}
           </p>
         </div>
       ) : (

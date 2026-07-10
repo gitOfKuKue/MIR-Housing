@@ -1,13 +1,11 @@
 'use client';
 
+import { useTranslations } from '@/src/i18n';
+import type { TranslationKey } from '@/src/i18n';
 import type { Property } from '@/src/types/property';
 import Image from 'next/image';
 import Link from 'next/link';
-import {
-  formatPropertyType,
-  formatRent,
-  formatStatus,
-} from './format';
+import { formatRent } from './format';
 
 function BookmarkIcon({ filled }: { filled?: boolean }) {
   return (
@@ -64,13 +62,15 @@ export default function PropertyCard({
   property,
   imageUrl,
   imageAlt,
-  actionLabel = 'View details',
+  actionLabel,
   href,
   onAction,
   bookmarked = false,
   onBookmark,
   className,
 }: PropertyCardProps) {
+  const t = useTranslations();
+  const resolvedActionLabel = actionLabel ?? t('properties.viewDetails');
   const rent = formatRent(property.rent_amount, property.rent_currency);
   const resolvedImageUrl = imageUrl ?? property.images?.[0]?.public_url;
   const description =
@@ -81,8 +81,12 @@ export default function PropertyCard({
     property.bedrooms !== null
       ? { icon: <BedIcon />, label: `${property.bedrooms} Bed` }
       : null,
-    { label: formatPropertyType(property.property_type) },
-    { label: formatStatus(property.status) },
+    {
+      label: t(`type.${property.property_type}` as TranslationKey),
+    },
+    {
+      label: t(`status.${property.status}` as TranslationKey),
+    },
   ].filter(Boolean) as Array<{ icon?: React.ReactNode; label: string }>;
 
   const actionClassName =
@@ -150,11 +154,11 @@ export default function PropertyCard({
 
         {href ? (
           <Link href={href} className={actionClassName}>
-            {actionLabel}
+            {resolvedActionLabel}
           </Link>
         ) : (
           <button type="button" onClick={onAction} className={actionClassName}>
-            {actionLabel}
+            {resolvedActionLabel}
           </button>
         )}
       </div>

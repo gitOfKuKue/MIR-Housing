@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from '@/src/i18n';
+
 interface PropertyPaginationProps {
   page: number;
   totalPages: number;
@@ -68,6 +70,8 @@ export default function PropertyPagination({
   disabled = false,
   className,
 }: PropertyPaginationProps) {
+  const t = useTranslations();
+
   if (totalPages <= 1) {
     return null;
   }
@@ -86,7 +90,7 @@ export default function PropertyPagination({
         className="inline-flex items-center gap-1 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-sm font-medium text-[#4b5563] transition hover:border-[#1e4636]/30 hover:text-[#1e4636] disabled:cursor-not-allowed disabled:opacity-50"
       >
         <ChevronLeftIcon />
-        Previous
+        {t('properties.previous')}
       </button>
 
       <div className="flex items-center gap-1">
@@ -123,7 +127,7 @@ export default function PropertyPagination({
         disabled={disabled || page >= totalPages}
         className="inline-flex items-center gap-1 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-sm font-medium text-[#4b5563] transition hover:border-[#1e4636]/30 hover:text-[#1e4636] disabled:cursor-not-allowed disabled:opacity-50"
       >
-        Next
+        {t('properties.next')}
         <ChevronRightIcon />
       </button>
     </nav>

@@ -1,6 +1,8 @@
 'use client';
 
 import logo from '@/src/assets/logo/logo-transparency-bg.png';
+import { LanguageSwitcher } from '@/src/i18n';
+import { useTranslations } from '@/src/i18n';
 import { logout } from '@/src/lib/api';
 import {
   clearSession,
@@ -18,6 +20,7 @@ const navLinkClass =
   'text-sm font-medium text-[#4b5563] transition hover:text-[#1e4636]';
 
 export default function Header({ className }: { className?: string }) {
+  const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -67,7 +70,9 @@ export default function Header({ className }: { className?: string }) {
           </span>
         </Link>
 
-        <div className="flex items-center gap-4 sm:gap-6">
+        <div className="flex items-center gap-3 sm:gap-5">
+          <LanguageSwitcher />
+
           {authReady && isAuthenticated ? (
             <>
               <nav className="flex items-center gap-6 md:hidden">
@@ -79,7 +84,7 @@ export default function Header({ className }: { className?: string }) {
                       : ''
                   }`}
                 >
-                  Properties
+                  {t('nav.properties')}
                 </Link>
               </nav>
 
@@ -94,7 +99,7 @@ export default function Header({ className }: { className?: string }) {
                 onClick={handleLogout}
                 className="rounded-lg border border-[#e5e7eb] px-4 py-2 text-sm font-medium text-[#1a1a1a] transition hover:border-[#1e4636] hover:text-[#1e4636]"
               >
-                Log out
+                {t('auth.logout')}
               </button>
             </>
           ) : authReady ? (
@@ -102,7 +107,7 @@ export default function Header({ className }: { className?: string }) {
               href="/login"
               className="rounded-lg bg-[#1e4636] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#163828]"
             >
-              Log in
+              {t('auth.login')}
             </Link>
           ) : (
             <div className="h-9 w-20" aria-hidden="true" />

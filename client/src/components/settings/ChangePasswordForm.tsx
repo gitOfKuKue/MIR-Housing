@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from '@/src/i18n';
 import { changePassword } from '@/src/lib/api';
 import { FormEvent, useState } from 'react';
 
@@ -35,6 +36,7 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 export default function ChangePasswordForm() {
+  const t = useTranslations();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -51,17 +53,17 @@ export default function ChangePasswordForm() {
     setSuccess('');
 
     if (newPassword.length < 8) {
-      setError('New password must be at least 8 characters.');
+      setError(t('settings.passwordTooShort'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('New password and confirmation do not match.');
+      setError(t('settings.passwordMismatch'));
       return;
     }
 
     if (currentPassword === newPassword) {
-      setError('New password must be different from your current password.');
+      setError(t('settings.passwordSame'));
       return;
     }
 
@@ -79,7 +81,7 @@ export default function ChangePasswordForm() {
       setConfirmPassword('');
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to change password',
+        err instanceof Error ? err.message : t('settings.passwordFailed'),
       );
     } finally {
       setSubmitting(false);
@@ -88,15 +90,17 @@ export default function ChangePasswordForm() {
 
   return (
     <section className="rounded-xl border border-[#e8e4dc] bg-white p-6">
-      <h2 className="text-lg font-semibold text-[#1a1a1a]">Change password</h2>
+      <h2 className="text-lg font-semibold text-[#1a1a1a]">
+        {t('settings.changePassword')}
+      </h2>
       <p className="mt-1 text-sm text-[#6b7280]">
-        Update your account password. You will stay signed in after changing it.
+        {t('settings.changePasswordHint')}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-6 max-w-md space-y-4">
         <div>
           <label htmlFor="current-password" className={labelClassName}>
-            Current password
+            {t('settings.currentPassword')}
           </label>
           <div className="relative">
             <input
@@ -112,7 +116,11 @@ export default function ChangePasswordForm() {
               type="button"
               onClick={() => setShowCurrentPassword((prev) => !prev)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] transition hover:text-[#4b5563]"
-              aria-label={showCurrentPassword ? 'Hide password' : 'Show password'}
+              aria-label={
+                showCurrentPassword
+                  ? t('auth.hidePassword')
+                  : t('auth.showPassword')
+              }
             >
               <EyeIcon open={showCurrentPassword} />
             </button>
@@ -121,7 +129,7 @@ export default function ChangePasswordForm() {
 
         <div>
           <label htmlFor="new-password" className={labelClassName}>
-            New password
+            {t('settings.newPassword')}
           </label>
           <div className="relative">
             <input
@@ -138,19 +146,21 @@ export default function ChangePasswordForm() {
               type="button"
               onClick={() => setShowNewPassword((prev) => !prev)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] transition hover:text-[#4b5563]"
-              aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+              aria-label={
+                showNewPassword ? t('auth.hidePassword') : t('auth.showPassword')
+              }
             >
               <EyeIcon open={showNewPassword} />
             </button>
           </div>
           <p className="mt-1.5 text-xs text-[#9ca3af]">
-            Must be at least 8 characters.
+            {t('settings.passwordMinLength')}
           </p>
         </div>
 
         <div>
           <label htmlFor="confirm-password" className={labelClassName}>
-            Confirm new password
+            {t('settings.confirmPassword')}
           </label>
           <div className="relative">
             <input
@@ -167,7 +177,11 @@ export default function ChangePasswordForm() {
               type="button"
               onClick={() => setShowConfirmPassword((prev) => !prev)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] transition hover:text-[#4b5563]"
-              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+              aria-label={
+                showConfirmPassword
+                  ? t('auth.hidePassword')
+                  : t('auth.showPassword')
+              }
             >
               <EyeIcon open={showConfirmPassword} />
             </button>
@@ -191,7 +205,7 @@ export default function ChangePasswordForm() {
           disabled={submitting}
           className="rounded-lg bg-[#1e4636] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#163829] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {submitting ? 'Updating...' : 'Update password'}
+          {submitting ? t('settings.updating') : t('settings.updatePassword')}
         </button>
       </form>
     </section>

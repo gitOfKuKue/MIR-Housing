@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from '@/src/i18n';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -7,7 +8,7 @@ import { useEffect, useState } from 'react';
 const SIDEBAR_COLLAPSED_KEY = 'mir_housing_sidebar_collapsed';
 
 interface NavItem {
-  label: string;
+  labelKey: 'nav.properties' | 'nav.settings';
   href: string;
   icon: React.ReactNode;
   isActive: (pathname: string) => boolean;
@@ -80,13 +81,13 @@ function ChevronIcon({ collapsed }: { collapsed: boolean }) {
 
 const navItems: NavItem[] = [
   {
-    label: 'Properties',
+    labelKey: 'nav.properties',
     href: '/properties',
     icon: <PropertiesIcon />,
     isActive: (pathname) => pathname.startsWith('/properties'),
   },
   {
-    label: 'Settings',
+    labelKey: 'nav.settings',
     href: '/settings',
     icon: <SettingsIcon />,
     isActive: (pathname) => pathname.startsWith('/settings'),
@@ -94,6 +95,7 @@ const navItems: NavItem[] = [
 ];
 
 export default function Sidebar({ className }: { className?: string }) {
+  const t = useTranslations();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -121,7 +123,7 @@ export default function Sidebar({ className }: { className?: string }) {
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
         {!collapsed ? (
           <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">
-            Menu
+            {t('common.menu')}
           </p>
         ) : (
           <div className="mb-2 h-5" aria-hidden="true" />
@@ -129,12 +131,13 @@ export default function Sidebar({ className }: { className?: string }) {
 
         {navItems.map((item) => {
           const active = item.isActive(pathname);
+          const label = t(item.labelKey);
 
           return (
             <Link
               key={item.href}
               href={item.href}
-              title={collapsed ? item.label : undefined}
+              title={collapsed ? label : undefined}
               className={`flex items-center rounded-lg py-2.5 text-sm font-medium transition ${
                 collapsed ? 'justify-center px-2' : 'gap-3 px-3'
               } ${
@@ -148,7 +151,7 @@ export default function Sidebar({ className }: { className?: string }) {
               >
                 {item.icon}
               </span>
-              {!collapsed ? <span className="truncate">{item.label}</span> : null}
+              {!collapsed ? <span className="truncate">{label}</span> : null}
             </Link>
           );
         })}
@@ -158,14 +161,14 @@ export default function Sidebar({ className }: { className?: string }) {
         <button
           type="button"
           onClick={toggleCollapsed}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? t('common.expand') : t('common.collapse')}
+          title={collapsed ? t('common.expand') : t('common.collapse')}
           className={`flex w-full items-center rounded-lg py-2.5 text-sm font-medium text-[#6b7280] transition hover:bg-[#f7f4ef] hover:text-[#1e4636] ${
             collapsed ? 'justify-center px-2' : 'gap-3 px-3'
           }`}
         >
           <ChevronIcon collapsed={collapsed} />
-          {!collapsed ? <span>Collapse</span> : null}
+          {!collapsed ? <span>{t('common.collapse')}</span> : null}
         </button>
       </div>
     </aside>

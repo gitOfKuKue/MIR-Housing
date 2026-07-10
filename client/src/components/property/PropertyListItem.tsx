@@ -1,15 +1,11 @@
 'use client';
 
+import { useTranslations } from '@/src/i18n';
+import type { TranslationKey } from '@/src/i18n';
 import type { Property } from '@/src/types/property';
 import Image from 'next/image';
 import Link from 'next/link';
-import {
-  formatAddress,
-  formatPropertyType,
-  formatRent,
-  formatStatus,
-  statusStyles,
-} from './format';
+import { formatAddress, formatRent, statusStyles } from './format';
 
 export interface PropertyListItemProps {
   property: Property;
@@ -22,6 +18,7 @@ export default function PropertyListItem({
   href,
   className,
 }: PropertyListItemProps) {
+  const t = useTranslations();
   const rent = formatRent(property.rent_amount, property.rent_currency);
   const imageUrl = property.images?.[0]?.public_url;
   const address = formatAddress(property);
@@ -63,10 +60,10 @@ export default function PropertyListItem({
           <span
             className={`inline-flex rounded-md px-2.5 py-1 text-xs font-semibold ${statusStyles(property.status)}`}
           >
-            {formatStatus(property.status)}
+            {t(`status.${property.status}` as TranslationKey)}
           </span>
           <span className="inline-flex rounded-md bg-[#f3f4f6] px-2.5 py-1 text-xs font-medium text-[#4b5563]">
-            {formatPropertyType(property.property_type)}
+            {t(`type.${property.property_type}` as TranslationKey)}
           </span>
           {property.bedrooms !== null ? (
             <span className="inline-flex rounded-md bg-[#f3f4f6] px-2.5 py-1 text-xs font-medium text-[#4b5563]">

@@ -7,6 +7,8 @@ import {
   type CreatePropertyPayload,
   type UpdatePropertyPayload,
 } from '@/src/lib/api';
+import { useTranslations } from '@/src/i18n';
+import type { TranslationKey } from '@/src/i18n';
 import type {
   DryingAreaType,
   MainGateLockType,
@@ -160,6 +162,7 @@ interface CreatePropertyFormProps {
 export default function CreatePropertyForm({
   property,
 }: CreatePropertyFormProps = {}) {
+  const t = useTranslations();
   const isEdit = Boolean(property);
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -404,8 +407,8 @@ export default function CreatePropertyForm({
         err instanceof Error
           ? err.message
           : isEdit
-            ? 'Failed to update property'
-            : 'Failed to create property',
+            ? t('form.updateFailed')
+            : t('form.createFailed'),
       );
       setSubmitting(false);
     }
@@ -418,17 +421,15 @@ export default function CreatePropertyForm({
         className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-[#6b7280] transition hover:text-[#1e4636]"
       >
         <BackIcon />
-        {isEdit ? 'Back to property' : 'Back to properties'}
+        {isEdit ? t('form.backToProperty') : t('detail.backToProperties')}
       </Link>
 
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-[#1a1a1a]">
-          {isEdit ? 'Edit property' : 'Create property'}
+          {isEdit ? t('form.editTitle') : t('form.createTitle')}
         </h1>
         <p className="mt-2 text-sm text-[#6b7280]">
-          {isEdit
-            ? 'Update any property details below and save your changes.'
-            : 'Fill in the details below to add a new property listing.'}
+          {isEdit ? t('form.editSubtitle') : t('form.createSubtitle')}
         </p>
       </div>
 
@@ -437,11 +438,13 @@ export default function CreatePropertyForm({
         className="space-y-6 rounded-xl border border-[#e8e4dc] bg-white p-6 shadow-sm"
       >
         <section>
-          <h2 className="text-lg font-semibold text-[#1a1a1a]">Basic info</h2>
+          <h2 className="text-lg font-semibold text-[#1a1a1a]">
+            {t('form.basicInfo')}
+          </h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label htmlFor="name" className={labelClassName}>
-                Name <span className="text-red-500">*</span>
+                {t('form.name')} <span className="text-red-500">*</span>
               </label>
               <input
                 id="name"
@@ -455,7 +458,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="property_type" className={labelClassName}>
-                Property type
+                {t('form.propertyType')}
               </label>
               <select
                 id="property_type"
@@ -467,7 +470,7 @@ export default function CreatePropertyForm({
               >
                 {PROPERTY_TYPES.map((type) => (
                   <option key={type} value={type}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                    {t(`type.${type}` as TranslationKey)}
                   </option>
                 ))}
               </select>
@@ -475,7 +478,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="status" className={labelClassName}>
-                Status
+                {t('form.status')}
               </label>
               <select
                 id="status"
@@ -485,7 +488,7 @@ export default function CreatePropertyForm({
               >
                 {PROPERTY_STATUSES.map((item) => (
                   <option key={item} value={item}>
-                    {item.charAt(0).toUpperCase() + item.slice(1)}
+                    {t(`status.${item}` as TranslationKey)}
                   </option>
                 ))}
               </select>
@@ -496,17 +499,25 @@ export default function CreatePropertyForm({
         <section>
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-[#1a1a1a]">Images</h2>
+              <h2 className="text-lg font-semibold text-[#1a1a1a]">
+                {t('form.images')}
+              </h2>
               <p className="mt-1 text-sm text-[#6b7280]">
                 {isEdit
-                  ? 'Existing images are shown below. Upload more images if needed.'
-                  : `Upload up to ${MAX_IMAGE_COUNT} images (JPEG, PNG, or WebP). Max 5 MB each.`}
+                  ? t('form.imagesEditHint')
+                  : t('form.imagesHint', { max: MAX_IMAGE_COUNT })}
               </p>
             </div>
             <p className="text-sm font-medium text-[#6b7280]">
               {isEdit
-                ? `${(property?.images.length ?? 0) + images.length}/${MAX_IMAGE_COUNT} total`
-                : `${images.length}/${MAX_IMAGE_COUNT} selected`}
+                ? t('form.imagesTotal', {
+                    count: (property?.images.length ?? 0) + images.length,
+                    max: MAX_IMAGE_COUNT,
+                  })
+                : t('form.imagesSelected', {
+                    count: images.length,
+                    max: MAX_IMAGE_COUNT,
+                  })}
             </p>
           </div>
 
@@ -521,18 +532,18 @@ export default function CreatePropertyForm({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={image.public_url}
-                      alt={`Existing image ${index + 1}`}
+                      alt={`${t('form.existingImage')} ${index + 1}`}
                       className="h-full w-full object-cover"
                     />
                     {index === 0 ? (
                       <span className="absolute left-2 top-2 rounded-md bg-[#1e4636] px-2 py-1 text-[11px] font-semibold text-white">
-                        Cover
+                        {t('form.cover')}
                       </span>
                     ) : null}
                   </div>
                   <div className="p-3">
                     <p className="text-xs font-medium text-[#6b7280]">
-                      Existing image
+                      {t('form.existingImage')}
                     </p>
                   </div>
                 </li>
@@ -559,10 +570,10 @@ export default function CreatePropertyForm({
                 <UploadIcon />
               </span>
               <span className="text-sm font-semibold text-[#1a1a1a]">
-                Click to select images
+                {t('form.clickToSelect')}
               </span>
               <span className="text-xs text-[#6b7280]">
-                You can select multiple images at once
+                {t('form.multiSelectHint')}
               </span>
             </label>
           </div>
@@ -589,7 +600,7 @@ export default function CreatePropertyForm({
                     />
                     {index === 0 ? (
                       <span className="absolute left-2 top-2 rounded-md bg-[#1e4636] px-2 py-1 text-[11px] font-semibold text-white">
-                        Cover
+                        {t('form.cover')}
                       </span>
                     ) : null}
                   </div>
@@ -607,7 +618,7 @@ export default function CreatePropertyForm({
                       onClick={() => removeImage(image.id)}
                       className="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
                     >
-                      Remove
+                      {t('form.remove')}
                     </button>
                   </div>
                 </li>
@@ -617,11 +628,13 @@ export default function CreatePropertyForm({
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1a1a1a]">Location</h2>
+          <h2 className="text-lg font-semibold text-[#1a1a1a]">
+            {t('form.location')}
+          </h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label htmlFor="address_line1" className={labelClassName}>
-                Address line 1 <span className="text-red-500">*</span>
+                {t('form.addressLine1')} <span className="text-red-500">*</span>
               </label>
               <input
                 id="address_line1"
@@ -635,7 +648,7 @@ export default function CreatePropertyForm({
 
             <div className="sm:col-span-2">
               <label htmlFor="address_line2" className={labelClassName}>
-                Address line 2
+                {t('form.addressLine2')}
               </label>
               <input
                 id="address_line2"
@@ -648,7 +661,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="city" className={labelClassName}>
-                City <span className="text-red-500">*</span>
+                {t('form.city')} <span className="text-red-500">*</span>
               </label>
               <input
                 id="city"
@@ -661,7 +674,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="province" className={labelClassName}>
-                Province <span className="text-red-500">*</span>
+                {t('form.province')} <span className="text-red-500">*</span>
               </label>
               <input
                 id="province"
@@ -674,7 +687,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="postal_code" className={labelClassName}>
-                Postal code
+                {t('form.postalCode')}
               </label>
               <input
                 id="postal_code"
@@ -686,7 +699,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="country" className={labelClassName}>
-                Country
+                {t('form.country')}
               </label>
               <input
                 id="country"
@@ -701,11 +714,13 @@ export default function CreatePropertyForm({
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1a1a1a]">Rent &amp; size</h2>
+          <h2 className="text-lg font-semibold text-[#1a1a1a]">
+            {t('form.rentSize')}
+          </h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <label htmlFor="rent_amount" className={labelClassName}>
-                Rent amount
+                {t('form.rentAmount')}
               </label>
               <input
                 id="rent_amount"
@@ -720,7 +735,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="rent_currency" className={labelClassName}>
-                Currency
+                {t('form.currency')}
               </label>
               <input
                 id="rent_currency"
@@ -733,7 +748,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="area_sqm" className={labelClassName}>
-                Area (sqm)
+                {t('form.areaSqm')}
               </label>
               <input
                 id="area_sqm"
@@ -748,7 +763,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="bedrooms" className={labelClassName}>
-                Bedrooms
+                {t('form.bedrooms')}
               </label>
               <input
                 id="bedrooms"
@@ -763,7 +778,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="bathrooms" className={labelClassName}>
-                Bathrooms
+                {t('form.bathrooms')}
               </label>
               <input
                 id="bathrooms"
@@ -780,12 +795,12 @@ export default function CreatePropertyForm({
 
         <section>
           <h2 className="text-lg font-semibold text-[#1a1a1a]">
-            Room info &amp; amenities
+            {t('form.roomInfo')}
           </h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <label htmlFor="room_type" className={labelClassName}>
-                Room type
+                {t('form.roomType')}
               </label>
               <input
                 id="room_type"
@@ -798,7 +813,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="floor" className={labelClassName}>
-                Floor
+                {t('form.floor')}
               </label>
               <input
                 id="floor"
@@ -810,7 +825,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="toilet_type" className={labelClassName}>
-                Toilet
+                {t('form.toilet')}
               </label>
               <select
                 id="toilet_type"
@@ -820,10 +835,10 @@ export default function CreatePropertyForm({
                 }
                 className={inputClassName}
               >
-                <option value="">Not set</option>
+                <option value="">{t('common.notSet')}</option>
                 {PRIVATE_SHARED.filter(Boolean).map((item) => (
                   <option key={item} value={item}>
-                    {item.charAt(0).toUpperCase() + item.slice(1)}
+                    {t(`value.${item}` as TranslationKey)}
                   </option>
                 ))}
               </select>
@@ -831,7 +846,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="parking_type" className={labelClassName}>
-                Parking
+                {t('form.parking')}
               </label>
               <select
                 id="parking_type"
@@ -841,10 +856,10 @@ export default function CreatePropertyForm({
                 }
                 className={inputClassName}
               >
-                <option value="">Not set</option>
+                <option value="">{t('common.notSet')}</option>
                 {PRIVATE_SHARED.filter(Boolean).map((item) => (
                   <option key={item} value={item}>
-                    {item.charAt(0).toUpperCase() + item.slice(1)}
+                    {t(`value.${item}` as TranslationKey)}
                   </option>
                 ))}
               </select>
@@ -852,7 +867,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="main_gate_lock" className={labelClassName}>
-                Main gate lock
+                {t('form.mainGateLock')}
               </label>
               <select
                 id="main_gate_lock"
@@ -865,8 +880,8 @@ export default function CreatePropertyForm({
                 {MAIN_GATE_LOCKS.map((item) => (
                   <option key={item || 'empty'} value={item}>
                     {item
-                      ? item.charAt(0).toUpperCase() + item.slice(1)
-                      : 'Not set'}
+                      ? t(`value.${item}` as TranslationKey)
+                      : t('common.notSet')}
                   </option>
                 ))}
               </select>
@@ -874,7 +889,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="drying_area" className={labelClassName}>
-                Drying area
+                {t('form.dryingArea')}
               </label>
               <select
                 id="drying_area"
@@ -884,10 +899,10 @@ export default function CreatePropertyForm({
                 }
                 className={inputClassName}
               >
-                <option value="">Not set</option>
+                <option value="">{t('common.notSet')}</option>
                 {PRIVATE_SHARED.filter(Boolean).map((item) => (
                   <option key={item} value={item}>
-                    {item.charAt(0).toUpperCase() + item.slice(1)}
+                    {t(`value.${item}` as TranslationKey)}
                   </option>
                 ))}
               </select>
@@ -895,7 +910,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="max_occupants" className={labelClassName}>
-                Max occupants
+                {t('form.maxOccupants')}
               </label>
               <input
                 id="max_occupants"
@@ -910,7 +925,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="max_bikes" className={labelClassName}>
-                Max bikes
+                {t('form.maxBikes')}
               </label>
               <input
                 id="max_bikes"
@@ -925,7 +940,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="deposit_months" className={labelClassName}>
-                Deposit (months)
+                {t('form.depositMonths')}
               </label>
               <input
                 id="deposit_months"
@@ -940,7 +955,7 @@ export default function CreatePropertyForm({
 
             <div>
               <label htmlFor="holding_deposit" className={labelClassName}>
-                Holding deposit
+                {t('form.holdingDeposit')}
               </label>
               <input
                 id="holding_deposit"
@@ -958,11 +973,13 @@ export default function CreatePropertyForm({
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1a1a1a]">Notes</h2>
+          <h2 className="text-lg font-semibold text-[#1a1a1a]">
+            {t('form.notes')}
+          </h2>
           <div className="mt-4 grid gap-4">
             <div>
               <label htmlFor="description" className={labelClassName}>
-                Description
+                {t('form.description')}
               </label>
               <textarea
                 id="description"
@@ -970,13 +987,13 @@ export default function CreatePropertyForm({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className={inputClassName}
-                placeholder="Public-facing description"
+                placeholder={t('form.descriptionPlaceholder')}
               />
             </div>
 
             <div>
               <label htmlFor="internal_notes" className={labelClassName}>
-                Internal notes
+                {t('form.internalNotes')}
               </label>
               <textarea
                 id="internal_notes"
@@ -984,7 +1001,7 @@ export default function CreatePropertyForm({
                 value={internalNotes}
                 onChange={(e) => setInternalNotes(e.target.value)}
                 className={inputClassName}
-                placeholder="Staff-only notes"
+                placeholder={t('form.internalNotesPlaceholder')}
               />
             </div>
           </div>
@@ -1001,7 +1018,7 @@ export default function CreatePropertyForm({
             href={isEdit && property ? `/properties/${property.id}` : '/properties'}
             className="inline-flex rounded-lg border border-[#e5e7eb] px-5 py-2.5 text-sm font-semibold text-[#4b5563] transition hover:border-[#1e4636] hover:text-[#1e4636]"
           >
-            Cancel
+            {t('common.cancel')}
           </Link>
           <button
             type="submit"
@@ -1010,11 +1027,11 @@ export default function CreatePropertyForm({
           >
             {submitting
               ? isEdit
-                ? 'Saving...'
-                : 'Creating...'
+                ? t('common.saving')
+                : t('form.creating')
               : isEdit
-                ? 'Save changes'
-                : 'Create property'}
+                ? t('form.saveChanges')
+                : t('form.create')}
           </button>
         </div>
       </form>
