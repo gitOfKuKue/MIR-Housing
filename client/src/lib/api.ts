@@ -124,12 +124,15 @@ export async function getProperties(params?: {
   search?: string;
   status?: string;
   property_type?: string;
+  room_type?: string;
   district?: string;
   ward?: string;
   street?: string;
   city?: string;
   min_rent?: number;
   max_rent?: number;
+  amenities?: string;
+  furnishings?: string;
 }): Promise<PaginatedResponse<Property>> {
   const searchParams = new URLSearchParams();
 
@@ -151,6 +154,10 @@ export async function getProperties(params?: {
 
   if (params?.property_type) {
     searchParams.set('property_type', params.property_type);
+  }
+
+  if (params?.room_type) {
+    searchParams.set('room_type', params.room_type);
   }
 
   if (params?.district) {
@@ -177,11 +184,25 @@ export async function getProperties(params?: {
     searchParams.set('max_rent', String(params.max_rent));
   }
 
+  if (params?.amenities) {
+    searchParams.set('amenities', params.amenities);
+  }
+
+  if (params?.furnishings) {
+    searchParams.set('furnishings', params.furnishings);
+  }
+
   const query = searchParams.toString();
 
   return apiFetch<PaginatedResponse<Property>>(
     `/properties${query ? `?${query}` : ''}`,
   );
+}
+
+export async function getPropertyRentBounds(): Promise<{
+  max_rent: number | null;
+}> {
+  return apiFetch<{ max_rent: number | null }>('/properties/rent-bounds');
 }
 
 export async function getAllProperties(): Promise<Property[]> {

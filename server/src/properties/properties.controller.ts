@@ -57,6 +57,13 @@ export class PropertiesController {
     return this.propertiesService.findAll(query, accessToken);
   }
 
+  @Get('rent-bounds')
+  getRentBounds(
+    @AccessToken() accessToken: string,
+  ): Promise<{ max_rent: number | null }> {
+    return this.propertiesService.getRentBounds(accessToken);
+  }
+
   @Post('bulk')
   @UseGuards(RolesGuard)
   @Roles(StaffRole.Admin, StaffRole.Sale)

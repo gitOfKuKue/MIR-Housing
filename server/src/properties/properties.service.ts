@@ -47,7 +47,10 @@ import {
   PROPERTY_SELECT_WITH_IMAGES,
   PROPERTY_UTILITY_BILLS_TABLE,
 } from './properties.constants';
-import { applyPropertyFilters } from './utils/apply-property-filters';
+import {
+  applyPropertyFilters,
+  propertySelectNeedsFurnishingsInner,
+} from './utils/apply-property-filters';
 import { resolveImageFile } from './utils/resolve-image-file';
 
 @Injectable()
@@ -61,9 +64,18 @@ export class PropertiesService {
     const supabase = this.supabaseService.getClient(accessToken);
     const { page, limit, from, to } = resolvePagination(query.page, query.limit);
 
+    const select = (
+      propertySelectNeedsFurnishingsInner(query)
+        ? PROPERTY_SELECT_WITH_IMAGES.replace(
+            'furnishings:property_furnishings (',
+            'furnishings:property_furnishings!inner (',
+          )
+        : PROPERTY_SELECT_WITH_IMAGES
+    ) as typeof PROPERTY_SELECT_WITH_IMAGES;
+
     let builder = supabase
       .from(PROPERTIES_TABLE)
-      .select(PROPERTY_SELECT_WITH_IMAGES, { count: 'exact' })
+      .select(select, { count: 'exact' })
       .is('deleted_at', null);
 
     builder = applyPropertyFilters(builder, query);
@@ -83,6 +95,33 @@ export class PropertiesService {
     return {
       data: (data ?? []).map((row) => mapPropertyWithImages(row, getPublicUrl)),
       meta: buildPaginationMeta(page, limit, total),
+    };
+  }
+
+  async getRentBounds(
+    accessToken: string,
+  ): Promise<{ max_rent: number | null }> {
+    const supabase = this.supabaseService.getClient(accessToken);
+
+    const { data, error } = await supabase
+      .from(PROPERTIES_TABLE)
+      .select('rent_amount')
+      .is('deleted_at', null)
+      .not('rent_amount', 'is', null)
+      .order('rent_amount', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      this.handleSupabaseError(error);
+    }
+
+    const maxRent = data?.rent_amount;
+    return {
+      max_rent:
+        typeof maxRent === 'number' && Number.isFinite(maxRent)
+          ? maxRent
+          : null,
     };
   }
 

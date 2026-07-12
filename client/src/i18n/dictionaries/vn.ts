@@ -184,6 +184,7 @@ export const vn: { [K in keyof typeof en]: string } = {
   'form.bathrooms': 'Phòng tắm',
   'form.roomInfo': 'Thông tin phòng & tiện nghi',
   'form.roomType': 'Loại phòng',
+  'form.selectRoomType': 'Chọn loại phòng',
   'form.floor': 'Tầng',
   'form.toilet': 'Nhà vệ sinh',
   'form.parking': 'Chỗ để xe',
@@ -271,6 +272,33 @@ export const vn: { [K in keyof typeof en]: string } = {
   'type.house': 'Nhà',
   'type.townhouse': 'Nhà phố',
   'type.other': 'Khác',
+
+  // Room types (filter / create)
+  'roomType.studio': 'Studio',
+  'roomType.duplex': 'Duplex',
+  'roomType.1Bedroom': '1 Phòng Ngủ',
+  'roomType.2Bedroom': '2 Phòng Ngủ',
+  'roomType.privateKitchen': 'Bếp Riêng',
+  'roomType.commercialSpace': 'Mặt Bằng',
+  'roomType.groundPlusOne': 'Phòng 1 Trệt 1 Lầu',
+  'roomType.kiosk': 'Kiot',
+  'roomType.sleepbox': 'Sleepbox',
+  'roomType.dormitory': 'Ký Túc Xá',
+  'roomType.foreignerApartment': 'Căn Hộ (Nước Ngoài)',
+  'roomType.miniApartment': 'Mini Apartment',
+
+  // Amenity filter values
+  'amenity.elevator': 'Thang Máy',
+  'amenity.sharedWashingMachine': 'Máy Giặt Chung',
+  'amenity.privateWashingMachine': 'Máy Giặt Riêng',
+  'amenity.security247': 'Bảo Vệ 24/7',
+  'amenity.carParking': 'Đỗ Xe Ô Tô',
+  'amenity.bikeParking': 'Đỗ Xe Máy',
+  'amenity.fixedElectricity': 'Điện Khoán',
+  'amenity.petsOk': 'Thú Cưng OK',
+  'amenity.foreignersOk': 'Người Nước Ngoài OK',
+  'amenity.solarHotWater': 'Nước Nóng Mặt Trời',
+  'amenity.cleaningService': 'Dịch Vụ Vệ Sinh',
 
   // Shared amenity values
   'value.private': 'Riêng',

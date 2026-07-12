@@ -8,11 +8,17 @@ import {
   PropertyPagination,
   PropertyToolbar,
   propertyFiltersToQueryParams,
+  resolveRentFilterMax,
+  RENT_FILTER_MAX_FALLBACK,
   type PropertyFilters,
   type PropertyViewMode,
 } from '@/src/components/property';
 import { useTranslations } from '@/src/i18n';
-import { getProperties, type PaginationMeta } from '@/src/lib/api';
+import {
+  getProperties,
+  getPropertyRentBounds,
+  type PaginationMeta,
+} from '@/src/lib/api';
 import { getAuthUser } from '@/src/lib/auth';
 import { canManageProperties } from '@/src/lib/roles';
 import type { Property } from '@/src/types/property';
@@ -37,24 +43,29 @@ function PlusIcon() {
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
 }
 
-function hasActiveFilters(filters: PropertyFilters): boolean {
+function hasActiveFilters(
+  filters: PropertyFilters,
+  rentFilterMax: number,
+): boolean {
   return Boolean(
     filters.search ||
       filters.status !== 'all' ||
       filters.propertyType !== 'all' ||
+      filters.roomType !== 'all' ||
       filters.district ||
       filters.ward ||
       filters.street ||
       filters.minRent > DEFAULT_PROPERTY_FILTERS.minRent ||
-      filters.maxRent < DEFAULT_PROPERTY_FILTERS.maxRent ||
+      filters.maxRent < rentFilterMax ||
       filters.includeRented ||
-      filters.amenity !== 'all' ||
-      filters.furnishing !== 'all',
+      filters.amenities.length > 0 ||
+      filters.furnishings.length > 0,
   );
 }
 
@@ -71,6 +82,7 @@ export default function PropertiesPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [rentFilterMax, setRentFilterMax] = useState(RENT_FILTER_MAX_FALLBACK);
   const [draftFilters, setDraftFilters] = useState<PropertyFilters>(
     DEFAULT_PROPERTY_FILTERS,
   );
@@ -90,6 +102,38 @@ export default function PropertiesPage() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadRentBounds() {
+      try {
+        const bounds = await getPropertyRentBounds();
+        if (cancelled) return;
+
+        const maxRent = resolveRentFilterMax(bounds.max_rent);
+        setRentFilterMax(maxRent);
+        setDraftFilters((prev) => ({
+          ...prev,
+          maxRent,
+          minRent: Math.min(prev.minRent, maxRent),
+        }));
+        setAppliedFilters((prev) => ({
+          ...prev,
+          maxRent,
+          minRent: Math.min(prev.minRent, maxRent),
+        }));
+      } catch {
+        // Keep fallback ceiling when bounds cannot be loaded.
+      }
+    }
+
+    loadRentBounds();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       setDebouncedSearch(appliedFilters.search);
     }, SEARCH_DEBOUNCE_MS);
@@ -105,6 +149,7 @@ export default function PropertiesPage() {
     debouncedSearch,
     appliedFilters.status,
     appliedFilters.propertyType,
+    appliedFilters.roomType,
     appliedFilters.district,
     appliedFilters.ward,
     appliedFilters.street,
@@ -127,6 +172,7 @@ export default function PropertiesPage() {
             { ...appliedFilters, search: debouncedSearch },
             page,
             pageSize,
+            rentFilterMax,
           ),
         );
 
@@ -163,12 +209,14 @@ export default function PropertiesPage() {
     debouncedSearch,
     appliedFilters.status,
     appliedFilters.propertyType,
+    appliedFilters.roomType,
     appliedFilters.district,
     appliedFilters.ward,
     appliedFilters.street,
     appliedFilters.minRent,
     appliedFilters.maxRent,
     appliedFilters.includeRented,
+    rentFilterMax,
     page,
     pageSize,
   ]);
@@ -190,10 +238,13 @@ export default function PropertiesPage() {
 
   const hasProperties = meta.total > 0;
   const showEmptyState = !loading && !error && !hasProperties;
-  const filtersActive = hasActiveFilters({
-    ...appliedFilters,
-    search: debouncedSearch,
-  });
+  const filtersActive = hasActiveFilters(
+    {
+      ...appliedFilters,
+      search: debouncedSearch,
+    },
+    rentFilterMax,
+  );
 
   return (
     <div className="p-6 sm:p-8">
@@ -226,6 +277,7 @@ export default function PropertiesPage() {
             value={draftFilters}
             onChange={setDraftFilters}
             onSearch={handleSearch}
+            rentFilterMax={rentFilterMax}
           />
         </div>
 

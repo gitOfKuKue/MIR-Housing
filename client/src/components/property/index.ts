@@ -9,6 +9,8 @@ export { default as PropertyToolbar } from './PropertyToolbar';
 export {
   DEFAULT_PROPERTY_FILTERS,
   propertyFiltersToQueryParams,
+  resolveRentFilterMax,
+  RENT_FILTER_MAX_FALLBACK,
 } from './filterProperties';
 export type { PropertyCardProps } from './PropertyCard';
 export type { PropertyListItemProps } from './PropertyListItem';

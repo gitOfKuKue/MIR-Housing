@@ -48,29 +48,5 @@ export const PROPERTY_SELECT_WITH_IMAGES = `
     created_at,
     updated_at
   ),
-  furnishings:property_furnishings (
-    id,
-    property_id,
-    has_loft,
-    has_window,
-    has_balcony,
-    has_fridge,
-    has_tv,
-    has_air_conditioner,
-    washing_machine,
-    has_kitchen_staff,
-    has_hot_water,
-    has_bed,
-    has_mattress,
-    has_wardrobe,
-    has_pillow,
-    has_blanket,
-    landlord_in_building,
-    has_elevator,
-    has_security_guard,
-    has_skylight,
-    has_pool,
-    created_at,
-    updated_at
-  )
+  furnishings:property_furnishings (*)
 `;

@@ -1,15 +1,13 @@
 'use client';
 
 import { useTranslations } from '@/src/i18n';
-import type { TranslationKey } from '@/src/i18n';
-import type { PropertyType } from '@/src/types/property';
+import AmenityMultiSelect from './AmenityMultiSelect';
+import FurnishingMultiSelect from './FurnishingMultiSelect';
 import HcmcLocationSelects from './HcmcLocationSelects';
+import RoomTypeSelect from './RoomTypeSelect';
 import {
-  RENT_FILTER_MAX,
   RENT_FILTER_MIN,
   RENT_FILTER_STEP,
-  type AmenityFilter,
-  type FurnishingFilter,
   type PropertyFilters,
 } from './filterProperties';
 
@@ -17,35 +15,8 @@ interface PropertyFilterSidebarProps {
   value: PropertyFilters;
   onChange: (filters: PropertyFilters) => void;
   onSearch: () => void;
+  rentFilterMax: number;
 }
-
-const PROPERTY_TYPES: Array<PropertyType | 'all'> = [
-  'all',
-  'apartment',
-  'condo',
-  'house',
-  'townhouse',
-  'other',
-];
-
-const AMENITY_OPTIONS: AmenityFilter[] = [
-  'all',
-  'has_air_conditioner',
-  'has_fridge',
-  'has_balcony',
-  'has_elevator',
-  'has_hot_water',
-  'has_window',
-];
-
-const FURNISHING_OPTIONS: FurnishingFilter[] = [
-  'all',
-  'has_bed',
-  'has_mattress',
-  'has_wardrobe',
-  'has_tv',
-  'has_loft',
-];
 
 const labelClassName =
   'mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[#9ca3af]';
@@ -80,18 +51,19 @@ function formatVnd(amount: number): string {
 function DualRangeSlider({
   minValue,
   maxValue,
+  rangeMax,
   onMinChange,
   onMaxChange,
 }: {
   minValue: number;
   maxValue: number;
+  rangeMax: number;
   onMinChange: (value: number) => void;
   onMaxChange: (value: number) => void;
 }) {
-  const minPercent =
-    ((minValue - RENT_FILTER_MIN) / (RENT_FILTER_MAX - RENT_FILTER_MIN)) * 100;
-  const maxPercent =
-    ((maxValue - RENT_FILTER_MIN) / (RENT_FILTER_MAX - RENT_FILTER_MIN)) * 100;
+  const span = Math.max(rangeMax - RENT_FILTER_MIN, 1);
+  const minPercent = ((minValue - RENT_FILTER_MIN) / span) * 100;
+  const maxPercent = ((maxValue - RENT_FILTER_MIN) / span) * 100;
 
   return (
     <div className="relative h-6">
@@ -103,7 +75,7 @@ function DualRangeSlider({
       <input
         type="range"
         min={RENT_FILTER_MIN}
-        max={RENT_FILTER_MAX}
+        max={rangeMax}
         step={RENT_FILTER_STEP}
         value={minValue}
         onChange={(event) => {
@@ -116,7 +88,7 @@ function DualRangeSlider({
       <input
         type="range"
         min={RENT_FILTER_MIN}
-        max={RENT_FILTER_MAX}
+        max={rangeMax}
         step={RENT_FILTER_STEP}
         value={maxValue}
         onChange={(event) => {
@@ -134,41 +106,12 @@ export default function PropertyFilterSidebar({
   value,
   onChange,
   onSearch,
+  rentFilterMax,
 }: PropertyFilterSidebarProps) {
   const t = useTranslations();
 
   function update(patch: Partial<PropertyFilters>) {
     onChange({ ...value, ...patch });
-  }
-
-  function typeLabel(type: PropertyType | 'all') {
-    if (type === 'all') return t('properties.allRoomTypes');
-    return t(`type.${type}` as TranslationKey);
-  }
-
-  function amenityLabel(option: AmenityFilter) {
-    if (option === 'all') return t('properties.selectAmenity');
-    const map: Record<Exclude<AmenityFilter, 'all'>, TranslationKey> = {
-      has_air_conditioner: 'furnishing.airConditioner',
-      has_fridge: 'furnishing.fridge',
-      has_balcony: 'furnishing.balcony',
-      has_elevator: 'furnishing.elevator',
-      has_hot_water: 'furnishing.hotWater',
-      has_window: 'furnishing.window',
-    };
-    return t(map[option]);
-  }
-
-  function furnishingLabel(option: FurnishingFilter) {
-    if (option === 'all') return t('properties.selectFurnishing');
-    const map: Record<Exclude<FurnishingFilter, 'all'>, TranslationKey> = {
-      has_bed: 'furnishing.bed',
-      has_mattress: 'furnishing.mattress',
-      has_wardrobe: 'furnishing.wardrobe',
-      has_tv: 'furnishing.tv',
-      has_loft: 'furnishing.loft',
-    };
-    return t(map[option]);
   }
 
   return (
@@ -216,61 +159,32 @@ export default function PropertyFilterSidebar({
       <div className="my-5 border-t border-[#e8e4dc]" />
 
       <div className="flex flex-col gap-4">
-        <label className="block">
-          <span className={labelClassName}>{t('properties.filterRoomType')}</span>
-          <select
-            value={value.propertyType}
-            onChange={(event) =>
-              update({
-                propertyType: event.target
-                  .value as PropertyFilters['propertyType'],
-              })
-            }
-            className={selectClassName}
-          >
-            {PROPERTY_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {typeLabel(type)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <RoomTypeSelect
+          value={value.roomType}
+          onChange={(roomType) => update({ roomType })}
+          labelClassName={labelClassName}
+          triggerClassName={
+            selectClassName + ' flex items-center justify-between text-left'
+          }
+        />
 
-        <label className="block">
-          <span className={labelClassName}>{t('properties.filterAmenity')}</span>
-          <select
-            value={value.amenity}
-            onChange={(event) =>
-              update({ amenity: event.target.value as AmenityFilter })
-            }
-            className={selectClassName}
-          >
-            {AMENITY_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {amenityLabel(option)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <AmenityMultiSelect
+          value={value.amenities}
+          onChange={(amenities) => update({ amenities })}
+          labelClassName={labelClassName}
+          triggerClassName={
+            selectClassName + ' flex items-center justify-between text-left'
+          }
+        />
 
-        <label className="block">
-          <span className={labelClassName}>
-            {t('properties.filterFurnishing')}
-          </span>
-          <select
-            value={value.furnishing}
-            onChange={(event) =>
-              update({ furnishing: event.target.value as FurnishingFilter })
-            }
-            className={selectClassName}
-          >
-            {FURNISHING_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {furnishingLabel(option)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <FurnishingMultiSelect
+          value={value.furnishings}
+          onChange={(furnishings) => update({ furnishings })}
+          labelClassName={labelClassName}
+          triggerClassName={
+            selectClassName + ' flex items-center justify-between text-left'
+          }
+        />
       </div>
 
       <div className="my-5 border-t border-[#e8e4dc]" />
@@ -280,6 +194,7 @@ export default function PropertyFilterSidebar({
         <DualRangeSlider
           minValue={value.minRent}
           maxValue={value.maxRent}
+          rangeMax={rentFilterMax}
           onMinChange={(minRent) => update({ minRent })}
           onMaxChange={(maxRent) => update({ maxRent })}
         />

@@ -22,6 +22,13 @@ export interface PropertyFurnishings {
   has_security_guard: boolean | null;
   has_skylight: boolean | null;
   has_pool: boolean | null;
+  has_car_parking: boolean | null;
+  has_bike_parking: boolean | null;
+  has_fixed_electricity: boolean | null;
+  pets_ok: boolean | null;
+  foreigners_ok: boolean | null;
+  has_solar_hot_water: boolean | null;
+  has_cleaning_service: boolean | null;
   created_at: string;
   updated_at: string;
 }

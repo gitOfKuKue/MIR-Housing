@@ -9,6 +9,11 @@ import {
 } from '@/src/lib/api';
 import { useTranslations } from '@/src/i18n';
 import type { TranslationKey } from '@/src/i18n';
+import {
+  ROOM_TYPE_VALUES,
+  isRoomTypeValue,
+  type RoomTypeValue,
+} from '@/src/lib/room-types';
 import type {
   DryingAreaType,
   MainGateLockType,
@@ -24,6 +29,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import HcmcLocationSelects, {
   type HcmcLocationValue,
 } from './HcmcLocationSelects';
+import { ROOM_TYPE_LABEL_KEYS } from './RoomTypeSelect';
 
 const HCMC_CITY = 'Ho Chi Minh City';
 const HCMC_PROVINCE = 'Ho Chi Minh';
@@ -212,7 +218,11 @@ export default function CreatePropertyForm({
   const [areaSqm, setAreaSqm] = useState(
     formatInitialNumber(property?.area_sqm ?? null),
   );
-  const [roomType, setRoomType] = useState(property?.room_type ?? '');
+  const [roomType, setRoomType] = useState(
+    property?.room_type && isRoomTypeValue(property.room_type)
+      ? property.room_type
+      : '',
+  );
   const [toiletType, setToiletType] = useState<ToiletType | ''>(
     property?.toilet_type ?? '',
   );
@@ -846,13 +856,25 @@ export default function CreatePropertyForm({
               <label htmlFor="room_type" className={labelClassName}>
                 {t('form.roomType')}
               </label>
-              <input
+              <select
                 id="room_type"
                 value={roomType}
-                onChange={(e) => setRoomType(e.target.value)}
+                onChange={(e) =>
+                  setRoomType(
+                    e.target.value === ''
+                      ? ''
+                      : (e.target.value as RoomTypeValue),
+                  )
+                }
                 className={inputClassName}
-                placeholder="e.g. 2BR Standard"
-              />
+              >
+                <option value="">{t('form.selectRoomType')}</option>
+                {ROOM_TYPE_VALUES.map((option) => (
+                  <option key={option} value={option}>
+                    {t(ROOM_TYPE_LABEL_KEYS[option])}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>

@@ -183,6 +183,7 @@ export const en = {
   'form.bathrooms': 'Bathrooms',
   'form.roomInfo': 'Room info & amenities',
   'form.roomType': 'Room type',
+  'form.selectRoomType': 'Select room type',
   'form.floor': 'Floor',
   'form.toilet': 'Toilet',
   'form.parking': 'Parking',
@@ -272,6 +273,33 @@ export const en = {
   'type.house': 'House',
   'type.townhouse': 'Townhouse',
   'type.other': 'Other',
+
+  // Room types (filter / create)
+  'roomType.studio': 'Studio',
+  'roomType.duplex': 'Duplex',
+  'roomType.1Bedroom': '1 Bedroom',
+  'roomType.2Bedroom': '2 Bedrooms',
+  'roomType.privateKitchen': 'Private kitchen',
+  'roomType.commercialSpace': 'Commercial space',
+  'roomType.groundPlusOne': 'Ground floor + 1 upper',
+  'roomType.kiosk': 'Kiosk',
+  'roomType.sleepbox': 'Sleepbox',
+  'roomType.dormitory': 'Dormitory',
+  'roomType.foreignerApartment': 'Apartment (foreigners)',
+  'roomType.miniApartment': 'Mini apartment',
+
+  // Amenity filter values
+  'amenity.elevator': 'Elevator',
+  'amenity.sharedWashingMachine': 'Shared washing machine',
+  'amenity.privateWashingMachine': 'Private washing machine',
+  'amenity.security247': '24/7 security',
+  'amenity.carParking': 'Car parking',
+  'amenity.bikeParking': 'Motorbike parking',
+  'amenity.fixedElectricity': 'Fixed electricity',
+  'amenity.petsOk': 'Pets OK',
+  'amenity.foreignersOk': 'Foreigners OK',
+  'amenity.solarHotWater': 'Solar hot water',
+  'amenity.cleaningService': 'Cleaning service',
 
   // Shared amenity values
   'value.private': 'Private',

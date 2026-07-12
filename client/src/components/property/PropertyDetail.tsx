@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import PropertyImageLightbox from './PropertyImageLightbox';
 import { deleteProperty } from '@/src/lib/api';
 import { getAuthUser } from '@/src/lib/auth';
+import { isRoomTypeValue } from '@/src/lib/room-types';
 import { canManageProperties } from '@/src/lib/roles';
 import {
   formatAddress,
@@ -20,6 +21,7 @@ import {
   statusStyles,
   utilityBillStatusStyles,
 } from './format';
+import { ROOM_TYPE_LABEL_KEYS } from './RoomTypeSelect';
 
 function BackIcon() {
   return (
@@ -332,7 +334,13 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
           </h2>
           <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
             {[
-              { label: t('detail.roomType'), value: property.room_type },
+              {
+                label: t('detail.roomType'),
+                value:
+                  property.room_type && isRoomTypeValue(property.room_type)
+                    ? t(ROOM_TYPE_LABEL_KEYS[property.room_type])
+                    : property.room_type,
+              },
               {
                 label: t('detail.toilet'),
                 value: translatePrivateShared(t, property.toilet_type),
