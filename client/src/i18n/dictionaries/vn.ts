@@ -88,6 +88,21 @@ export const vn: { [K in keyof typeof en]: string } = {
   'properties.list': 'Danh sách',
   'properties.foundZero': 'Không tìm thấy bất động sản',
 
+  'list.perMonth': 'tháng',
+  'list.morePhotos': '+{count} ảnh',
+  'list.floor': 'Tầng {floor}',
+  'list.area': 'DT {area}m²',
+  'list.holdingDeposit': 'Cọc GR {amount}',
+  'list.depositMonths': 'Cọc {count} tháng',
+  'list.electricity': 'Điện {amount}',
+  'list.water': 'Nước {amount}',
+  'list.management': 'QL {amount}',
+  'list.included': 'Bao gồm',
+  'list.viewEdit': 'Xem / Sửa',
+  'list.copyInfo': 'Copy thông tin',
+  'list.copied': 'Đã copy',
+  'list.photoGallery': 'Thư viện ảnh',
+
   // Property detail
   'detail.backToProperties': 'Quay lại danh sách',
   'detail.description': 'Mô tả',

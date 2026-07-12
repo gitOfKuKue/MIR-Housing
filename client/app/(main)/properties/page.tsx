@@ -91,7 +91,7 @@ export default function PropertiesPage() {
   );
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [viewMode, setViewMode] = useState<PropertyViewMode>('card');
+  const [viewMode, setViewMode] = useState<PropertyViewMode>('list');
 
   const pageSize = viewMode === 'card' ? CARD_PAGE_SIZE : LIST_PAGE_SIZE;
 

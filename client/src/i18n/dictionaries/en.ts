@@ -87,6 +87,21 @@ export const en = {
   'properties.list': 'List',
   'properties.foundZero': '0 properties found',
 
+  'list.perMonth': 'month',
+  'list.morePhotos': '+{count} photos',
+  'list.floor': 'Floor {floor}',
+  'list.area': 'Area {area}m²',
+  'list.holdingDeposit': 'Holding {amount}',
+  'list.depositMonths': 'Deposit {count} mo',
+  'list.electricity': 'Electricity {amount}',
+  'list.water': 'Water {amount}',
+  'list.management': 'Management {amount}',
+  'list.included': 'Included',
+  'list.viewEdit': 'View / Edit',
+  'list.copyInfo': 'Copy info',
+  'list.copied': 'Copied',
+  'list.photoGallery': 'Photo gallery',
+
   // Property detail
   'detail.backToProperties': 'Back to properties',
   'detail.description': 'Description',
