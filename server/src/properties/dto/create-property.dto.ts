@@ -11,6 +11,7 @@ import {
 } from 'class-validator';
 import { PropertyStatus } from '../enums/property-status.enum';
 import { PropertyType } from '../enums/property-type.enum';
+import { FeeWaterType } from '../enums/fee-water-type.enum';
 import {
   DryingAreaType,
   MainGateLockType,
@@ -99,7 +100,7 @@ export class CreatePropertyDto {
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
+  @Min(0.01)
   area_sqm?: number;
 
   @IsOptional()
@@ -155,6 +156,50 @@ export class CreatePropertyDto {
   @IsOptional()
   @IsString()
   internal_notes?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  zalo_group_link?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  fee_electricity?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  fee_water?: string;
+
+  @IsOptional()
+  @IsEnum(FeeWaterType)
+  fee_water_type?: FeeWaterType;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  fee_motorbike?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  fee_car?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  fee_wifi?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  fee_management?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  fee_service?: string;
 
   @IsOptional()
   @IsUUID()

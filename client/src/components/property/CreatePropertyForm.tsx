@@ -4,6 +4,7 @@ import {
   createProperty,
   updateProperty,
   uploadPropertyImages,
+  upsertPropertyFurnishings,
   type CreatePropertyPayload,
   type UpdatePropertyPayload,
 } from '@/src/lib/api';
@@ -14,8 +15,18 @@ import {
   isRoomTypeValue,
   type RoomTypeValue,
 } from '@/src/lib/room-types';
+import { AMENITY_VALUES, type AmenityValue } from '@/src/lib/amenities';
+import {
+  FURNISHING_VALUES,
+  type FurnishingValue,
+} from '@/src/lib/furnishings';
+import {
+  furnishingsToAmenityValues,
+  furnishingsToFurnishingValues,
+} from '@/src/lib/furnishings-selection';
 import type {
   DryingAreaType,
+  FeeWaterType,
   MainGateLockType,
   ParkingType,
   Property,
@@ -26,6 +37,8 @@ import type {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useRef, useState } from 'react';
+import { AMENITY_LABEL_KEYS } from './AmenityMultiSelect';
+import { FURNISHING_LABEL_KEYS } from './FurnishingMultiSelect';
 import HcmcLocationSelects, {
   type HcmcLocationValue,
 } from './HcmcLocationSelects';
@@ -43,13 +56,6 @@ const PROPERTY_TYPES: PropertyType[] = [
   'other',
 ];
 
-const PROPERTY_STATUSES: PropertyStatus[] = [
-  'available',
-  'rented',
-  'maintenance',
-  'inactive',
-];
-
 const PRIVATE_SHARED: Array<ToiletType | ParkingType | DryingAreaType | ''> = [
   '',
   'private',
@@ -57,6 +63,8 @@ const PRIVATE_SHARED: Array<ToiletType | ParkingType | DryingAreaType | ''> = [
 ];
 
 const MAIN_GATE_LOCKS: Array<MainGateLockType | ''> = ['', 'standard', 'none'];
+
+const FEE_WATER_TYPES: FeeWaterType[] = ['fixed', 'per_m3'];
 
 const MAX_IMAGE_COUNT = 10;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -67,9 +75,16 @@ const ALLOWED_IMAGE_TYPES = new Set([
 ]);
 
 const inputClassName =
-  'w-full rounded-lg border border-[#e5e7eb] bg-[#fafaf9] px-3 py-2.5 text-sm text-[#1a1a1a] outline-none transition placeholder:text-[#9ca3af] focus:border-[#1e4636] focus:bg-white focus:ring-2 focus:ring-[#1e4636]/10';
+  'h-9 w-full rounded-lg border border-[#e5e7eb] bg-white px-3 text-sm text-[#1a1a1a] outline-none transition placeholder:text-[#9ca3af] focus:border-[#1e4636] focus:ring-2 focus:ring-[#1e4636]/15';
 
-const labelClassName = 'mb-1.5 block text-sm font-medium text-[#4b5563]';
+const smallInputClassName =
+  'h-8 w-full rounded-lg border border-[#e5e7eb] bg-white px-3 text-sm text-[#1a1a1a] outline-none transition placeholder:text-[#9ca3af] focus:border-[#1e4636] focus:ring-2 focus:ring-[#1e4636]/15';
+
+const labelClassName =
+  'mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-[#9ca3af]';
+
+const subheadingClassName =
+  'mb-3 text-xs font-semibold uppercase tracking-wider text-[#6b7280]';
 
 interface ImagePreview {
   id: string;
@@ -100,8 +115,8 @@ function BackIcon() {
 function UploadIcon() {
   return (
     <svg
-      width="24"
-      height="24"
+      width="20"
+      height="20"
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
@@ -114,6 +129,100 @@ function UploadIcon() {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M5 12.5l5 5L19 7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SectionHeading({
+  number,
+  title,
+}: {
+  number: number;
+  title: string;
+}) {
+  return (
+    <div className="mb-4 flex items-center gap-3 border-b border-[#f3f4f6] pb-3">
+      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#e8f3ed] text-xs font-semibold text-[#1e4636]">
+        {number}
+      </span>
+      <h2 className="text-sm font-semibold text-[#1a1a1a]">{title}</h2>
+    </div>
+  );
+}
+
+function CheckboxGrid<T extends string>({
+  options,
+  value,
+  onChange,
+  labelFor,
+}: {
+  options: readonly T[];
+  value: T[];
+  onChange: (next: T[]) => void;
+  labelFor: (option: T) => string;
+}) {
+  const selected = new Set(value);
+
+  function toggle(option: T) {
+    if (selected.has(option)) {
+      onChange(value.filter((item) => item !== option));
+      return;
+    }
+    onChange([...value, option]);
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      {options.map((option) => {
+        const checked = selected.has(option);
+        return (
+          <label
+            key={option}
+            className="flex cursor-pointer items-center gap-2.5 rounded-lg px-1 py-1.5 text-sm text-[#1a1a1a] hover:bg-[#f9fafb]"
+          >
+            <span
+              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                checked
+                  ? 'border-[#1e4636] bg-[#1e4636] text-white'
+                  : 'border-[#d1d5db] bg-white'
+              }`}
+            >
+              {checked ? (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M5 12.5l5 5L19 7"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              ) : null}
+            </span>
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={checked}
+              onChange={() => toggle(option)}
+            />
+            {labelFor(option)}
+          </label>
+        );
+      })}
+    </div>
   );
 }
 
@@ -166,6 +275,11 @@ function formatInitialCurrency(value: number | null): string {
 function formatInitialNumber(value: number | null): string {
   if (value === null || value === undefined) return '';
   return String(value);
+}
+
+function normalizeFeeAmount(value: string): string | null {
+  const digits = value.replace(/[^\d.]/g, '').replace(/\.$/, '');
+  return digits || null;
 }
 
 interface CreatePropertyFormProps {
@@ -252,6 +366,39 @@ export default function CreatePropertyForm({
   const [internalNotes, setInternalNotes] = useState(
     property?.internal_notes ?? '',
   );
+  const [zaloGroupLink, setZaloGroupLink] = useState(
+    property?.zalo_group_link ?? '',
+  );
+  const [feeElectricity, setFeeElectricity] = useState(
+    formatCurrencyInput(property?.fee_electricity ?? ''),
+  );
+  const [feeWater, setFeeWater] = useState(
+    formatCurrencyInput(property?.fee_water ?? ''),
+  );
+  const [feeWaterType, setFeeWaterType] = useState<FeeWaterType>(
+    property?.fee_water_type ?? 'per_m3',
+  );
+  const [feeMotorbike, setFeeMotorbike] = useState(
+    formatCurrencyInput(property?.fee_motorbike ?? ''),
+  );
+  const [feeCar, setFeeCar] = useState(
+    formatCurrencyInput(property?.fee_car ?? ''),
+  );
+  const [feeWifi, setFeeWifi] = useState(
+    formatCurrencyInput(property?.fee_wifi ?? ''),
+  );
+  const [feeManagement, setFeeManagement] = useState(
+    formatCurrencyInput(property?.fee_management ?? ''),
+  );
+  const [feeService, setFeeService] = useState(
+    formatCurrencyInput(property?.fee_service ?? ''),
+  );
+  const [amenities, setAmenities] = useState<AmenityValue[]>(() =>
+    furnishingsToAmenityValues(property?.furnishings),
+  );
+  const [furnishings, setFurnishings] = useState<FurnishingValue[]>(() =>
+    furnishingsToFurnishingValues(property?.furnishings),
+  );
 
   useEffect(() => {
     return () => {
@@ -261,6 +408,17 @@ export default function CreatePropertyForm({
       });
     };
   }, []);
+
+  function moveImage(index: number, direction: -1 | 1) {
+    setImages((prev) => {
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= prev.length) return prev;
+      const copy = [...prev];
+      const [item] = copy.splice(index, 1);
+      copy.splice(nextIndex, 0, item);
+      return copy;
+    });
+  }
 
   function handleFilesSelected(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) {
@@ -339,8 +497,14 @@ export default function CreatePropertyForm({
     setSubmitting(true);
 
     try {
-      const basePayload = {
-        name: name.trim(),
+      const areaValue = parseOptionalNumber(areaSqm);
+      const basePayload: UpdatePropertyPayload = {
+        name:
+          name.trim() ||
+          [addressLine1.trim(), location.street, location.ward, location.district]
+            .filter(Boolean)
+            .join(', ') ||
+          'Untitled property',
         property_type: propertyType,
         status,
         address_line1: addressLine1.trim(),
@@ -357,6 +521,15 @@ export default function CreatePropertyForm({
         floor: floor.trim() || null,
         description: description.trim() || null,
         internal_notes: internalNotes.trim() || null,
+        zalo_group_link: zaloGroupLink.trim() || null,
+        fee_electricity: normalizeFeeAmount(feeElectricity),
+        fee_water: normalizeFeeAmount(feeWater),
+        fee_water_type: normalizeFeeAmount(feeWater) ? feeWaterType : null,
+        fee_motorbike: normalizeFeeAmount(feeMotorbike),
+        fee_car: normalizeFeeAmount(feeCar),
+        fee_wifi: normalizeFeeAmount(feeWifi),
+        fee_management: normalizeFeeAmount(feeManagement),
+        fee_service: normalizeFeeAmount(feeService),
         toilet_type: toiletType || null,
         parking_type: parkingType || null,
         main_gate_lock: mainGateLock || null,
@@ -364,73 +537,44 @@ export default function CreatePropertyForm({
         rent_amount: parseOptionalNumber(rentAmount) ?? null,
         bedrooms: parseOptionalInt(bedrooms) ?? null,
         bathrooms: parseOptionalNumber(bathrooms) ?? null,
-        area_sqm: parseOptionalNumber(areaSqm) ?? null,
+        // DB constraint: area_sqm is null or > 0
+        area_sqm:
+          areaValue !== undefined && areaValue > 0 ? areaValue : null,
         max_occupants: parseOptionalInt(maxOccupants) ?? null,
         max_bikes: parseOptionalInt(maxBikes) ?? null,
         deposit_months: parseOptionalInt(depositMonths) ?? null,
         holding_deposit: parseOptionalNumber(holdingDeposit) ?? null,
       };
 
+      let propertyId: string;
       if (isEdit && property) {
-        const payload: UpdatePropertyPayload = basePayload;
-        await updateProperty(property.id, payload);
-
-        if (images.length > 0) {
-          await uploadPropertyImages(
-            property.id,
-            images.map((image) => image.file),
-            property.images.length,
-          );
-        }
-
-        router.push(`/properties/${property.id}`);
-        return;
+        await updateProperty(property.id, basePayload);
+        propertyId = property.id;
+      } else {
+        const created = await createProperty(
+          Object.fromEntries(
+            Object.entries(basePayload).filter(
+              ([, value]) => value !== null && value !== undefined,
+            ),
+          ) as CreatePropertyPayload,
+        );
+        propertyId = created.id;
       }
 
-      const payload: CreatePropertyPayload = {
-        name: basePayload.name,
-        property_type: basePayload.property_type,
-        status: basePayload.status,
-        address_line1: basePayload.address_line1,
-        city: basePayload.city,
-        province: basePayload.province,
-        country: basePayload.country,
-        rent_currency: basePayload.rent_currency,
-      };
-
-      if (basePayload.address_line2) payload.address_line2 = basePayload.address_line2;
-      if (basePayload.district) payload.district = basePayload.district;
-      if (basePayload.ward) payload.ward = basePayload.ward;
-      if (basePayload.street) payload.street = basePayload.street;
-      if (basePayload.postal_code) payload.postal_code = basePayload.postal_code;
-      if (basePayload.room_type) payload.room_type = basePayload.room_type;
-      if (basePayload.floor) payload.floor = basePayload.floor;
-      if (basePayload.description) payload.description = basePayload.description;
-      if (basePayload.internal_notes) payload.internal_notes = basePayload.internal_notes;
-      if (basePayload.toilet_type) payload.toilet_type = basePayload.toilet_type;
-      if (basePayload.parking_type) payload.parking_type = basePayload.parking_type;
-      if (basePayload.main_gate_lock) payload.main_gate_lock = basePayload.main_gate_lock;
-      if (basePayload.drying_area) payload.drying_area = basePayload.drying_area;
-      if (basePayload.rent_amount !== null) payload.rent_amount = basePayload.rent_amount;
-      if (basePayload.bedrooms !== null) payload.bedrooms = basePayload.bedrooms;
-      if (basePayload.bathrooms !== null) payload.bathrooms = basePayload.bathrooms;
-      if (basePayload.area_sqm !== null) payload.area_sqm = basePayload.area_sqm;
-      if (basePayload.max_occupants !== null) payload.max_occupants = basePayload.max_occupants;
-      if (basePayload.max_bikes !== null) payload.max_bikes = basePayload.max_bikes;
-      if (basePayload.deposit_months !== null) payload.deposit_months = basePayload.deposit_months;
-      if (basePayload.holding_deposit !== null) payload.holding_deposit = basePayload.holding_deposit;
-
-      const created = await createProperty(payload);
+      await upsertPropertyFurnishings(propertyId, {
+        amenities,
+        furnishings,
+      });
 
       if (images.length > 0) {
         await uploadPropertyImages(
-          created.id,
+          propertyId,
           images.map((image) => image.file),
-          0,
+          property?.images.length ?? 0,
         );
       }
 
-      router.push(`/properties/${created.id}`);
+      router.push(`/properties/${propertyId}`);
     } catch (err) {
       setError(
         err instanceof Error
@@ -443,121 +587,208 @@ export default function CreatePropertyForm({
     }
   }
 
-  return (
-    <div className="p-6 sm:p-8">
-      <Link
-        href={isEdit && property ? `/properties/${property.id}` : '/properties'}
-        className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-[#6b7280] transition hover:text-[#1e4636]"
-      >
-        <BackIcon />
-        {isEdit ? t('form.backToProperty') : t('detail.backToProperties')}
-      </Link>
+  const backHref =
+    isEdit && property ? `/properties/${property.id}` : '/properties';
+  const rentPreview = parseOptionalNumber(rentAmount);
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-[#1a1a1a]">
+  return (
+    <div className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-white">
+      <header className="flex shrink-0 items-center gap-3 border-b border-[#f3f4f6] px-4 py-3 sm:px-6">
+        <Link
+          href={backHref}
+          className="inline-flex items-center gap-1.5 text-sm text-[#6b7280] transition hover:text-[#1a1a1a]"
+        >
+          <BackIcon />
+          {t('form.back')}
+        </Link>
+        <span className="text-[#e5e7eb]">|</span>
+        <h1 className="text-sm font-semibold text-[#1a1a1a]">
           {isEdit ? t('form.editTitle') : t('form.createTitle')}
         </h1>
-        <p className="mt-2 text-sm text-[#6b7280]">
-          {isEdit ? t('form.editSubtitle') : t('form.createSubtitle')}
-        </p>
-      </div>
+        <button
+          type="submit"
+          form="property-form"
+          disabled={submitting}
+          className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#1e4636] px-4 text-sm font-medium text-white transition hover:bg-[#163828] disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          <CheckIcon />
+          {submitting ? t('common.saving') : t('form.saveRoom')}
+        </button>
+      </header>
 
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-6 rounded-xl border border-[#e8e4dc] bg-white p-6 shadow-sm"
-      >
-        <section>
-          <h2 className="text-lg font-semibold text-[#1a1a1a]">
-            {t('form.basicInfo')}
-          </h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label htmlFor="name" className={labelClassName}>
-                {t('form.name')} <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="name"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={inputClassName}
-                placeholder="e.g. Masteri Thao Dien - Unit 15.08"
-              />
+      <div className="flex-1 overflow-y-auto">
+        <form
+          id="property-form"
+          onSubmit={handleSubmit}
+          className="w-full space-y-10 px-4 py-8 sm:px-8 lg:px-10"
+        >
+          <section>
+            <SectionHeading number={1} title={t('form.sectionAddress')} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:col-span-2 sm:grid-cols-3">
+                <HcmcLocationSelects
+                  value={location}
+                  onChange={setLocation}
+                  required
+                  showLabels
+                  selectClassName={inputClassName}
+                  labelClassName={labelClassName}
+                  labels={{
+                    district: t('form.district'),
+                    ward: t('form.ward'),
+                    street: t('form.street'),
+                    allDistricts: t('form.selectDistrict'),
+                    allWards: t('form.selectWard'),
+                    allStreets: t('form.selectStreet'),
+                    loadingDistricts: t('form.loadingDistricts'),
+                    loadingWards: t('form.loadingWards'),
+                    loadingStreets: t('form.loadingStreets'),
+                    selectDistrictFirst: t('form.selectDistrictFirst'),
+                    selectWardFirst: t('form.selectWardFirst'),
+                    noStreets: t('form.noStreets'),
+                  }}
+                />
+              </div>
+              <div>
+                <label htmlFor="address_line1" className={labelClassName}>
+                  {t('form.houseNumber')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="address_line1"
+                  required
+                  value={addressLine1}
+                  onChange={(e) => setAddressLine1(e.target.value)}
+                  className={inputClassName}
+                  placeholder={t('form.houseNumberPlaceholder')}
+                />
+              </div>
+              <div>
+                <label htmlFor="name" className={labelClassName}>
+                  {t('form.name')}
+                </label>
+                <input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className={inputClassName}
+                  placeholder={t('form.nameOptionalPlaceholder')}
+                />
+              </div>
             </div>
+          </section>
 
-            <div>
-              <label htmlFor="property_type" className={labelClassName}>
-                {t('form.propertyType')}
-              </label>
-              <select
-                id="property_type"
-                value={propertyType}
-                onChange={(e) =>
-                  setPropertyType(e.target.value as PropertyType)
-                }
-                className={inputClassName}
-              >
-                {PROPERTY_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {t(`type.${type}` as TranslationKey)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="status" className={labelClassName}>
-                {t('form.status')}
-              </label>
-              <select
-                id="status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value as PropertyStatus)}
-                className={inputClassName}
-              >
-                {PROPERTY_STATUSES.map((item) => (
-                  <option key={item} value={item}>
-                    {t(`status.${item}` as TranslationKey)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </section>
-
-        <section>
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-[#1a1a1a]">
-                {t('form.images')}
-              </h2>
-              <p className="mt-1 text-sm text-[#6b7280]">
-                {isEdit
-                  ? t('form.imagesEditHint')
-                  : t('form.imagesHint', { max: MAX_IMAGE_COUNT })}
-              </p>
-            </div>
-            <p className="text-sm font-medium text-[#6b7280]">
-              {isEdit
-                ? t('form.imagesTotal', {
-                    count: (property?.images.length ?? 0) + images.length,
-                    max: MAX_IMAGE_COUNT,
-                  })
-                : t('form.imagesSelected', {
-                    count: images.length,
-                    max: MAX_IMAGE_COUNT,
-                  })}
-            </p>
-          </div>
-
-          {isEdit && property && property.images.length > 0 ? (
-            <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {property.images.map((image, index) => (
-                <li
-                  key={image.id}
-                  className="overflow-hidden rounded-lg border border-[#e8e4dc] bg-white"
+          <section>
+            <SectionHeading number={2} title={t('form.sectionBasic')} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="room_type" className={labelClassName}>
+                  {t('form.roomType')}
+                </label>
+                <select
+                  id="room_type"
+                  value={roomType}
+                  onChange={(e) =>
+                    setRoomType(
+                      e.target.value === ''
+                        ? ''
+                        : (e.target.value as RoomTypeValue),
+                    )
+                  }
+                  className={inputClassName}
                 >
-                  <div className="relative aspect-[4/3] bg-[#f3f4f6]">
+                  <option value="">{t('form.selectRoomType')}</option>
+                  {ROOM_TYPE_VALUES.map((option) => (
+                    <option key={option} value={option}>
+                      {t(ROOM_TYPE_LABEL_KEYS[option])}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="floor" className={labelClassName}>
+                  {t('form.floor')}
+                </label>
+                <input
+                  id="floor"
+                  value={floor}
+                  onChange={(e) => setFloor(e.target.value)}
+                  className={inputClassName}
+                  placeholder={t('form.floorPlaceholder')}
+                />
+              </div>
+              <div>
+                <label htmlFor="area_sqm" className={labelClassName}>
+                  {t('form.areaSqm')}
+                </label>
+                <input
+                  id="area_sqm"
+                  type="number"
+                  min={0.01}
+                  step="0.01"
+                  value={areaSqm}
+                  onChange={(e) => setAreaSqm(e.target.value)}
+                  className={inputClassName}
+                  placeholder={t('form.areaPlaceholder')}
+                />
+              </div>
+              <div>
+                <label htmlFor="rent_amount" className={labelClassName}>
+                  {t('form.rentAmountVnd')}
+                </label>
+                <div className="relative">
+                  <input
+                    id="rent_amount"
+                    type="text"
+                    inputMode="decimal"
+                    value={rentAmount}
+                    onChange={(e) =>
+                      setRentAmount(formatCurrencyInput(e.target.value))
+                    }
+                    className={`${inputClassName} pr-8 font-mono`}
+                    placeholder={t('form.rentPlaceholder')}
+                  />
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#6b7280]">
+                    đ
+                  </span>
+                </div>
+                {rentPreview ? (
+                  <p className="mt-1.5 text-xs font-medium text-[#1e4636]">
+                    {rentPreview.toLocaleString('vi-VN')} đ/{t('list.perMonth')}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <SectionHeading number={3} title={t('form.sectionAmenities')} />
+            <CheckboxGrid
+              options={AMENITY_VALUES}
+              value={amenities}
+              onChange={setAmenities}
+              labelFor={(option) => t(AMENITY_LABEL_KEYS[option])}
+            />
+          </section>
+
+          <section>
+            <SectionHeading number={4} title={t('form.sectionFurniture')} />
+            <CheckboxGrid
+              options={FURNISHING_VALUES}
+              value={furnishings}
+              onChange={setFurnishings}
+              labelFor={(option) => t(FURNISHING_LABEL_KEYS[option])}
+            />
+          </section>
+
+          <section>
+            <SectionHeading number={5} title={t('form.sectionImages')} />
+            {isEdit && property && property.images.length > 0 ? (
+              <ul className="mb-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
+                {property.images.map((image, index) => (
+                  <li
+                    key={image.id}
+                    className="relative aspect-[4/3] overflow-hidden rounded-lg border border-[#e5e7eb] bg-[#f3f4f6]"
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={image.public_url}
@@ -565,22 +796,15 @@ export default function CreatePropertyForm({
                       className="h-full w-full object-cover"
                     />
                     {index === 0 ? (
-                      <span className="absolute left-2 top-2 rounded-md bg-[#1e4636] px-2 py-1 text-[11px] font-semibold text-white">
+                      <span className="absolute left-1.5 top-1.5 rounded bg-amber-400 px-1.5 py-0.5 text-[9px] font-bold text-white">
                         {t('form.cover')}
                       </span>
                     ) : null}
-                  </div>
-                  <div className="p-3">
-                    <p className="text-xs font-medium text-[#6b7280]">
-                      {t('form.existingImage')}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
 
-          <div className="mt-4">
             <input
               ref={fileInputRef}
               id="property_images"
@@ -591,516 +815,516 @@ export default function CreatePropertyForm({
               onChange={(event) => handleFilesSelected(event.target.files)}
             />
 
-            <label
-              htmlFor="property_images"
-              className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[#d1d5db] bg-[#fafaf9] px-6 py-10 text-center transition hover:border-[#1e4636] hover:bg-[#f3f7f5]"
-            >
-              <span className="text-[#1e4636]">
-                <UploadIcon />
-              </span>
-              <span className="text-sm font-semibold text-[#1a1a1a]">
-                {t('form.clickToSelect')}
-              </span>
-              <span className="text-xs text-[#6b7280]">
-                {t('form.multiSelectHint')}
-              </span>
-            </label>
-          </div>
-
-          {imageError ? (
-            <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-              {imageError}
-            </div>
-          ) : null}
-
-          {images.length > 0 ? (
-            <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
               {images.map((image, index) => (
                 <li
                   key={image.id}
-                  className="overflow-hidden rounded-lg border border-[#e8e4dc] bg-white"
+                  className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-[#e5e7eb] bg-[#f3f4f6]"
                 >
-                  <div className="relative aspect-[4/3] bg-[#f3f4f6]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={image.url}
-                      alt={image.file.name}
-                      className="h-full w-full object-cover"
-                    />
-                    {index === 0 ? (
-                      <span className="absolute left-2 top-2 rounded-md bg-[#1e4636] px-2 py-1 text-[11px] font-semibold text-white">
-                        {t('form.cover')}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="flex items-start justify-between gap-3 p-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-[#1a1a1a]">
-                        {image.file.name}
-                      </p>
-                      <p className="mt-1 text-xs text-[#6b7280]">
-                        {formatFileSize(image.file.size)}
-                      </p>
-                    </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={image.url}
+                    alt={image.file.name}
+                    className="h-full w-full object-cover"
+                  />
+                  {index === 0 ? (
+                    <span className="absolute left-1.5 top-1.5 rounded bg-amber-400 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                      {t('form.cover')}
+                    </span>
+                  ) : null}
+                  <div className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/40 opacity-0 transition group-hover:opacity-100">
+                    <button
+                      type="button"
+                      disabled={index === 0}
+                      onClick={() => moveImage(index, -1)}
+                      className="rounded bg-white/90 px-1.5 py-1 text-xs disabled:opacity-40"
+                      aria-label="Move left"
+                    >
+                      ←
+                    </button>
                     <button
                       type="button"
                       onClick={() => removeImage(image.id)}
-                      className="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                      className="rounded bg-white/90 px-1.5 py-1 text-xs font-semibold text-red-600"
                     >
                       {t('form.remove')}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={index === images.length - 1}
+                      onClick={() => moveImage(index, 1)}
+                      className="rounded bg-white/90 px-1.5 py-1 text-xs disabled:opacity-40"
+                      aria-label="Move right"
+                    >
+                      →
                     </button>
                   </div>
                 </li>
               ))}
+              <li>
+                <label
+                  htmlFor="property_images"
+                  className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#d1d5db] bg-[#fafaf9] text-[#6b7280] transition hover:border-[#1e4636] hover:bg-[#f3f7f5] hover:text-[#1e4636]"
+                >
+                  <UploadIcon />
+                  <span className="text-xs font-medium">{t('form.uploadImages')}</span>
+                </label>
+              </li>
             </ul>
+            <p className="mt-2 text-xs text-[#9ca3af]">{t('form.imageOrderHint')}</p>
+            {imageError ? (
+              <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                {imageError}
+              </div>
+            ) : null}
+          </section>
+
+          <section>
+            <SectionHeading number={6} title={t('form.sectionExtra')} />
+
+            <p className={subheadingClassName}>{t('form.monthlyFees')}</p>
+            <div className="mb-7 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="fee_electricity" className={labelClassName}>
+                  {t('form.feeElectricity')}
+                </label>
+                <input
+                  id="fee_electricity"
+                  type="text"
+                  inputMode="decimal"
+                  value={feeElectricity}
+                  onChange={(e) =>
+                    setFeeElectricity(formatCurrencyInput(e.target.value))
+                  }
+                  className={`${smallInputClassName} font-mono`}
+                  placeholder={t('form.feeElectricityPlaceholder')}
+                />
+              </div>
+              <div>
+                <label htmlFor="fee_water" className={labelClassName}>
+                  {t('form.feeWater')}
+                </label>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                  <input
+                    id="fee_water"
+                    type="text"
+                    inputMode="decimal"
+                    value={feeWater}
+                    onChange={(e) =>
+                      setFeeWater(formatCurrencyInput(e.target.value))
+                    }
+                    className={`${smallInputClassName} font-mono`}
+                    placeholder={
+                      feeWaterType === 'fixed'
+                        ? t('form.feeWaterFixedPlaceholder')
+                        : t('form.feeWaterPerM3Placeholder')
+                    }
+                  />
+                  <select
+                    id="fee_water_type"
+                    aria-label={t('form.feeWaterType')}
+                    value={feeWaterType}
+                    onChange={(e) =>
+                      setFeeWaterType(e.target.value as FeeWaterType)
+                    }
+                    className={smallInputClassName}
+                  >
+                    {FEE_WATER_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type === 'fixed'
+                          ? t('form.feeWaterFixed')
+                          : t('form.feeWaterPerM3')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label htmlFor="fee_motorbike" className={labelClassName}>
+                  {t('form.feeMotorbike')}
+                </label>
+                <input
+                  id="fee_motorbike"
+                  type="text"
+                  inputMode="decimal"
+                  value={feeMotorbike}
+                  onChange={(e) =>
+                    setFeeMotorbike(formatCurrencyInput(e.target.value))
+                  }
+                  className={`${smallInputClassName} font-mono`}
+                  placeholder={t('form.feeMotorbikePlaceholder')}
+                />
+              </div>
+              <div>
+                <label htmlFor="fee_car" className={labelClassName}>
+                  {t('form.feeCar')}
+                </label>
+                <input
+                  id="fee_car"
+                  type="text"
+                  inputMode="decimal"
+                  value={feeCar}
+                  onChange={(e) =>
+                    setFeeCar(formatCurrencyInput(e.target.value))
+                  }
+                  className={`${smallInputClassName} font-mono`}
+                  placeholder={t('form.feeCarPlaceholder')}
+                />
+              </div>
+              <div>
+                <label htmlFor="fee_wifi" className={labelClassName}>
+                  {t('form.feeWifi')}
+                </label>
+                <input
+                  id="fee_wifi"
+                  type="text"
+                  inputMode="decimal"
+                  value={feeWifi}
+                  onChange={(e) =>
+                    setFeeWifi(formatCurrencyInput(e.target.value))
+                  }
+                  className={`${smallInputClassName} font-mono`}
+                  placeholder={t('form.feeWifiPlaceholder')}
+                />
+              </div>
+              <div>
+                <label htmlFor="fee_management" className={labelClassName}>
+                  {t('form.feeManagement')}
+                </label>
+                <input
+                  id="fee_management"
+                  type="text"
+                  inputMode="decimal"
+                  value={feeManagement}
+                  onChange={(e) =>
+                    setFeeManagement(formatCurrencyInput(e.target.value))
+                  }
+                  className={`${smallInputClassName} font-mono`}
+                  placeholder={t('form.feeManagementPlaceholder')}
+                />
+              </div>
+              <div>
+                <label htmlFor="fee_service" className={labelClassName}>
+                  {t('form.feeService')}
+                </label>
+                <input
+                  id="fee_service"
+                  type="text"
+                  inputMode="decimal"
+                  value={feeService}
+                  onChange={(e) =>
+                    setFeeService(formatCurrencyInput(e.target.value))
+                  }
+                  className={`${smallInputClassName} font-mono`}
+                  placeholder={t('form.feeServicePlaceholder')}
+                />
+              </div>
+            </div>
+
+            <p className={subheadingClassName}>{t('form.roomDetails')}</p>
+            <div className="mb-7 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="toilet_type" className={labelClassName}>
+                  {t('form.toilet')}
+                </label>
+                <select
+                  id="toilet_type"
+                  value={toiletType}
+                  onChange={(e) =>
+                    setToiletType(e.target.value as ToiletType | '')
+                  }
+                  className={smallInputClassName}
+                >
+                  <option value="">{t('common.notSet')}</option>
+                  {PRIVATE_SHARED.filter(Boolean).map((item) => (
+                    <option key={item} value={item}>
+                      {t(`value.${item}` as TranslationKey)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="parking_type" className={labelClassName}>
+                  {t('form.parking')}
+                </label>
+                <select
+                  id="parking_type"
+                  value={parkingType}
+                  onChange={(e) =>
+                    setParkingType(e.target.value as ParkingType | '')
+                  }
+                  className={smallInputClassName}
+                >
+                  <option value="">{t('common.notSet')}</option>
+                  {PRIVATE_SHARED.filter(Boolean).map((item) => (
+                    <option key={item} value={item}>
+                      {t(`value.${item}` as TranslationKey)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="drying_area" className={labelClassName}>
+                  {t('form.dryingArea')}
+                </label>
+                <select
+                  id="drying_area"
+                  value={dryingArea}
+                  onChange={(e) =>
+                    setDryingArea(e.target.value as DryingAreaType | '')
+                  }
+                  className={smallInputClassName}
+                >
+                  <option value="">{t('common.notSet')}</option>
+                  {PRIVATE_SHARED.filter(Boolean).map((item) => (
+                    <option key={item} value={item}>
+                      {t(`value.${item}` as TranslationKey)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="main_gate_lock" className={labelClassName}>
+                  {t('form.mainGateLock')}
+                </label>
+                <select
+                  id="main_gate_lock"
+                  value={mainGateLock}
+                  onChange={(e) =>
+                    setMainGateLock(e.target.value as MainGateLockType | '')
+                  }
+                  className={smallInputClassName}
+                >
+                  {MAIN_GATE_LOCKS.map((item) => (
+                    <option key={item || 'empty'} value={item}>
+                      {item
+                        ? t(`value.${item}` as TranslationKey)
+                        : t('common.notSet')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="max_occupants" className={labelClassName}>
+                  {t('form.maxOccupants')}
+                </label>
+                <input
+                  id="max_occupants"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={maxOccupants}
+                  onChange={(e) => setMaxOccupants(e.target.value)}
+                  className={smallInputClassName}
+                  placeholder="2"
+                />
+              </div>
+              <div>
+                <label htmlFor="max_bikes" className={labelClassName}>
+                  {t('form.maxBikes')}
+                </label>
+                <input
+                  id="max_bikes"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={maxBikes}
+                  onChange={(e) => setMaxBikes(e.target.value)}
+                  className={smallInputClassName}
+                  placeholder="1"
+                />
+              </div>
+              <div>
+                <label htmlFor="holding_deposit" className={labelClassName}>
+                  {t('form.holdingDeposit')}
+                </label>
+                <div className="relative">
+                  <input
+                    id="holding_deposit"
+                    type="text"
+                    inputMode="decimal"
+                    value={holdingDeposit}
+                    onChange={(e) =>
+                      setHoldingDeposit(formatCurrencyInput(e.target.value))
+                    }
+                    className={`${smallInputClassName} pr-8 font-mono`}
+                    placeholder={t('form.depositPlaceholder')}
+                  />
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#6b7280]">
+                    đ
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label htmlFor="deposit_months" className={labelClassName}>
+                  {t('form.depositMonths')}
+                </label>
+                <input
+                  id="deposit_months"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={depositMonths}
+                  onChange={(e) => setDepositMonths(e.target.value)}
+                  className={smallInputClassName}
+                />
+              </div>
+              <div>
+                <label htmlFor="bedrooms" className={labelClassName}>
+                  {t('form.bedrooms')}
+                </label>
+                <input
+                  id="bedrooms"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={bedrooms}
+                  onChange={(e) => setBedrooms(e.target.value)}
+                  className={smallInputClassName}
+                />
+              </div>
+              <div>
+                <label htmlFor="bathrooms" className={labelClassName}>
+                  {t('form.bathrooms')}
+                </label>
+                <input
+                  id="bathrooms"
+                  type="number"
+                  min={0}
+                  step="0.5"
+                  value={bathrooms}
+                  onChange={(e) => setBathrooms(e.target.value)}
+                  className={smallInputClassName}
+                />
+              </div>
+              <div>
+                <label htmlFor="property_type" className={labelClassName}>
+                  {t('form.propertyType')}
+                </label>
+                <select
+                  id="property_type"
+                  value={propertyType}
+                  onChange={(e) =>
+                    setPropertyType(e.target.value as PropertyType)
+                  }
+                  className={smallInputClassName}
+                >
+                  {PROPERTY_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {t(`type.${type}` as TranslationKey)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="mb-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="zalo_group_link" className={labelClassName}>
+                  {t('form.zaloGroupLink')}
+                </label>
+                <input
+                  id="zalo_group_link"
+                  type="text"
+                  inputMode="url"
+                  value={zaloGroupLink}
+                  onChange={(e) => setZaloGroupLink(e.target.value)}
+                  className={inputClassName}
+                  placeholder={t('form.zaloGroupLinkPlaceholder')}
+                />
+              </div>
+              <div>
+                <span className={labelClassName}>{t('form.status')}</span>
+                <div className="mt-1 flex flex-wrap gap-5">
+                  {(['available', 'rented'] as PropertyStatus[]).map((item) => (
+                    <label
+                      key={item}
+                      className="flex cursor-pointer items-center gap-2 text-sm text-[#1a1a1a]"
+                    >
+                      <input
+                        type="radio"
+                        name="status"
+                        checked={status === item}
+                        onChange={() => setStatus(item)}
+                        className="h-4 w-4 border-[#d1d5db] text-[#1e4636] focus:ring-[#1e4636]"
+                      />
+                      {t(`status.${item}` as TranslationKey)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label htmlFor="status_extra" className={labelClassName}>
+                  {t('form.statusOther')}
+                </label>
+                <select
+                  id="status_extra"
+                  value={
+                    status === 'available' || status === 'rented' ? '' : status
+                  }
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    if (next) setStatus(next as PropertyStatus);
+                  }}
+                  className={inputClassName}
+                >
+                  <option value="">{t('common.notSet')}</option>
+                  <option value="maintenance">
+                    {t('status.maintenance')}
+                  </option>
+                  <option value="inactive">{t('status.inactive')}</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              <div>
+                <label htmlFor="description" className={labelClassName}>
+                  {t('form.notes')}
+                </label>
+                <textarea
+                  id="description"
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className={`${inputClassName} h-auto resize-none py-2`}
+                  placeholder={t('form.notesPlaceholder')}
+                />
+              </div>
+              <div>
+                <label htmlFor="internal_notes" className={labelClassName}>
+                  {t('form.internalNotes')}
+                </label>
+                <textarea
+                  id="internal_notes"
+                  rows={2}
+                  value={internalNotes}
+                  onChange={(e) => setInternalNotes(e.target.value)}
+                  className={`${inputClassName} h-auto resize-none py-2`}
+                  placeholder={t('form.internalNotesPlaceholder')}
+                />
+              </div>
+            </div>
+          </section>
+
+          {error ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {error}
+            </div>
           ) : null}
-        </section>
 
-        <section>
-          <h2 className="text-lg font-semibold text-[#1a1a1a]">
-            {t('form.location')}
-          </h2>
-          <p className="mt-1 text-sm text-[#6b7280]">{t('form.hcmcOnly')}</p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-4 sm:col-span-2 sm:grid-cols-3">
-              <HcmcLocationSelects
-                value={location}
-                onChange={setLocation}
-                required
-                showLabels
-                selectClassName={inputClassName}
-                labels={{
-                  district: t('form.district'),
-                  ward: t('form.ward'),
-                  street: t('form.street'),
-                  allDistricts: t('form.selectDistrict'),
-                  allWards: t('form.selectWard'),
-                  allStreets: t('form.selectStreet'),
-                  loadingDistricts: t('form.loadingDistricts'),
-                  loadingWards: t('form.loadingWards'),
-                  loadingStreets: t('form.loadingStreets'),
-                  selectDistrictFirst: t('form.selectDistrictFirst'),
-                  selectWardFirst: t('form.selectWardFirst'),
-                  noStreets: t('form.noStreets'),
-                }}
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label htmlFor="address_line1" className={labelClassName}>
-                {t('form.addressLine1')} <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="address_line1"
-                required
-                value={addressLine1}
-                onChange={(e) => setAddressLine1(e.target.value)}
-                className={inputClassName}
-                placeholder="e.g. 123"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label htmlFor="address_line2" className={labelClassName}>
-                {t('form.addressLine2')}
-              </label>
-              <input
-                id="address_line2"
-                value={addressLine2}
-                onChange={(e) => setAddressLine2(e.target.value)}
-                className={inputClassName}
-                placeholder="Unit, floor, block (optional)"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="city" className={labelClassName}>
-                {t('form.city')} <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="city"
-                required
-                value={city}
-                readOnly
-                className={`${inputClassName} bg-[#f3f4f6] text-[#6b7280]`}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="province" className={labelClassName}>
-                {t('form.province')} <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="province"
-                required
-                value={province}
-                readOnly
-                className={`${inputClassName} bg-[#f3f4f6] text-[#6b7280]`}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="postal_code" className={labelClassName}>
-                {t('form.postalCode')}
-              </label>
-              <input
-                id="postal_code"
-                value={postalCode}
-                onChange={(e) => setPostalCode(e.target.value)}
-                className={inputClassName}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="country" className={labelClassName}>
-                {t('form.country')}
-              </label>
-              <input
-                id="country"
-                value={country}
-                readOnly
-                maxLength={2}
-                className={`${inputClassName} bg-[#f3f4f6] text-[#6b7280]`}
-                placeholder="VN"
-              />
-            </div>
+          <div className="flex justify-end pb-12">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#1e4636] px-6 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#163828] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              <CheckIcon />
+              {submitting ? t('common.saving') : t('form.saveRoom')}
+            </button>
           </div>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold text-[#1a1a1a]">
-            {t('form.rentSize')}
-          </h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <label htmlFor="rent_amount" className={labelClassName}>
-                {t('form.rentAmount')}
-              </label>
-              <input
-                id="rent_amount"
-                type="text"
-                inputMode="decimal"
-                value={rentAmount}
-                onChange={(e) => setRentAmount(formatCurrencyInput(e.target.value))}
-                className={inputClassName}
-                placeholder="e.g. 28,000,000"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="rent_currency" className={labelClassName}>
-                {t('form.currency')}
-              </label>
-              <input
-                id="rent_currency"
-                value={rentCurrency}
-                onChange={(e) => setRentCurrency(e.target.value)}
-                maxLength={3}
-                className={inputClassName}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="area_sqm" className={labelClassName}>
-                {t('form.areaSqm')}
-              </label>
-              <input
-                id="area_sqm"
-                type="number"
-                min={0}
-                step="0.01"
-                value={areaSqm}
-                onChange={(e) => setAreaSqm(e.target.value)}
-                className={inputClassName}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="bedrooms" className={labelClassName}>
-                {t('form.bedrooms')}
-              </label>
-              <input
-                id="bedrooms"
-                type="number"
-                min={0}
-                step={1}
-                value={bedrooms}
-                onChange={(e) => setBedrooms(e.target.value)}
-                className={inputClassName}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="bathrooms" className={labelClassName}>
-                {t('form.bathrooms')}
-              </label>
-              <input
-                id="bathrooms"
-                type="number"
-                min={0}
-                step="0.5"
-                value={bathrooms}
-                onChange={(e) => setBathrooms(e.target.value)}
-                className={inputClassName}
-              />
-            </div>
-          </div>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold text-[#1a1a1a]">
-            {t('form.roomInfo')}
-          </h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <label htmlFor="room_type" className={labelClassName}>
-                {t('form.roomType')}
-              </label>
-              <select
-                id="room_type"
-                value={roomType}
-                onChange={(e) =>
-                  setRoomType(
-                    e.target.value === ''
-                      ? ''
-                      : (e.target.value as RoomTypeValue),
-                  )
-                }
-                className={inputClassName}
-              >
-                <option value="">{t('form.selectRoomType')}</option>
-                {ROOM_TYPE_VALUES.map((option) => (
-                  <option key={option} value={option}>
-                    {t(ROOM_TYPE_LABEL_KEYS[option])}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="floor" className={labelClassName}>
-                {t('form.floor')}
-              </label>
-              <input
-                id="floor"
-                value={floor}
-                onChange={(e) => setFloor(e.target.value)}
-                className={inputClassName}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="toilet_type" className={labelClassName}>
-                {t('form.toilet')}
-              </label>
-              <select
-                id="toilet_type"
-                value={toiletType}
-                onChange={(e) =>
-                  setToiletType(e.target.value as ToiletType | '')
-                }
-                className={inputClassName}
-              >
-                <option value="">{t('common.notSet')}</option>
-                {PRIVATE_SHARED.filter(Boolean).map((item) => (
-                  <option key={item} value={item}>
-                    {t(`value.${item}` as TranslationKey)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="parking_type" className={labelClassName}>
-                {t('form.parking')}
-              </label>
-              <select
-                id="parking_type"
-                value={parkingType}
-                onChange={(e) =>
-                  setParkingType(e.target.value as ParkingType | '')
-                }
-                className={inputClassName}
-              >
-                <option value="">{t('common.notSet')}</option>
-                {PRIVATE_SHARED.filter(Boolean).map((item) => (
-                  <option key={item} value={item}>
-                    {t(`value.${item}` as TranslationKey)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="main_gate_lock" className={labelClassName}>
-                {t('form.mainGateLock')}
-              </label>
-              <select
-                id="main_gate_lock"
-                value={mainGateLock}
-                onChange={(e) =>
-                  setMainGateLock(e.target.value as MainGateLockType | '')
-                }
-                className={inputClassName}
-              >
-                {MAIN_GATE_LOCKS.map((item) => (
-                  <option key={item || 'empty'} value={item}>
-                    {item
-                      ? t(`value.${item}` as TranslationKey)
-                      : t('common.notSet')}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="drying_area" className={labelClassName}>
-                {t('form.dryingArea')}
-              </label>
-              <select
-                id="drying_area"
-                value={dryingArea}
-                onChange={(e) =>
-                  setDryingArea(e.target.value as DryingAreaType | '')
-                }
-                className={inputClassName}
-              >
-                <option value="">{t('common.notSet')}</option>
-                {PRIVATE_SHARED.filter(Boolean).map((item) => (
-                  <option key={item} value={item}>
-                    {t(`value.${item}` as TranslationKey)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="max_occupants" className={labelClassName}>
-                {t('form.maxOccupants')}
-              </label>
-              <input
-                id="max_occupants"
-                type="number"
-                min={0}
-                step={1}
-                value={maxOccupants}
-                onChange={(e) => setMaxOccupants(e.target.value)}
-                className={inputClassName}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="max_bikes" className={labelClassName}>
-                {t('form.maxBikes')}
-              </label>
-              <input
-                id="max_bikes"
-                type="number"
-                min={0}
-                step={1}
-                value={maxBikes}
-                onChange={(e) => setMaxBikes(e.target.value)}
-                className={inputClassName}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="deposit_months" className={labelClassName}>
-                {t('form.depositMonths')}
-              </label>
-              <input
-                id="deposit_months"
-                type="number"
-                min={0}
-                step={1}
-                value={depositMonths}
-                onChange={(e) => setDepositMonths(e.target.value)}
-                className={inputClassName}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="holding_deposit" className={labelClassName}>
-                {t('form.holdingDeposit')}
-              </label>
-              <input
-                id="holding_deposit"
-                type="text"
-                inputMode="decimal"
-                value={holdingDeposit}
-                onChange={(e) =>
-                  setHoldingDeposit(formatCurrencyInput(e.target.value))
-                }
-                className={inputClassName}
-                placeholder="e.g. 56,000,000"
-              />
-            </div>
-          </div>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold text-[#1a1a1a]">
-            {t('form.notes')}
-          </h2>
-          <div className="mt-4 grid gap-4">
-            <div>
-              <label htmlFor="description" className={labelClassName}>
-                {t('form.description')}
-              </label>
-              <textarea
-                id="description"
-                rows={4}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className={inputClassName}
-                placeholder={t('form.descriptionPlaceholder')}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="internal_notes" className={labelClassName}>
-                {t('form.internalNotes')}
-              </label>
-              <textarea
-                id="internal_notes"
-                rows={3}
-                value={internalNotes}
-                onChange={(e) => setInternalNotes(e.target.value)}
-                className={inputClassName}
-                placeholder={t('form.internalNotesPlaceholder')}
-              />
-            </div>
-          </div>
-        </section>
-
-        {error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            {error}
-          </div>
-        ) : null}
-
-        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-[#f3f4f6] pt-6">
-          <Link
-            href={isEdit && property ? `/properties/${property.id}` : '/properties'}
-            className="inline-flex rounded-lg border border-[#e5e7eb] px-5 py-2.5 text-sm font-semibold text-[#4b5563] transition hover:border-[#1e4636] hover:text-[#1e4636]"
-          >
-            {t('common.cancel')}
-          </Link>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="inline-flex rounded-lg bg-[#1e4636] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#163828] disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {submitting
-              ? isEdit
-                ? t('common.saving')
-                : t('form.creating')
-              : isEdit
-                ? t('form.saveChanges')
-                : t('form.create')}
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }

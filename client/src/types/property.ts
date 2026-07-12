@@ -15,6 +15,7 @@ export type ToiletType = 'private' | 'shared';
 export type ParkingType = 'private' | 'shared';
 export type MainGateLockType = 'standard' | 'none';
 export type DryingAreaType = 'private' | 'shared';
+export type FeeWaterType = 'fixed' | 'per_m3';
 
 export type UtilityBillType =
   | 'electricity'
@@ -124,6 +125,15 @@ export interface Property {
   holding_deposit: number | null;
   description: string | null;
   internal_notes: string | null;
+  zalo_group_link: string | null;
+  fee_electricity: string | null;
+  fee_water: string | null;
+  fee_water_type: FeeWaterType | null;
+  fee_motorbike: string | null;
+  fee_car: string | null;
+  fee_wifi: string | null;
+  fee_management: string | null;
+  fee_service: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

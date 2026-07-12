@@ -328,6 +328,69 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
           </section>
         ) : null}
 
+        {property.zalo_group_link ? (
+          <section className="rounded-xl border border-[#e8e4dc] bg-white p-6 lg:col-span-3">
+            <h2 className="text-lg font-semibold text-[#1a1a1a]">
+              {t('detail.zaloGroupLink')}
+            </h2>
+            <a
+              href={property.zalo_group_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex break-all text-sm font-medium text-[#1e4636] underline-offset-2 hover:underline"
+            >
+              {property.zalo_group_link}
+            </a>
+          </section>
+        ) : null}
+
+        {(() => {
+          const monthlyFees = [
+            {
+              label: t('form.feeElectricity'),
+              value: property.fee_electricity,
+            },
+            {
+              label: t('form.feeWater'),
+              value: property.fee_water
+                ? property.fee_water_type === 'fixed'
+                  ? `${property.fee_water} (${t('form.feeWaterFixed')})`
+                  : property.fee_water_type === 'per_m3'
+                    ? `${property.fee_water} (${t('form.feeWaterPerM3')})`
+                    : property.fee_water
+                : null,
+            },
+            { label: t('form.feeMotorbike'), value: property.fee_motorbike },
+            { label: t('form.feeCar'), value: property.fee_car },
+            { label: t('form.feeWifi'), value: property.fee_wifi },
+            {
+              label: t('form.feeManagement'),
+              value: property.fee_management,
+            },
+            { label: t('form.feeService'), value: property.fee_service },
+          ].filter((item) => item.value);
+
+          if (monthlyFees.length === 0) return null;
+
+          return (
+            <section className="rounded-xl border border-[#e8e4dc] bg-white p-6 lg:col-span-3">
+              <h2 className="text-lg font-semibold text-[#1a1a1a]">
+                {t('form.monthlyFees')}
+              </h2>
+              <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                {monthlyFees.map((item) => (
+                  <div key={item.label}>
+                    <dt className="font-medium text-[#9ca3af]">{item.label}</dt>
+                    <dd className="mt-1 font-medium text-[#1a1a1a]">
+                      {item.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          );
+        })()}
+
         <section className="rounded-xl border border-[#e8e4dc] bg-white p-6 lg:col-span-3">
           <h2 className="text-lg font-semibold text-[#1a1a1a]">
             {t('detail.roomInfo')}
@@ -559,6 +622,62 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
                             property.furnishings.has_security_guard,
                           ),
                           included: property.furnishings.has_security_guard,
+                        },
+                        {
+                          label: t('amenity.carParking'),
+                          value: translateFurnishingIncluded(
+                            t,
+                            property.furnishings.has_car_parking,
+                          ),
+                          included: property.furnishings.has_car_parking,
+                        },
+                        {
+                          label: t('amenity.bikeParking'),
+                          value: translateFurnishingIncluded(
+                            t,
+                            property.furnishings.has_bike_parking,
+                          ),
+                          included: property.furnishings.has_bike_parking,
+                        },
+                        {
+                          label: t('amenity.fixedElectricity'),
+                          value: translateFurnishingIncluded(
+                            t,
+                            property.furnishings.has_fixed_electricity,
+                          ),
+                          included: property.furnishings.has_fixed_electricity,
+                        },
+                        {
+                          label: t('amenity.petsOk'),
+                          value: translateFurnishingIncluded(
+                            t,
+                            property.furnishings.pets_ok,
+                          ),
+                          included: property.furnishings.pets_ok,
+                        },
+                        {
+                          label: t('amenity.foreignersOk'),
+                          value: translateFurnishingIncluded(
+                            t,
+                            property.furnishings.foreigners_ok,
+                          ),
+                          included: property.furnishings.foreigners_ok,
+                        },
+                        {
+                          label: t('amenity.solarHotWater'),
+                          value: translateFurnishingIncluded(
+                            t,
+                            property.furnishings.has_solar_hot_water,
+                          ),
+                          included: property.furnishings.has_solar_hot_water,
+                        },
+                        {
+                          label: t('amenity.cleaningService'),
+                          value: translateFurnishingIncluded(
+                            t,
+                            property.furnishings.has_cleaning_service,
+                          ),
+                          included: property.furnishings.has_cleaning_service,
                         },
                         {
                           label: t('furnishing.skylight'),

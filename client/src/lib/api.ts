@@ -1,5 +1,5 @@
 import { getAccessToken, handleSessionExpired, isSessionExpired } from './auth';
-import type { Property } from '@/src/types/property';
+import type { Property, PropertyFurnishings } from '@/src/types/property';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000/api/v1';
@@ -258,6 +258,15 @@ export type CreatePropertyPayload = {
   holding_deposit?: number;
   description?: string;
   internal_notes?: string;
+  zalo_group_link?: string;
+  fee_electricity?: string;
+  fee_water?: string;
+  fee_water_type?: Property['fee_water_type'];
+  fee_motorbike?: string;
+  fee_car?: string;
+  fee_wifi?: string;
+  fee_management?: string;
+  fee_service?: string;
 };
 
 export interface LocationOption {
@@ -322,6 +331,19 @@ export async function updateProperty(
 ): Promise<Property> {
   return apiFetch<Property>(`/properties/${id}`, {
     method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function upsertPropertyFurnishings(
+  propertyId: string,
+  payload: {
+    amenities?: string[];
+    furnishings?: string[];
+  },
+): Promise<PropertyFurnishings> {
+  return apiFetch<PropertyFurnishings>(`/properties/${propertyId}/furnishings`, {
+    method: 'PUT',
     body: JSON.stringify(payload),
   });
 }

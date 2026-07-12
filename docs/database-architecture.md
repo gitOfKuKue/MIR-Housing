@@ -230,6 +230,7 @@ Core entity for Phase 1 property CRUD.
 | `area_sqm` | `numeric(10,2)` | YES | — | Floor area in square meters |
 | `description` | `text` | YES | — | Public-facing description for staff |
 | `internal_notes` | `text` | YES | — | Staff-only notes |
+| `zalo_group_link` | `text` | YES | — | Zalo group URL for the property |
 | `created_by` | `uuid` | YES | — | FK → `auth.users.id` |
 | `created_at` | `timestamptz` | NO | `now()` | Record created |
 | `updated_at` | `timestamptz` | NO | `now()` | Last modified |
@@ -363,6 +364,7 @@ create table public.properties (
   area_sqm numeric(10, 2),
   description text,
   internal_notes text,
+  zalo_group_link text,
   created_by uuid references auth.users (id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -475,6 +477,7 @@ interface Property {
   area_sqm: number | null;
   description: string | null;
   internal_notes: string | null;
+  zalo_group_link: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

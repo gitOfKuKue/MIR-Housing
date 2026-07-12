@@ -41,6 +41,7 @@ import {
 import { UtilityBillStatus } from './enums/utility-bill-status.enum';
 import {
   PROPERTIES_TABLE,
+  PROPERTY_FURNISHINGS_TABLE,
   PROPERTY_IMAGE_MAX_UPLOAD_COUNT,
   PROPERTY_IMAGES_BUCKET,
   PROPERTY_IMAGES_TABLE,
@@ -51,7 +52,10 @@ import {
   applyPropertyFilters,
   propertySelectNeedsFurnishingsInner,
 } from './utils/apply-property-filters';
+import { buildFurnishingsUpsertRow } from './utils/build-furnishings-upsert-row';
 import { resolveImageFile } from './utils/resolve-image-file';
+import { UpsertPropertyFurnishingsDto } from './dto/upsert-property-furnishings.dto';
+import { PropertyFurnishings } from './entities/property-furnishings.entity';
 
 @Injectable()
 export class PropertiesService {
@@ -154,11 +158,12 @@ export class PropertiesService {
     accessToken: string,
   ): Promise<Property> {
     const supabase = this.supabaseService.getServiceClient();
+    const row = this.toPropertyWriteRow(dto);
 
     const { data, error } = await supabase
       .from(PROPERTIES_TABLE)
       .insert({
-        ...dto,
+        ...row,
         created_by: dto.created_by ?? userId,
       })
       .select('*')
@@ -179,7 +184,7 @@ export class PropertiesService {
     const supabase = this.supabaseService.getClient(accessToken);
 
     const rows = dtos.map((dto) => ({
-      ...dto,
+      ...this.toPropertyWriteRow(dto),
       created_by: dto.created_by ?? userId,
     }));
 
@@ -208,10 +213,11 @@ export class PropertiesService {
     await this.findOne(id, accessToken);
 
     const supabase = this.supabaseService.getClient(accessToken);
+    const row = this.toPropertyWriteRow(dto);
 
     const { data, error } = await supabase
       .from(PROPERTIES_TABLE)
-      .update(dto)
+      .update(row)
       .eq('id', id)
       .is('deleted_at', null)
       .select('*')
@@ -222,6 +228,33 @@ export class PropertiesService {
     }
 
     return data as Property;
+  }
+
+  async upsertFurnishings(
+    propertyId: string,
+    dto: UpsertPropertyFurnishingsDto,
+    accessToken: string,
+  ): Promise<PropertyFurnishings> {
+    await this.findOne(propertyId, accessToken);
+
+    const supabase = this.supabaseService.getClient(accessToken);
+    const row = buildFurnishingsUpsertRow(
+      propertyId,
+      dto.amenities ?? [],
+      dto.furnishings ?? [],
+    );
+
+    const { data, error } = await supabase
+      .from(PROPERTY_FURNISHINGS_TABLE)
+      .upsert(row, { onConflict: 'property_id' })
+      .select('*')
+      .single();
+
+    if (error) {
+      this.handleSupabaseError(error);
+    }
+
+    return data as PropertyFurnishings;
   }
 
   async remove(
@@ -568,6 +601,19 @@ export class PropertiesService {
     return data.publicUrl;
   }
 
+  /** Plain row for Supabase insert/update (drops undefined; keeps null clears). */
+  private toPropertyWriteRow(
+    dto: CreatePropertyDto | UpdatePropertyDto,
+  ): Record<string, unknown> {
+    const row: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(dto)) {
+      if (value !== undefined) {
+        row[key] = value;
+      }
+    }
+    return row;
+  }
+
   private handleStorageError(error: { message: string }): never {
     if (error.message.toLowerCase().includes('bucket not found')) {
       throw new InternalServerErrorException(
@@ -595,6 +641,37 @@ export class PropertiesService {
     if (error.code === 'PGRST202' || error.message.includes('soft_delete_property')) {
       throw new InternalServerErrorException(
         'Database function soft_delete_property is missing. Run migration 003_soft_delete_rpc.sql in Supabase.',
+      );
+    }
+
+    if (
+      error.message.includes('zalo_group_link') ||
+      error.message.includes('fee_electricity') ||
+      error.message.includes('fee_water') ||
+      error.message.includes('fee_motorbike') ||
+      error.message.includes('fee_car') ||
+      error.message.includes('fee_wifi') ||
+      error.message.includes('fee_management') ||
+      error.message.includes('fee_service') ||
+      error.message.includes('fee_water_type') ||
+      error.message.includes('property_fee_water_type')
+    ) {
+      throw new InternalServerErrorException(
+        'Property fee/Zalo columns are missing. Run migrations 016–018 (zalo, monthly fees, fee_water_type) in Supabase.',
+      );
+    }
+
+    if (
+      error.message.includes('has_car_parking') ||
+      error.message.includes('has_bike_parking') ||
+      error.message.includes('has_fixed_electricity') ||
+      error.message.includes('pets_ok') ||
+      error.message.includes('foreigners_ok') ||
+      error.message.includes('has_solar_hot_water') ||
+      error.message.includes('has_cleaning_service')
+    ) {
+      throw new InternalServerErrorException(
+        'Property amenity columns are missing. Run migration 015_property_amenity_flags.sql in Supabase.',
       );
     }
 

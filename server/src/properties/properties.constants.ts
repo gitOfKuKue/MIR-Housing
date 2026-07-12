@@ -1,6 +1,7 @@
 export const PROPERTIES_TABLE = 'properties';
 export const PROPERTY_IMAGES_TABLE = 'property_images';
 export const PROPERTY_UTILITY_BILLS_TABLE = 'property_utility_bills';
+export const PROPERTY_FURNISHINGS_TABLE = 'property_furnishings';
 export const PROPERTY_IMAGES_BUCKET = 'property-images';
 
 export const PROPERTY_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
