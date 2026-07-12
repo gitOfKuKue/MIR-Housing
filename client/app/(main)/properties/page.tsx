@@ -1,7 +1,9 @@
 'use client';
 
 import {
+  DEFAULT_PROPERTY_FILTERS,
   PropertyCard,
+  PropertyFilterSidebar,
   PropertyListItem,
   PropertyPagination,
   PropertyToolbar,
@@ -12,15 +14,10 @@ import {
 import { useTranslations } from '@/src/i18n';
 import { getProperties, type PaginationMeta } from '@/src/lib/api';
 import { getAuthUser } from '@/src/lib/auth';
+import { canManageProperties } from '@/src/lib/roles';
 import type { Property } from '@/src/types/property';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-
-const DEFAULT_FILTERS: PropertyFilters = {
-  search: '',
-  status: 'all',
-  propertyType: 'all',
-};
 
 const CARD_PAGE_SIZE = 12;
 const LIST_PAGE_SIZE = 10;
@@ -45,9 +42,26 @@ function PlusIcon() {
   );
 }
 
+function hasActiveFilters(filters: PropertyFilters): boolean {
+  return Boolean(
+    filters.search ||
+      filters.status !== 'all' ||
+      filters.propertyType !== 'all' ||
+      filters.district ||
+      filters.ward ||
+      filters.street ||
+      filters.minRent > DEFAULT_PROPERTY_FILTERS.minRent ||
+      filters.maxRent < DEFAULT_PROPERTY_FILTERS.maxRent ||
+      filters.includeRented ||
+      filters.amenity !== 'all' ||
+      filters.furnishing !== 'all',
+  );
+}
+
 export default function PropertiesPage() {
   const t = useTranslations();
   const [userName, setUserName] = useState<string | null>(null);
+  const [canCreate, setCanCreate] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({
     page: 1,
@@ -57,7 +71,12 @@ export default function PropertiesPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filters, setFilters] = useState<PropertyFilters>(DEFAULT_FILTERS);
+  const [draftFilters, setDraftFilters] = useState<PropertyFilters>(
+    DEFAULT_PROPERTY_FILTERS,
+  );
+  const [appliedFilters, setAppliedFilters] = useState<PropertyFilters>(
+    DEFAULT_PROPERTY_FILTERS,
+  );
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<PropertyViewMode>('card');
@@ -67,21 +86,33 @@ export default function PropertiesPage() {
   useEffect(() => {
     const user = getAuthUser();
     setUserName(user?.full_name ?? user?.email ?? null);
+    setCanCreate(canManageProperties(user?.role));
   }, []);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
-      setDebouncedSearch(filters.search);
+      setDebouncedSearch(appliedFilters.search);
     }, SEARCH_DEBOUNCE_MS);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [filters.search]);
+  }, [appliedFilters.search]);
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, filters.status, filters.propertyType, pageSize]);
+  }, [
+    debouncedSearch,
+    appliedFilters.status,
+    appliedFilters.propertyType,
+    appliedFilters.district,
+    appliedFilters.ward,
+    appliedFilters.street,
+    appliedFilters.minRent,
+    appliedFilters.maxRent,
+    appliedFilters.includeRented,
+    pageSize,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,7 +124,7 @@ export default function PropertiesPage() {
       try {
         const response = await getProperties(
           propertyFiltersToQueryParams(
-            { ...filters, search: debouncedSearch },
+            { ...appliedFilters, search: debouncedSearch },
             page,
             pageSize,
           ),
@@ -128,14 +159,28 @@ export default function PropertiesPage() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedSearch, filters.status, filters.propertyType, page, pageSize]);
+  }, [
+    debouncedSearch,
+    appliedFilters.status,
+    appliedFilters.propertyType,
+    appliedFilters.district,
+    appliedFilters.ward,
+    appliedFilters.street,
+    appliedFilters.minRent,
+    appliedFilters.maxRent,
+    appliedFilters.includeRented,
+    page,
+    pageSize,
+  ]);
 
-  function handleFiltersChange(nextFilters: PropertyFilters) {
-    setFilters(nextFilters);
+  function handleSearch() {
+    setAppliedFilters(draftFilters);
+    setPage(1);
   }
 
-  function handleViewModeChange(nextViewMode: PropertyViewMode) {
-    setViewMode(nextViewMode);
+  function handleToolbarSearchChange(search: string) {
+    setDraftFilters((prev) => ({ ...prev, search }));
+    setAppliedFilters((prev) => ({ ...prev, search }));
   }
 
   function handlePageChange(nextPage: number) {
@@ -145,6 +190,10 @@ export default function PropertiesPage() {
 
   const hasProperties = meta.total > 0;
   const showEmptyState = !loading && !error && !hasProperties;
+  const filtersActive = hasActiveFilters({
+    ...appliedFilters,
+    search: debouncedSearch,
+  });
 
   return (
     <div className="p-6 sm:p-8">
@@ -160,100 +209,110 @@ export default function PropertiesPage() {
           ) : null}
         </div>
 
-        <Link
-          href="/properties/new"
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#1e4636] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#163828]"
-        >
-          <PlusIcon />
-          {t('properties.createNew')}
-        </Link>
+        {canCreate ? (
+          <Link
+            href="/properties/new"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#1e4636] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#163828]"
+          >
+            <PlusIcon />
+            {t('properties.createNew')}
+          </Link>
+        ) : null}
       </div>
 
-      <PropertyToolbar
-        filters={filters}
-        viewMode={viewMode}
-        page={meta.page}
-        pageSize={meta.limit}
-        total={meta.total}
-        onFiltersChange={handleFiltersChange}
-        onViewModeChange={handleViewModeChange}
-      />
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <div className="w-full shrink-0 lg:sticky lg:top-20 lg:w-72 xl:w-80">
+          <PropertyFilterSidebar
+            value={draftFilters}
+            onChange={setDraftFilters}
+            onSearch={handleSearch}
+          />
+        </div>
 
-      {loading ? (
-        viewMode === 'card' ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {Array.from({ length: pageSize }).map((_, index) => (
-              <div
-                key={index}
-                className="h-[28rem] animate-pulse rounded-xl bg-[#e5e7eb]"
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {Array.from({ length: pageSize }).map((_, index) => (
-              <div
-                key={index}
-                className="h-32 animate-pulse rounded-lg bg-[#e5e7eb]"
-              />
-            ))}
-          </div>
-        )
-      ) : error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-          {error}
-        </div>
-      ) : showEmptyState ? (
-        <div className="rounded-lg border border-[#e8e4dc] bg-white px-6 py-10 text-center">
-          <p className="text-lg font-medium text-[#1a1a1a]">
-            {filters.search ||
-            filters.status !== 'all' ||
-            filters.propertyType !== 'all'
-              ? t('properties.emptyMatching')
-              : t('properties.emptyNone')}
-          </p>
-          <p className="mt-2 text-sm text-[#6b7280]">
-            {filters.search ||
-            filters.status !== 'all' ||
-            filters.propertyType !== 'all'
-              ? t('properties.emptyHint')
-              : t('properties.emptyNoneHint')}
-          </p>
-        </div>
-      ) : (
-        <>
-          {viewMode === 'card' ? (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {properties.map((property) => (
-                <PropertyCard
-                  key={property.id}
-                  property={property}
-                  href={`/properties/${property.id}`}
-                  className="max-w-none"
-                />
-              ))}
+        <div className="min-w-0 flex-1">
+          <PropertyToolbar
+            viewMode={viewMode}
+            page={meta.page}
+            pageSize={meta.limit}
+            total={meta.total}
+            search={appliedFilters.search}
+            onSearchChange={handleToolbarSearchChange}
+            onViewModeChange={setViewMode}
+          />
+
+          {loading ? (
+            viewMode === 'card' ? (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                {Array.from({ length: pageSize }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-[28rem] animate-pulse rounded-xl bg-[#e5e7eb]"
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {Array.from({ length: pageSize }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-32 animate-pulse rounded-lg bg-[#e5e7eb]"
+                  />
+                ))}
+              </div>
+            )
+          ) : error ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {error}
+            </div>
+          ) : showEmptyState ? (
+            <div className="rounded-lg border border-[#e8e4dc] bg-white px-6 py-10 text-center">
+              <p className="text-lg font-medium text-[#1a1a1a]">
+                {filtersActive
+                  ? t('properties.emptyMatching')
+                  : t('properties.emptyNone')}
+              </p>
+              <p className="mt-2 text-sm text-[#6b7280]">
+                {filtersActive
+                  ? t('properties.emptyHint')
+                  : t('properties.emptyNoneHint')}
+              </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
-              {properties.map((property) => (
-                <PropertyListItem
-                  key={property.id}
-                  property={property}
-                  href={`/properties/${property.id}`}
-                />
-              ))}
-            </div>
-          )}
+            <>
+              {viewMode === 'card' ? (
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                  {properties.map((property) => (
+                    <PropertyCard
+                      key={property.id}
+                      property={property}
+                      href={`/properties/${property.id}`}
+                      className="max-w-none"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {properties.map((property) => (
+                    <PropertyListItem
+                      key={property.id}
+                      property={property}
+                      href={`/properties/${property.id}`}
+                    />
+                  ))}
+                </div>
+              )}
 
-          <PropertyPagination
-            page={meta.page}
-            totalPages={meta.totalPages}
-            onPageChange={handlePageChange}
-            disabled={loading}
-            className="mt-8"
-          />
-        </>
-      )}
+              <PropertyPagination
+                page={meta.page}
+                totalPages={meta.totalPages}
+                onPageChange={handlePageChange}
+                disabled={loading}
+                className="mt-8"
+              />
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

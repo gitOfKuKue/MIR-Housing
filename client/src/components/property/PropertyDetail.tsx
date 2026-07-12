@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import PropertyImageLightbox from './PropertyImageLightbox';
 import { deleteProperty } from '@/src/lib/api';
 import { getAuthUser } from '@/src/lib/auth';
+import { canManageProperties } from '@/src/lib/roles';
 import {
   formatAddress,
   formatBillingPeriod,
@@ -132,7 +133,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
   const router = useRouter();
   const authUser = getAuthUser();
   const canEdit = Boolean(authUser);
-  const canDelete = authUser?.role === 'admin';
+  const canDelete = canManageProperties(authUser?.role);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -276,6 +277,22 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
               {property.address_line2 ? (
                 <dd className="text-[#1a1a1a]">{property.address_line2}</dd>
               ) : null}
+            </div>
+            <div>
+              <dt className="font-medium text-[#9ca3af]">
+                {t('detail.street')}
+              </dt>
+              <dd className="mt-1 text-[#1a1a1a]">{property.street ?? '—'}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-[#9ca3af]">{t('detail.ward')}</dt>
+              <dd className="mt-1 text-[#1a1a1a]">{property.ward ?? '—'}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-[#9ca3af]">
+                {t('detail.district')}
+              </dt>
+              <dd className="mt-1 text-[#1a1a1a]">{property.district ?? '—'}</dd>
             </div>
             <div>
               <dt className="font-medium text-[#9ca3af]">

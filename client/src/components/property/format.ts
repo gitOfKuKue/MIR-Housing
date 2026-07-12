@@ -36,6 +36,9 @@ export function formatDate(value: string): string {
 export function formatAddress(property: Property): string {
   const parts = [
     property.address_line1,
+    property.street,
+    property.ward,
+    property.district,
     property.address_line2,
     property.city,
     property.province,

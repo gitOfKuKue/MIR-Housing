@@ -33,6 +33,21 @@ export class QueryPropertiesDto extends PaginationQueryDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(150)
+  district?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  ward?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  street?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(2)
   country?: string;
 

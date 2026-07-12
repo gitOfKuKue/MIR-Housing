@@ -26,3 +26,8 @@ export interface LogoutResponse {
 export interface ChangePasswordResponse {
   message: string;
 }
+
+export interface CreateUserResponse {
+  message: string;
+  user: LoginUser;
+}

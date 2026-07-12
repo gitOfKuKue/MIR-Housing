@@ -1,0 +1,49 @@
+meta {
+  name: Create User - Sale
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{base_url}}/{{version}}/auth/users
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "email": "{{newSaleEmail}}",
+    "password": "{{newUserPassword}}",
+    "full_name": "Bruno Sale User",
+    "role": "sale"
+  }
+}
+
+tests {
+  test("should return 201 or 200 when caller is admin", function() {
+    expect([200, 201]).to.include(res.getStatus());
+  });
+
+  test("should return created sale user", function() {
+    const body = res.getBody();
+    expect(body.message).to.equal("User account created successfully");
+    expect(body.user.role).to.equal("sale");
+    expect(body.user.email).to.equal(bru.getEnvVar("newSaleEmail").toLowerCase());
+  });
+}
+
+docs {
+  Creates a sale account. Only admins can create `sale` users.
+  Sale callers should receive 403 for this request.
+
+  Run Login as admin first. Set `newSaleEmail` and `newUserPassword` in local env.
+}

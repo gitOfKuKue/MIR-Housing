@@ -54,6 +54,21 @@ export class CreatePropertyDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(150)
+  district?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  ward?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  street?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(20)
   postal_code?: string;
 

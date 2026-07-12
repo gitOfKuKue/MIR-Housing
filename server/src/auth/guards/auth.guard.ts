@@ -44,7 +44,7 @@ export class AuthGuard implements CanActivate {
     request.user = {
       id: data.user.id,
       email: data.user.email,
-      role: (profile?.role as StaffRole) ?? StaffRole.Staff,
+      role: (profile?.role as StaffRole) ?? StaffRole.Contributor,
     };
     request.headers['x-access-token'] = token;
 

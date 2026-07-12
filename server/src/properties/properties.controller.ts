@@ -58,6 +58,8 @@ export class PropertiesController {
   }
 
   @Post('bulk')
+  @UseGuards(RolesGuard)
+  @Roles(StaffRole.Admin, StaffRole.Sale)
   createBulk(
     @Body() dto: BulkCreatePropertiesDto,
     @CurrentUser() user: AuthUser,
@@ -79,6 +81,8 @@ export class PropertiesController {
   }
 
   @Post(':id/images')
+  @UseGuards(RolesGuard)
+  @Roles(StaffRole.Admin, StaffRole.Sale)
   @UseInterceptors(
     FileFieldsInterceptor([
       { name: 'file', maxCount: PROPERTY_IMAGE_MAX_UPLOAD_COUNT },
@@ -119,6 +123,8 @@ export class PropertiesController {
   }
 
   @Post(':id/utility-bills')
+  @UseGuards(RolesGuard)
+  @Roles(StaffRole.Admin, StaffRole.Sale)
   createUtilityBill(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreatePropertyUtilityBillDto,
@@ -161,6 +167,8 @@ export class PropertiesController {
   }
 
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles(StaffRole.Admin, StaffRole.Sale)
   create(
     @Body() dto: CreatePropertyDto,
     @CurrentUser() user: AuthUser,
@@ -180,7 +188,7 @@ export class PropertiesController {
 
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles(StaffRole.Admin)
+  @Roles(StaffRole.Admin, StaffRole.Sale)
   remove(
     @Param('id', ParseUUIDPipe) id: string,
     @AccessToken() accessToken: string,

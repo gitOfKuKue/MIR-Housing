@@ -540,8 +540,13 @@ export class PropertiesService {
   }
 
   private handleSupabaseError(error: PostgrestError): never {
-    if (error.message.includes('Only admins can delete properties')) {
-      throw new ForbiddenException('Only admins can delete properties');
+    if (
+      error.message.includes('Only admins can delete properties') ||
+      error.message.includes('Only admin or sale can delete properties')
+    ) {
+      throw new ForbiddenException(
+        'Only admin or sale can delete properties',
+      );
     }
 
     if (error.code === 'P0002' || error.message.includes('Property not found')) {

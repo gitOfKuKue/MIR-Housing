@@ -21,6 +21,13 @@ import type {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useRef, useState } from 'react';
+import HcmcLocationSelects, {
+  type HcmcLocationValue,
+} from './HcmcLocationSelects';
+
+const HCMC_CITY = 'Ho Chi Minh City';
+const HCMC_PROVINCE = 'Ho Chi Minh';
+const HCMC_COUNTRY = 'VN';
 
 const PROPERTY_TYPES: PropertyType[] = [
   'apartment',
@@ -180,10 +187,16 @@ export default function CreatePropertyForm({
   );
   const [addressLine1, setAddressLine1] = useState(property?.address_line1 ?? '');
   const [addressLine2, setAddressLine2] = useState(property?.address_line2 ?? '');
-  const [city, setCity] = useState(property?.city ?? 'Ho Chi Minh City');
-  const [province, setProvince] = useState(property?.province ?? 'Ho Chi Minh');
+  const [location, setLocation] = useState<HcmcLocationValue>({
+    districtCode: null,
+    district: property?.district ?? '',
+    ward: property?.ward ?? '',
+    street: property?.street ?? '',
+  });
+  const [city] = useState(property?.city ?? HCMC_CITY);
+  const [province] = useState(property?.province ?? HCMC_PROVINCE);
   const [postalCode, setPostalCode] = useState(property?.postal_code ?? '');
-  const [country, setCountry] = useState(property?.country ?? 'VN');
+  const [country] = useState(property?.country ?? HCMC_COUNTRY);
   const [rentAmount, setRentAmount] = useState(
     formatInitialCurrency(property?.rent_amount ?? null),
   );
@@ -321,11 +334,14 @@ export default function CreatePropertyForm({
         property_type: propertyType,
         status,
         address_line1: addressLine1.trim(),
-        city: city.trim(),
-        province: province.trim(),
-        country: country.trim() || 'VN',
+        city: city.trim() || HCMC_CITY,
+        province: province.trim() || HCMC_PROVINCE,
+        country: country.trim() || HCMC_COUNTRY,
         rent_currency: rentCurrency.trim() || 'VND',
         address_line2: addressLine2.trim() || null,
+        district: location.district.trim() || null,
+        ward: location.ward.trim() || null,
+        street: location.street.trim() || null,
         postal_code: postalCode.trim() || null,
         room_type: roomType.trim() || null,
         floor: floor.trim() || null,
@@ -373,6 +389,9 @@ export default function CreatePropertyForm({
       };
 
       if (basePayload.address_line2) payload.address_line2 = basePayload.address_line2;
+      if (basePayload.district) payload.district = basePayload.district;
+      if (basePayload.ward) payload.ward = basePayload.ward;
+      if (basePayload.street) payload.street = basePayload.street;
       if (basePayload.postal_code) payload.postal_code = basePayload.postal_code;
       if (basePayload.room_type) payload.room_type = basePayload.room_type;
       if (basePayload.floor) payload.floor = basePayload.floor;
@@ -631,7 +650,32 @@ export default function CreatePropertyForm({
           <h2 className="text-lg font-semibold text-[#1a1a1a]">
             {t('form.location')}
           </h2>
+          <p className="mt-1 text-sm text-[#6b7280]">{t('form.hcmcOnly')}</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:col-span-2 sm:grid-cols-3">
+              <HcmcLocationSelects
+                value={location}
+                onChange={setLocation}
+                required
+                showLabels
+                selectClassName={inputClassName}
+                labels={{
+                  district: t('form.district'),
+                  ward: t('form.ward'),
+                  street: t('form.street'),
+                  allDistricts: t('form.selectDistrict'),
+                  allWards: t('form.selectWard'),
+                  allStreets: t('form.selectStreet'),
+                  loadingDistricts: t('form.loadingDistricts'),
+                  loadingWards: t('form.loadingWards'),
+                  loadingStreets: t('form.loadingStreets'),
+                  selectDistrictFirst: t('form.selectDistrictFirst'),
+                  selectWardFirst: t('form.selectWardFirst'),
+                  noStreets: t('form.noStreets'),
+                }}
+              />
+            </div>
+
             <div className="sm:col-span-2">
               <label htmlFor="address_line1" className={labelClassName}>
                 {t('form.addressLine1')} <span className="text-red-500">*</span>
@@ -642,7 +686,7 @@ export default function CreatePropertyForm({
                 value={addressLine1}
                 onChange={(e) => setAddressLine1(e.target.value)}
                 className={inputClassName}
-                placeholder="Street address"
+                placeholder="e.g. 123"
               />
             </div>
 
@@ -667,8 +711,8 @@ export default function CreatePropertyForm({
                 id="city"
                 required
                 value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className={inputClassName}
+                readOnly
+                className={`${inputClassName} bg-[#f3f4f6] text-[#6b7280]`}
               />
             </div>
 
@@ -680,8 +724,8 @@ export default function CreatePropertyForm({
                 id="province"
                 required
                 value={province}
-                onChange={(e) => setProvince(e.target.value)}
-                className={inputClassName}
+                readOnly
+                className={`${inputClassName} bg-[#f3f4f6] text-[#6b7280]`}
               />
             </div>
 
@@ -704,9 +748,9 @@ export default function CreatePropertyForm({
               <input
                 id="country"
                 value={country}
-                onChange={(e) => setCountry(e.target.value)}
+                readOnly
                 maxLength={2}
-                className={inputClassName}
+                className={`${inputClassName} bg-[#f3f4f6] text-[#6b7280]`}
                 placeholder="VN"
               />
             </div>

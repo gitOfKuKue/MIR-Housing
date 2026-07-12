@@ -1,0 +1,42 @@
+meta {
+  name: Create User - Forbidden Role
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{base_url}}/{{version}}/auth/users
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "email": "forbidden-admin@example.com",
+    "password": "{{newUserPassword}}",
+    "full_name": "Should Fail",
+    "role": "admin"
+  }
+}
+
+tests {
+  test("should return 403 when creating admin role", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}
+
+docs {
+  Neither admin nor sale can create `admin` accounts via this API.
+  Expects 403 Forbidden.
+
+  Run Login first (admin or sale).
+}

@@ -75,7 +75,15 @@ export default function PropertyCard({
   const resolvedImageUrl = imageUrl ?? property.images?.[0]?.public_url;
   const description =
     property.description ??
-    `${property.address_line1}, ${property.city}, ${property.province}`;
+    [
+      property.address_line1,
+      property.street,
+      property.ward,
+      property.district,
+      property.city,
+    ]
+      .filter(Boolean)
+      .join(', ');
 
   const tags = [
     property.bedrooms !== null

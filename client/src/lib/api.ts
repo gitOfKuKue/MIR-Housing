@@ -25,7 +25,7 @@ export interface LoginResponse {
     id: string;
     email: string;
     full_name: string | null;
-    role: 'staff' | 'admin';
+    role: 'admin' | 'sale' | 'contributor';
   };
 }
 
@@ -97,12 +97,39 @@ export async function changePassword(
   });
 }
 
+export interface CreateUserPayload {
+  email: string;
+  password: string;
+  full_name?: string;
+  role?: 'admin' | 'sale' | 'contributor';
+}
+
+export interface CreateUserResponse {
+  message: string;
+  user: LoginResponse['user'];
+}
+
+export async function createUser(
+  payload: CreateUserPayload,
+): Promise<CreateUserResponse> {
+  return apiFetch<CreateUserResponse>('/auth/users', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getProperties(params?: {
   page?: number;
   limit?: number;
   search?: string;
   status?: string;
   property_type?: string;
+  district?: string;
+  ward?: string;
+  street?: string;
+  city?: string;
+  min_rent?: number;
+  max_rent?: number;
 }): Promise<PaginatedResponse<Property>> {
   const searchParams = new URLSearchParams();
 
@@ -124,6 +151,30 @@ export async function getProperties(params?: {
 
   if (params?.property_type) {
     searchParams.set('property_type', params.property_type);
+  }
+
+  if (params?.district) {
+    searchParams.set('district', params.district);
+  }
+
+  if (params?.ward) {
+    searchParams.set('ward', params.ward);
+  }
+
+  if (params?.street) {
+    searchParams.set('street', params.street);
+  }
+
+  if (params?.city) {
+    searchParams.set('city', params.city);
+  }
+
+  if (params?.min_rent !== undefined) {
+    searchParams.set('min_rent', String(params.min_rent));
+  }
+
+  if (params?.max_rent !== undefined) {
+    searchParams.set('max_rent', String(params.max_rent));
   }
 
   const query = searchParams.toString();
@@ -164,6 +215,9 @@ export type CreatePropertyPayload = {
   property_type?: Property['property_type'];
   status?: Property['status'];
   address_line2?: string;
+  district?: string;
+  ward?: string;
+  street?: string;
   postal_code?: string;
   country?: string;
   rent_amount?: number;
@@ -184,6 +238,49 @@ export type CreatePropertyPayload = {
   description?: string;
   internal_notes?: string;
 };
+
+export interface LocationOption {
+  code?: number;
+  name: string;
+}
+
+export interface LocationScope {
+  city: string;
+  province: string;
+  country: string;
+  province_code: number;
+}
+
+export async function getLocationScope(): Promise<LocationScope> {
+  return apiFetch<LocationScope>('/locations/scope');
+}
+
+export async function getDistricts(): Promise<LocationOption[]> {
+  return apiFetch<LocationOption[]>('/locations/districts');
+}
+
+export async function getWards(districtCode: number): Promise<LocationOption[]> {
+  return apiFetch<LocationOption[]>(
+    `/locations/wards?district_code=${districtCode}`,
+  );
+}
+
+export async function getStreets(params: {
+  district: string;
+  ward: string;
+  search?: string;
+}): Promise<LocationOption[]> {
+  const searchParams = new URLSearchParams({
+    district: params.district,
+    ward: params.ward,
+  });
+
+  if (params.search?.trim()) {
+    searchParams.set('search', params.search.trim());
+  }
+
+  return apiFetch<LocationOption[]>(`/locations/streets?${searchParams}`);
+}
 
 export async function createProperty(
   payload: CreatePropertyPayload,

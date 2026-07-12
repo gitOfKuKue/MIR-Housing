@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -9,10 +10,13 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../supabase/supabase.constants';
 import { SupabaseService } from '../supabase/supabase.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
-import { StaffRole } from './enums/staff-role.enum';
+import { canCreateRole, StaffRole } from './enums/staff-role.enum';
+import type { AuthUser } from './interfaces/auth-user.interface';
 import {
   ChangePasswordResponse,
+  CreateUserResponse,
   LoginResponse,
   LogoutResponse,
   MeResponse,
@@ -54,7 +58,7 @@ export class AuthService {
         id: data.user.id,
         email: data.user.email ?? dto.email,
         full_name: profile?.full_name ?? null,
-        role: profile?.role ?? StaffRole.Staff,
+        role: profile?.role ?? StaffRole.Contributor,
       },
     };
   }
@@ -68,6 +72,59 @@ export class AuthService {
     }
 
     return { message: 'Logged out successfully' };
+  }
+
+  async createUser(
+    actor: AuthUser,
+    dto: CreateUserDto,
+  ): Promise<CreateUserResponse> {
+    const fullName = dto.full_name?.trim() || null;
+    const role = dto.role ?? StaffRole.Contributor;
+
+    if (!canCreateRole(actor.role, role)) {
+      throw new ForbiddenException(
+        'You are not allowed to create an account with that role',
+      );
+    }
+
+    const admin = this.supabaseService.getServiceClient();
+
+    const { data, error } = await admin.auth.admin.createUser({
+      email: dto.email.trim().toLowerCase(),
+      password: dto.password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: fullName,
+      },
+    });
+
+    if (error || !data.user) {
+      throw new BadRequestException(
+        error?.message ?? 'Failed to create user account',
+      );
+    }
+
+    const { error: profileError } = await admin
+      .from('profiles')
+      .update({
+        full_name: fullName,
+        role,
+      })
+      .eq('id', data.user.id);
+
+    if (profileError) {
+      throw new InternalServerErrorException(profileError.message);
+    }
+
+    return {
+      message: 'User account created successfully',
+      user: {
+        id: data.user.id,
+        email: data.user.email ?? dto.email.trim().toLowerCase(),
+        full_name: fullName,
+        role,
+      },
+    };
   }
 
   async changePassword(
@@ -134,7 +191,7 @@ export class AuthService {
         id: userData.user.id,
         email: userData.user.email ?? '',
         full_name: profile?.full_name ?? null,
-        role: profile?.role ?? StaffRole.Staff,
+        role: profile?.role ?? StaffRole.Contributor,
       },
     };
   }

@@ -1,0 +1,59 @@
+meta {
+  name: Create User
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{base_url}}/{{version}}/auth/users
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "email": "{{newUserEmail}}",
+    "password": "{{newUserPassword}}",
+    "full_name": "Bruno Test User",
+    "role": "contributor"
+  }
+}
+
+tests {
+  test("should return 201 or 200", function() {
+    expect([200, 201]).to.include(res.getStatus());
+  });
+
+  test("should return success message", function() {
+    expect(res.getBody().message).to.equal("User account created successfully");
+  });
+
+  test("should return created user", function() {
+    const user = res.getBody().user;
+    expect(user).to.be.an("object");
+    expect(user.id).to.be.a("string");
+    expect(user.email).to.equal(bru.getEnvVar("newUserEmail").toLowerCase());
+    expect(user.role).to.equal("contributor");
+  });
+}
+
+docs {
+  Creates a new user account. Requires admin or sale access token (run Login first).
+
+  Role rules:
+  - admin can create `sale` or `contributor`
+  - sale can create `contributor` only
+  - contributor cannot call this endpoint (403)
+
+  Set `newUserEmail` and `newUserPassword` in the local environment.
+  Default app password pattern: Welcome@{year}!!!
+}

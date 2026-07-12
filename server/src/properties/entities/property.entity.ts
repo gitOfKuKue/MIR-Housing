@@ -16,6 +16,9 @@ export interface Property {
   address_line2: string | null;
   city: string;
   province: string;
+  district: string | null;
+  ward: string | null;
+  street: string | null;
   postal_code: string | null;
   country: string;
   rent_amount: number | null;

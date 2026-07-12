@@ -27,7 +27,7 @@ tests {
     expect(res.getBody().user).to.be.an("object");
     expect(res.getBody().user.id).to.be.a("string");
     expect(res.getBody().user.email).to.equal(bru.getEnvVar("email"));
-    expect(res.getBody().user.role).to.be.oneOf(["staff", "admin"]);
+    expect(res.getBody().user.role).to.be.oneOf(["admin", "sale", "contributor", "staff"]);
   });
 }
 

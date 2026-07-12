@@ -28,6 +28,24 @@ export function applyPropertyFilters(
     );
   }
 
+  if (query.district) {
+    filtered = filtered.ilike(
+      'district',
+      `%${escapeFilterValue(query.district)}%`,
+    );
+  }
+
+  if (query.ward) {
+    filtered = filtered.ilike('ward', `%${escapeFilterValue(query.ward)}%`);
+  }
+
+  if (query.street) {
+    filtered = filtered.ilike(
+      'street',
+      `%${escapeFilterValue(query.street)}%`,
+    );
+  }
+
   if (query.country) {
     filtered = filtered.eq('country', query.country);
   }
@@ -35,7 +53,7 @@ export function applyPropertyFilters(
   if (query.search) {
     const term = escapeFilterValue(query.search);
     filtered = filtered.or(
-      `name.ilike.%${term}%,address_line1.ilike.%${term}%,city.ilike.%${term}%,description.ilike.%${term}%`,
+      `name.ilike.%${term}%,address_line1.ilike.%${term}%,street.ilike.%${term}%,district.ilike.%${term}%,ward.ilike.%${term}%,city.ilike.%${term}%,description.ilike.%${term}%`,
     );
   }
 

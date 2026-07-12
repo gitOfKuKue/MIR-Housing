@@ -2,12 +2,17 @@ import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AccessToken } from './decorators/access-token.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { Roles } from './decorators/roles.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
+import { StaffRole } from './enums/staff-role.enum';
 import { AuthGuard } from './guards/auth.guard';
+import { RolesGuard } from './guards/roles.guard';
 import type { AuthUser } from './interfaces/auth-user.interface';
 import type {
   ChangePasswordResponse,
+  CreateUserResponse,
   LoginResponse,
   LogoutResponse,
   MeResponse,
@@ -35,6 +40,16 @@ export class AuthController {
     @AccessToken() accessToken: string,
   ): Promise<MeResponse> {
     return this.authService.getMe(user.id, accessToken);
+  }
+
+  @Post('users')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(StaffRole.Admin, StaffRole.Sale)
+  createUser(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateUserDto,
+  ): Promise<CreateUserResponse> {
+    return this.authService.createUser(user, dto);
   }
 
   @Post('change-password')

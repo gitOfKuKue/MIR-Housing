@@ -2,6 +2,7 @@
 
 import { useTranslations } from '@/src/i18n';
 import { changePassword } from '@/src/lib/api';
+import { isDefaultPassword } from '@/src/lib/default-password';
 import { FormEvent, useState } from 'react';
 
 const inputClassName =
@@ -67,6 +68,11 @@ export default function ChangePasswordForm() {
       return;
     }
 
+    if (isDefaultPassword(newPassword)) {
+      setError(t('settings.passwordStillDefault'));
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -89,125 +95,122 @@ export default function ChangePasswordForm() {
   }
 
   return (
-    <section className="rounded-xl border border-[#e8e4dc] bg-white p-6">
-      <h2 className="text-lg font-semibold text-[#1a1a1a]">
-        {t('settings.changePassword')}
-      </h2>
-      <p className="mt-1 text-sm text-[#6b7280]">
-        {t('settings.changePasswordHint')}
-      </p>
-
-      <form onSubmit={handleSubmit} className="mt-6 max-w-md space-y-4">
-        <div>
-          <label htmlFor="current-password" className={labelClassName}>
-            {t('settings.currentPassword')}
-          </label>
-          <div className="relative">
-            <input
-              id="current-password"
-              type={showCurrentPassword ? 'text' : 'password'}
-              autoComplete="current-password"
-              required
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className={`${inputClassName} pr-11`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowCurrentPassword((prev) => !prev)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] transition hover:text-[#4b5563]"
-              aria-label={
-                showCurrentPassword
-                  ? t('auth.hidePassword')
-                  : t('auth.showPassword')
-              }
-            >
-              <EyeIcon open={showCurrentPassword} />
-            </button>
-          </div>
+    <form onSubmit={handleSubmit} className="max-w-md space-y-4">
+      {isDefaultPassword(currentPassword) ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {t('settings.defaultPasswordWarning')}
         </div>
+      ) : null}
 
-        <div>
-          <label htmlFor="new-password" className={labelClassName}>
-            {t('settings.newPassword')}
-          </label>
-          <div className="relative">
-            <input
-              id="new-password"
-              type={showNewPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              required
-              minLength={8}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className={`${inputClassName} pr-11`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowNewPassword((prev) => !prev)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] transition hover:text-[#4b5563]"
-              aria-label={
-                showNewPassword ? t('auth.hidePassword') : t('auth.showPassword')
-              }
-            >
-              <EyeIcon open={showNewPassword} />
-            </button>
-          </div>
-          <p className="mt-1.5 text-xs text-[#9ca3af]">
-            {t('settings.passwordMinLength')}
-          </p>
+      <div>
+        <label htmlFor="current-password" className={labelClassName}>
+          {t('settings.currentPassword')}
+        </label>
+        <div className="relative">
+          <input
+            id="current-password"
+            type={showCurrentPassword ? 'text' : 'password'}
+            autoComplete="current-password"
+            required
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            className={`${inputClassName} pr-11`}
+          />
+          <button
+            type="button"
+            onClick={() => setShowCurrentPassword((prev) => !prev)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] transition hover:text-[#4b5563]"
+            aria-label={
+              showCurrentPassword
+                ? t('auth.hidePassword')
+                : t('auth.showPassword')
+            }
+          >
+            <EyeIcon open={showCurrentPassword} />
+          </button>
         </div>
+      </div>
 
-        <div>
-          <label htmlFor="confirm-password" className={labelClassName}>
-            {t('settings.confirmPassword')}
-          </label>
-          <div className="relative">
-            <input
-              id="confirm-password"
-              type={showConfirmPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              required
-              minLength={8}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className={`${inputClassName} pr-11`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword((prev) => !prev)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] transition hover:text-[#4b5563]"
-              aria-label={
-                showConfirmPassword
-                  ? t('auth.hidePassword')
-                  : t('auth.showPassword')
-              }
-            >
-              <EyeIcon open={showConfirmPassword} />
-            </button>
-          </div>
+      <div>
+        <label htmlFor="new-password" className={labelClassName}>
+          {t('settings.newPassword')}
+        </label>
+        <div className="relative">
+          <input
+            id="new-password"
+            type={showNewPassword ? 'text' : 'password'}
+            autoComplete="new-password"
+            required
+            minLength={8}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            className={`${inputClassName} pr-11`}
+          />
+          <button
+            type="button"
+            onClick={() => setShowNewPassword((prev) => !prev)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] transition hover:text-[#4b5563]"
+            aria-label={
+              showNewPassword ? t('auth.hidePassword') : t('auth.showPassword')
+            }
+          >
+            <EyeIcon open={showNewPassword} />
+          </button>
         </div>
+        <p className="mt-1.5 text-xs text-[#9ca3af]">
+          {t('settings.passwordMinLength')}
+        </p>
+      </div>
 
-        {error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            {error}
-          </div>
-        ) : null}
+      <div>
+        <label htmlFor="confirm-password" className={labelClassName}>
+          {t('settings.confirmPassword')}
+        </label>
+        <div className="relative">
+          <input
+            id="confirm-password"
+            type={showConfirmPassword ? 'text' : 'password'}
+            autoComplete="new-password"
+            required
+            minLength={8}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className={`${inputClassName} pr-11`}
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword((prev) => !prev)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] transition hover:text-[#4b5563]"
+            aria-label={
+              showConfirmPassword
+                ? t('auth.hidePassword')
+                : t('auth.showPassword')
+            }
+          >
+            <EyeIcon open={showConfirmPassword} />
+          </button>
+        </div>
+      </div>
 
-        {success ? (
-          <div className="rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-sm text-[#166534]">
-            {success}
-          </div>
-        ) : null}
+      {error ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {error}
+        </div>
+      ) : null}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-lg bg-[#1e4636] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#163829] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {submitting ? t('settings.updating') : t('settings.updatePassword')}
-        </button>
-      </form>
-    </section>
+      {success ? (
+        <div className="rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-sm text-[#166534]">
+          {success}
+        </div>
+      ) : null}
+
+      <button
+        type="submit"
+        disabled={submitting}
+        className="rounded-lg bg-[#1e4636] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#163829] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {submitting ? t('settings.updating') : t('settings.updatePassword')}
+      </button>
+    </form>
   );
 }
