@@ -91,7 +91,7 @@ export default function EditPropertyPage() {
   }
 
   return (
-    <div className="relative h-full min-h-0">
+    <div className="min-h-0 flex-1 overflow-y-auto bg-white">
       <CreatePropertyForm property={property} />
     </div>
   );

@@ -4,7 +4,7 @@ import houseSearchingImage from '@/src/assets/images/House searching-cuate.svg';
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#1e4636] px-4 py-10">
+    <main className="flex h-full min-h-0 items-center justify-center overflow-y-auto bg-[#1e4636] px-4 py-10">
       <div className="flex w-full max-w-5xl flex-col overflow-hidden rounded-[1rem] bg-[#f7f4ef] shadow-2xl md:min-h-[700px] md:flex-row">
         <div className="flex flex-1 items-center px-8 py-10 sm:px-10 sm:py-12">
           <LoginForm />

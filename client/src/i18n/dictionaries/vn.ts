@@ -51,6 +51,8 @@ export const vn: { [K in keyof typeof en]: string } = {
   'properties.filterAmenity': 'Tiện ích',
   'properties.filterFurnishing': 'Nội thất',
   'properties.filterPriceRange': 'Khoảng giá (VND)',
+  'properties.filterPriceMin': 'Tối thiểu',
+  'properties.filterPriceMax': 'Tối đa',
   'properties.allRoomTypes': 'Tất cả loại phòng',
   'properties.selectAmenity': 'Chọn tiện ích…',
   'properties.selectFurnishing': 'Chọn nội thất…',

@@ -23,7 +23,7 @@ export interface PropertyFilters {
 
 export const RENT_FILTER_MIN = 0;
 export const RENT_FILTER_MAX_FALLBACK = 20_000_000;
-export const RENT_FILTER_STEP = 500_000;
+export const RENT_FILTER_STEP = 1;
 
 /** Fixed price-range ceiling: 0 – 20,000,000 VND. */
 export const RENT_FILTER_MAX = RENT_FILTER_MAX_FALLBACK;

@@ -50,6 +50,8 @@ export const en = {
   'properties.filterAmenity': 'Amenities',
   'properties.filterFurnishing': 'Furniture',
   'properties.filterPriceRange': 'Price range (VND)',
+  'properties.filterPriceMin': 'Min',
+  'properties.filterPriceMax': 'Max',
   'properties.allRoomTypes': 'All room types',
   'properties.selectAmenity': 'Select amenities…',
   'properties.selectFurnishing': 'Select furniture…',

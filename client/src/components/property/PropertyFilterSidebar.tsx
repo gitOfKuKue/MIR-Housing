@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from '@/src/i18n';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AmenityMultiSelect from './AmenityMultiSelect';
 import FurnishingMultiSelect from './FurnishingMultiSelect';
 import HcmcLocationSelects from './HcmcLocationSelects';
@@ -47,8 +47,19 @@ function SearchIcon() {
   );
 }
 
-function formatVnd(amount: number): string {
-  return `${amount.toLocaleString('vi-VN')} đ`;
+function formatRentInput(amount: number): string {
+  return amount.toLocaleString('en-US');
+}
+
+function parseRentInput(raw: string): number | null {
+  const cleaned = raw.replace(/[^\d]/g, '');
+  if (!cleaned) return null;
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function clampRent(value: number, rangeMax: number): number {
+  return Math.min(Math.max(value, RENT_FILTER_MIN), rangeMax);
 }
 
 function DualRangeSlider({
@@ -105,6 +116,9 @@ function DualRangeSlider({
   );
 }
 
+const rentInputClassName =
+  'w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-sm font-mono text-[#1a1a1a] outline-none transition placeholder:text-[#9ca3af] focus:border-[#1e4636] focus:ring-2 focus:ring-[#1e4636]/10';
+
 export default function PropertyFilterSidebar({
   value,
   onChange,
@@ -113,6 +127,26 @@ export default function PropertyFilterSidebar({
 }: PropertyFilterSidebarProps) {
   const t = useTranslations();
   const [openDropdown, setOpenDropdown] = useState<FilterDropdownId>(null);
+  const [minRentInput, setMinRentInput] = useState(() =>
+    formatRentInput(value.minRent),
+  );
+  const [maxRentInput, setMaxRentInput] = useState(() =>
+    formatRentInput(value.maxRent),
+  );
+  const [minFocused, setMinFocused] = useState(false);
+  const [maxFocused, setMaxFocused] = useState(false);
+
+  useEffect(() => {
+    if (!minFocused) {
+      setMinRentInput(formatRentInput(value.minRent));
+    }
+  }, [value.minRent, minFocused]);
+
+  useEffect(() => {
+    if (!maxFocused) {
+      setMaxRentInput(formatRentInput(value.maxRent));
+    }
+  }, [value.maxRent, maxFocused]);
 
   function update(patch: Partial<PropertyFilters>) {
     onChange({ ...value, ...patch });
@@ -120,6 +154,28 @@ export default function PropertyFilterSidebar({
 
   function setDropdownOpen(id: Exclude<FilterDropdownId, null>, open: boolean) {
     setOpenDropdown(open ? id : null);
+  }
+
+  function commitMinRent(raw: string) {
+    const parsed = parseRentInput(raw);
+    if (parsed === null) {
+      setMinRentInput(formatRentInput(value.minRent));
+      return;
+    }
+    const next = Math.min(clampRent(parsed, rentFilterMax), value.maxRent);
+    setMinRentInput(formatRentInput(next));
+    update({ minRent: next });
+  }
+
+  function commitMaxRent(raw: string) {
+    const parsed = parseRentInput(raw);
+    if (parsed === null) {
+      setMaxRentInput(formatRentInput(value.maxRent));
+      return;
+    }
+    const next = Math.max(clampRent(parsed, rentFilterMax), value.minRent);
+    setMaxRentInput(formatRentInput(next));
+    update({ maxRent: next });
   }
 
   return (
@@ -212,9 +268,77 @@ export default function PropertyFilterSidebar({
           onMinChange={(minRent) => update({ minRent })}
           onMaxChange={(maxRent) => update({ maxRent })}
         />
-        <div className="mt-2 flex items-center justify-between text-xs text-[#6b7280]">
-          <span>{formatVnd(value.minRent)}</span>
-          <span>{formatVnd(value.maxRent)}</span>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div>
+            <label htmlFor="filter_min_rent" className={labelClassName}>
+              {t('properties.filterPriceMin')}
+            </label>
+            <input
+              id="filter_min_rent"
+              type="text"
+              inputMode="numeric"
+              value={minRentInput}
+              onFocus={() => setMinFocused(true)}
+              onChange={(event) => {
+                const raw = event.target.value.replace(/[^\d,]/g, '');
+                setMinRentInput(raw);
+                const parsed = parseRentInput(raw);
+                if (parsed === null) return;
+                update({
+                  minRent: Math.min(
+                    clampRent(parsed, rentFilterMax),
+                    value.maxRent,
+                  ),
+                });
+              }}
+              onBlur={() => {
+                setMinFocused(false);
+                commitMinRent(minRentInput);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.currentTarget.blur();
+                }
+              }}
+              className={rentInputClassName}
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label htmlFor="filter_max_rent" className={labelClassName}>
+              {t('properties.filterPriceMax')}
+            </label>
+            <input
+              id="filter_max_rent"
+              type="text"
+              inputMode="numeric"
+              value={maxRentInput}
+              onFocus={() => setMaxFocused(true)}
+              onChange={(event) => {
+                const raw = event.target.value.replace(/[^\d,]/g, '');
+                setMaxRentInput(raw);
+                const parsed = parseRentInput(raw);
+                if (parsed === null) return;
+                update({
+                  maxRent: Math.max(
+                    clampRent(parsed, rentFilterMax),
+                    value.minRent,
+                  ),
+                });
+              }}
+              onBlur={() => {
+                setMaxFocused(false);
+                commitMaxRent(maxRentInput);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.currentTarget.blur();
+                }
+              }}
+              className={rentInputClassName}
+              placeholder={formatRentInput(rentFilterMax)}
+            />
+          </div>
         </div>
       </div>
 

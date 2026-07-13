@@ -177,11 +177,19 @@ function CheckboxGrid<T extends string>({
       {options.map((option) => {
         const checked = selected.has(option);
         return (
-          <label
+          <button
             key={option}
-            className="flex cursor-pointer items-center gap-2.5 rounded-lg px-1 py-1.5 text-sm text-[#1a1a1a] hover:bg-[#f9fafb]"
+            type="button"
+            aria-pressed={checked}
+            onMouseDown={(event) => {
+              // Avoid focus-driven scroll jumps that leave a blank white panel.
+              event.preventDefault();
+            }}
+            onClick={() => toggle(option)}
+            className="flex cursor-pointer items-center gap-2.5 rounded-lg px-1 py-1.5 text-left text-sm text-[#1a1a1a] hover:bg-[#f9fafb]"
           >
             <span
+              aria-hidden="true"
               className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
                 checked
                   ? 'border-[#1e4636] bg-[#1e4636] text-white'
@@ -200,14 +208,8 @@ function CheckboxGrid<T extends string>({
                 </svg>
               ) : null}
             </span>
-            <input
-              type="checkbox"
-              className="sr-only"
-              checked={checked}
-              onChange={() => toggle(option)}
-            />
             {labelFor(option)}
-          </label>
+          </button>
         );
       })}
     </div>
@@ -552,8 +554,8 @@ export default function CreatePropertyForm({
   const rentPreview = parseOptionalNumber(rentAmount);
 
   return (
-    <div className="absolute inset-0 flex flex-col overflow-hidden bg-white">
-      <header className="flex shrink-0 items-center gap-3 border-b border-[#f3f4f6] px-4 py-3 sm:px-6">
+    <div className="bg-white">
+      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-[#f3f4f6] bg-white px-4 py-3 sm:px-6">
         <Link
           href={backHref}
           className="inline-flex items-center gap-1.5 text-sm text-[#6b7280] transition hover:text-[#1a1a1a]"
@@ -576,12 +578,11 @@ export default function CreatePropertyForm({
         </button>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <form
-          id="property-form"
-          onSubmit={handleSubmit}
-          className="w-full space-y-10 px-4 pt-8 pb-4 sm:px-8 lg:px-10"
-        >
+      <form
+        id="property-form"
+        onSubmit={handleSubmit}
+        className="w-full space-y-10 px-4 pt-8 pb-16 sm:px-8 lg:px-10"
+      >
           <section>
             <SectionHeading number={1} title={t('form.sectionAddress')} />
             <div className="grid gap-4 sm:grid-cols-2">
@@ -765,16 +766,17 @@ export default function CreatePropertyForm({
               </ul>
             ) : null}
 
-            <input
-              ref={fileInputRef}
-              id="property_images"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              className="sr-only"
-              onChange={(event) => handleFilesSelected(event.target.files)}
-            />
-
+            <div className="relative h-0 w-0 overflow-hidden">
+              <input
+                ref={fileInputRef}
+                id="property_images"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                tabIndex={-1}
+                onChange={(event) => handleFilesSelected(event.target.files)}
+              />
+            </div>
             <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
               {images.map((image, index) => (
                 <li
@@ -1073,12 +1075,14 @@ export default function CreatePropertyForm({
                     <label
                       key={item}
                       className="flex cursor-pointer items-center gap-2 text-sm text-[#1a1a1a]"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => setStatus(item)}
                     >
                       <input
                         type="radio"
                         name="status"
                         checked={status === item}
-                        onChange={() => setStatus(item)}
+                        readOnly
                         className="h-4 w-4 border-[#d1d5db] text-[#1e4636] focus:ring-[#1e4636]"
                       />
                       {t(`status.${item}` as TranslationKey)}
@@ -1157,7 +1161,6 @@ export default function CreatePropertyForm({
             </button>
           </div>
         </form>
-      </div>
     </div>
   );
 }
