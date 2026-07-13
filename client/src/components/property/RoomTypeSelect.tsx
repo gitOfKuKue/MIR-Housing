@@ -6,13 +6,15 @@ import {
   ROOM_TYPE_VALUES,
   type RoomTypeValue,
 } from '@/src/lib/room-types';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
 export type RoomTypeFilterValue = RoomTypeValue | 'all';
 
 interface RoomTypeSelectProps {
   value: RoomTypeFilterValue;
   onChange: (value: RoomTypeFilterValue) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   labelClassName?: string;
   triggerClassName?: string;
 }
@@ -35,25 +37,28 @@ export const ROOM_TYPE_LABEL_KEYS: Record<RoomTypeValue, TranslationKey> = {
 export default function RoomTypeSelect({
   value,
   onChange,
+  open,
+  onOpenChange,
   labelClassName,
   triggerClassName,
 }: RoomTypeSelectProps) {
   const t = useTranslations();
-  const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const listId = useId();
   const groupName = useId();
 
   useEffect(() => {
+    if (!open) return;
+
     function handlePointerDown(event: MouseEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
+        onOpenChange(false);
       }
     }
 
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, []);
+  }, [open, onOpenChange]);
 
   const summary =
     value === 'all'
@@ -62,18 +67,18 @@ export default function RoomTypeSelect({
 
   function selectValue(next: RoomTypeFilterValue) {
     onChange(next);
-    setOpen(false);
+    onOpenChange(false);
   }
 
   return (
-    <div ref={rootRef} className="relative block">
+    <div ref={rootRef} className="block">
       <span className={labelClassName}>{t('properties.filterRoomType')}</span>
       <button
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => onOpenChange(!open)}
         className={
           triggerClassName ??
           'flex w-full items-center justify-between rounded-md border border-[#e5e7eb] bg-white px-3 py-2.5 text-left text-sm text-[#1a1a1a] outline-none transition focus:border-[#1e4636] focus:ring-2 focus:ring-[#1e4636]/10'
@@ -102,7 +107,7 @@ export default function RoomTypeSelect({
         <div
           id={listId}
           role="listbox"
-          className="absolute z-30 mt-1 max-h-72 w-full overflow-auto rounded-md border border-[#e5e7eb] bg-white py-1 shadow-lg"
+          className="mt-1 max-h-72 w-full overflow-auto rounded-md border border-[#e5e7eb] bg-white py-1"
         >
           <label className="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-[#1a1a1a] hover:bg-[#f9fafb]">
             <input

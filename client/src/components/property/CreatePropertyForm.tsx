@@ -25,14 +25,10 @@ import {
   furnishingsToFurnishingValues,
 } from '@/src/lib/furnishings-selection';
 import type {
-  DryingAreaType,
   FeeWaterType,
-  MainGateLockType,
-  ParkingType,
   Property,
   PropertyStatus,
   PropertyType,
-  ToiletType,
 } from '@/src/types/property';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -55,14 +51,6 @@ const PROPERTY_TYPES: PropertyType[] = [
   'townhouse',
   'other',
 ];
-
-const PRIVATE_SHARED: Array<ToiletType | ParkingType | DryingAreaType | ''> = [
-  '',
-  'private',
-  'shared',
-];
-
-const MAIN_GATE_LOCKS: Array<MainGateLockType | ''> = ['', 'standard', 'none'];
 
 const FEE_WATER_TYPES: FeeWaterType[] = ['fixed', 'per_m3'];
 
@@ -337,25 +325,7 @@ export default function CreatePropertyForm({
       ? property.room_type
       : '',
   );
-  const [toiletType, setToiletType] = useState<ToiletType | ''>(
-    property?.toilet_type ?? '',
-  );
-  const [parkingType, setParkingType] = useState<ParkingType | ''>(
-    property?.parking_type ?? '',
-  );
-  const [mainGateLock, setMainGateLock] = useState<MainGateLockType | ''>(
-    property?.main_gate_lock ?? '',
-  );
-  const [maxOccupants, setMaxOccupants] = useState(
-    formatInitialNumber(property?.max_occupants ?? null),
-  );
-  const [maxBikes, setMaxBikes] = useState(
-    formatInitialNumber(property?.max_bikes ?? null),
-  );
   const [floor, setFloor] = useState(property?.floor ?? '');
-  const [dryingArea, setDryingArea] = useState<DryingAreaType | ''>(
-    property?.drying_area ?? '',
-  );
   const [depositMonths, setDepositMonths] = useState(
     formatInitialNumber(property?.deposit_months ?? null),
   );
@@ -389,9 +359,6 @@ export default function CreatePropertyForm({
   );
   const [feeManagement, setFeeManagement] = useState(
     formatCurrencyInput(property?.fee_management ?? ''),
-  );
-  const [feeService, setFeeService] = useState(
-    formatCurrencyInput(property?.fee_service ?? ''),
   );
   const [amenities, setAmenities] = useState<AmenityValue[]>(() =>
     furnishingsToAmenityValues(property?.furnishings),
@@ -529,19 +496,12 @@ export default function CreatePropertyForm({
         fee_car: normalizeFeeAmount(feeCar),
         fee_wifi: normalizeFeeAmount(feeWifi),
         fee_management: normalizeFeeAmount(feeManagement),
-        fee_service: normalizeFeeAmount(feeService),
-        toilet_type: toiletType || null,
-        parking_type: parkingType || null,
-        main_gate_lock: mainGateLock || null,
-        drying_area: dryingArea || null,
         rent_amount: parseOptionalNumber(rentAmount) ?? null,
         bedrooms: parseOptionalInt(bedrooms) ?? null,
         bathrooms: parseOptionalNumber(bathrooms) ?? null,
         // DB constraint: area_sqm is null or > 0
         area_sqm:
           areaValue !== undefined && areaValue > 0 ? areaValue : null,
-        max_occupants: parseOptionalInt(maxOccupants) ?? null,
-        max_bikes: parseOptionalInt(maxBikes) ?? null,
         deposit_months: parseOptionalInt(depositMonths) ?? null,
         holding_deposit: parseOptionalNumber(holdingDeposit) ?? null,
       };
@@ -592,7 +552,7 @@ export default function CreatePropertyForm({
   const rentPreview = parseOptionalNumber(rentAmount);
 
   return (
-    <div className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-white">
+    <div className="absolute inset-0 flex flex-col overflow-hidden bg-white">
       <header className="flex shrink-0 items-center gap-3 border-b border-[#f3f4f6] px-4 py-3 sm:px-6">
         <Link
           href={backHref}
@@ -616,11 +576,11 @@ export default function CreatePropertyForm({
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <form
           id="property-form"
           onSubmit={handleSubmit}
-          className="w-full space-y-10 px-4 py-8 sm:px-8 lg:px-10"
+          className="w-full space-y-10 px-4 pt-8 pb-4 sm:px-8 lg:px-10"
         >
           <section>
             <SectionHeading number={1} title={t('form.sectionAddress')} />
@@ -1003,137 +963,10 @@ export default function CreatePropertyForm({
                   placeholder={t('form.feeManagementPlaceholder')}
                 />
               </div>
-              <div>
-                <label htmlFor="fee_service" className={labelClassName}>
-                  {t('form.feeService')}
-                </label>
-                <input
-                  id="fee_service"
-                  type="text"
-                  inputMode="decimal"
-                  value={feeService}
-                  onChange={(e) =>
-                    setFeeService(formatCurrencyInput(e.target.value))
-                  }
-                  className={`${smallInputClassName} font-mono`}
-                  placeholder={t('form.feeServicePlaceholder')}
-                />
-              </div>
             </div>
 
             <p className={subheadingClassName}>{t('form.roomDetails')}</p>
             <div className="mb-7 grid gap-3 sm:grid-cols-2">
-              <div>
-                <label htmlFor="toilet_type" className={labelClassName}>
-                  {t('form.toilet')}
-                </label>
-                <select
-                  id="toilet_type"
-                  value={toiletType}
-                  onChange={(e) =>
-                    setToiletType(e.target.value as ToiletType | '')
-                  }
-                  className={smallInputClassName}
-                >
-                  <option value="">{t('common.notSet')}</option>
-                  {PRIVATE_SHARED.filter(Boolean).map((item) => (
-                    <option key={item} value={item}>
-                      {t(`value.${item}` as TranslationKey)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="parking_type" className={labelClassName}>
-                  {t('form.parking')}
-                </label>
-                <select
-                  id="parking_type"
-                  value={parkingType}
-                  onChange={(e) =>
-                    setParkingType(e.target.value as ParkingType | '')
-                  }
-                  className={smallInputClassName}
-                >
-                  <option value="">{t('common.notSet')}</option>
-                  {PRIVATE_SHARED.filter(Boolean).map((item) => (
-                    <option key={item} value={item}>
-                      {t(`value.${item}` as TranslationKey)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="drying_area" className={labelClassName}>
-                  {t('form.dryingArea')}
-                </label>
-                <select
-                  id="drying_area"
-                  value={dryingArea}
-                  onChange={(e) =>
-                    setDryingArea(e.target.value as DryingAreaType | '')
-                  }
-                  className={smallInputClassName}
-                >
-                  <option value="">{t('common.notSet')}</option>
-                  {PRIVATE_SHARED.filter(Boolean).map((item) => (
-                    <option key={item} value={item}>
-                      {t(`value.${item}` as TranslationKey)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="main_gate_lock" className={labelClassName}>
-                  {t('form.mainGateLock')}
-                </label>
-                <select
-                  id="main_gate_lock"
-                  value={mainGateLock}
-                  onChange={(e) =>
-                    setMainGateLock(e.target.value as MainGateLockType | '')
-                  }
-                  className={smallInputClassName}
-                >
-                  {MAIN_GATE_LOCKS.map((item) => (
-                    <option key={item || 'empty'} value={item}>
-                      {item
-                        ? t(`value.${item}` as TranslationKey)
-                        : t('common.notSet')}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="max_occupants" className={labelClassName}>
-                  {t('form.maxOccupants')}
-                </label>
-                <input
-                  id="max_occupants"
-                  type="number"
-                  min={0}
-                  step={1}
-                  value={maxOccupants}
-                  onChange={(e) => setMaxOccupants(e.target.value)}
-                  className={smallInputClassName}
-                  placeholder="2"
-                />
-              </div>
-              <div>
-                <label htmlFor="max_bikes" className={labelClassName}>
-                  {t('form.maxBikes')}
-                </label>
-                <input
-                  id="max_bikes"
-                  type="number"
-                  min={0}
-                  step={1}
-                  value={maxBikes}
-                  onChange={(e) => setMaxBikes(e.target.value)}
-                  className={smallInputClassName}
-                  placeholder="1"
-                />
-              </div>
               <div>
                 <label htmlFor="holding_deposit" className={labelClassName}>
                   {t('form.holdingDeposit')}
@@ -1313,7 +1146,7 @@ export default function CreatePropertyForm({
             </div>
           ) : null}
 
-          <div className="flex justify-end pb-12">
+          <div className="flex justify-end pb-2">
             <button
               type="submit"
               disabled={submitting}

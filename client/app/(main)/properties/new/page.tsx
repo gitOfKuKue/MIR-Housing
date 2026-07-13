@@ -35,5 +35,9 @@ export default function CreatePropertyPage() {
     );
   }
 
-  return <CreatePropertyForm />;
+  return (
+    <div className="relative h-full min-h-0">
+      <CreatePropertyForm />
+    </div>
+  );
 }

@@ -652,7 +652,6 @@ export class PropertiesService {
       error.message.includes('fee_car') ||
       error.message.includes('fee_wifi') ||
       error.message.includes('fee_management') ||
-      error.message.includes('fee_service') ||
       error.message.includes('fee_water_type') ||
       error.message.includes('property_fee_water_type')
     ) {
@@ -664,6 +663,7 @@ export class PropertiesService {
     if (
       error.message.includes('has_car_parking') ||
       error.message.includes('has_bike_parking') ||
+      error.message.includes('has_ev_parking') ||
       error.message.includes('has_fixed_electricity') ||
       error.message.includes('pets_ok') ||
       error.message.includes('foreigners_ok') ||
@@ -671,7 +671,7 @@ export class PropertiesService {
       error.message.includes('has_cleaning_service')
     ) {
       throw new InternalServerErrorException(
-        'Property amenity columns are missing. Run migration 015_property_amenity_flags.sql in Supabase.',
+        'Property amenity columns are missing. Run migrations 015_property_amenity_flags.sql and 019_property_ev_parking_amenity.sql in Supabase.',
       );
     }
 

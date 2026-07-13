@@ -1,12 +1,6 @@
+import { FeeWaterType } from '../enums/fee-water-type.enum';
 import { PropertyStatus } from '../enums/property-status.enum';
 import { PropertyType } from '../enums/property-type.enum';
-import { FeeWaterType } from '../enums/fee-water-type.enum';
-import {
-  DryingAreaType,
-  MainGateLockType,
-  ParkingType,
-  ToiletType,
-} from '../enums/room-amenity.enum';
 
 export interface Property {
   id: string;
@@ -28,13 +22,7 @@ export interface Property {
   bathrooms: number | null;
   area_sqm: number | null;
   room_type: string | null;
-  toilet_type: ToiletType | null;
-  parking_type: ParkingType | null;
-  main_gate_lock: MainGateLockType | null;
-  max_occupants: number | null;
-  max_bikes: number | null;
   floor: string | null;
-  drying_area: DryingAreaType | null;
   deposit_months: number | null;
   holding_deposit: number | null;
   description: string | null;
@@ -47,7 +35,6 @@ export interface Property {
   fee_car: string | null;
   fee_wifi: string | null;
   fee_management: string | null;
-  fee_service: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

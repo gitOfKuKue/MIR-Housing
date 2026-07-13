@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from '@/src/i18n';
+import { useState } from 'react';
 import AmenityMultiSelect from './AmenityMultiSelect';
 import FurnishingMultiSelect from './FurnishingMultiSelect';
 import HcmcLocationSelects from './HcmcLocationSelects';
@@ -10,6 +11,8 @@ import {
   RENT_FILTER_STEP,
   type PropertyFilters,
 } from './filterProperties';
+
+type FilterDropdownId = 'roomType' | 'amenities' | 'furnishings' | null;
 
 interface PropertyFilterSidebarProps {
   value: PropertyFilters;
@@ -109,9 +112,14 @@ export default function PropertyFilterSidebar({
   rentFilterMax,
 }: PropertyFilterSidebarProps) {
   const t = useTranslations();
+  const [openDropdown, setOpenDropdown] = useState<FilterDropdownId>(null);
 
   function update(patch: Partial<PropertyFilters>) {
     onChange({ ...value, ...patch });
+  }
+
+  function setDropdownOpen(id: Exclude<FilterDropdownId, null>, open: boolean) {
+    setOpenDropdown(open ? id : null);
   }
 
   return (
@@ -162,6 +170,8 @@ export default function PropertyFilterSidebar({
         <RoomTypeSelect
           value={value.roomType}
           onChange={(roomType) => update({ roomType })}
+          open={openDropdown === 'roomType'}
+          onOpenChange={(open) => setDropdownOpen('roomType', open)}
           labelClassName={labelClassName}
           triggerClassName={
             selectClassName + ' flex items-center justify-between text-left'
@@ -171,6 +181,8 @@ export default function PropertyFilterSidebar({
         <AmenityMultiSelect
           value={value.amenities}
           onChange={(amenities) => update({ amenities })}
+          open={openDropdown === 'amenities'}
+          onOpenChange={(open) => setDropdownOpen('amenities', open)}
           labelClassName={labelClassName}
           triggerClassName={
             selectClassName + ' flex items-center justify-between text-left'
@@ -180,6 +192,8 @@ export default function PropertyFilterSidebar({
         <FurnishingMultiSelect
           value={value.furnishings}
           onChange={(furnishings) => update({ furnishings })}
+          open={openDropdown === 'furnishings'}
+          onOpenChange={(open) => setDropdownOpen('furnishings', open)}
           labelClassName={labelClassName}
           triggerClassName={
             selectClassName + ' flex items-center justify-between text-left'

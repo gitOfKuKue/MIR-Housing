@@ -11,10 +11,6 @@ export type PropertyType =
   | 'townhouse'
   | 'other';
 
-export type ToiletType = 'private' | 'shared';
-export type ParkingType = 'private' | 'shared';
-export type MainGateLockType = 'standard' | 'none';
-export type DryingAreaType = 'private' | 'shared';
 export type FeeWaterType = 'fixed' | 'per_m3';
 
 export type UtilityBillType =
@@ -64,28 +60,34 @@ export type WashingMachineType = 'private' | 'shared' | 'not_available';
 export interface PropertyFurnishings {
   id: string;
   property_id: string;
-  has_loft: boolean | null;
-  has_window: boolean | null;
-  has_balcony: boolean | null;
-  has_fridge: boolean | null;
-  has_tv: boolean | null;
   has_air_conditioner: boolean | null;
-  washing_machine: WashingMachineType | null;
-  has_kitchen_staff: boolean | null;
-  has_hot_water: boolean | null;
-  has_bed: boolean | null;
-  has_mattress: boolean | null;
+  has_fridge: boolean | null;
   has_wardrobe: boolean | null;
-  has_pillow: boolean | null;
-  has_blanket: boolean | null;
+  has_upper_kitchen_cabinet: boolean | null;
+  has_lower_kitchen_cabinet: boolean | null;
+  has_kitchen_counter: boolean | null;
+  has_mattress: boolean | null;
+  has_bed: boolean | null;
+  has_shoe_cabinet: boolean | null;
+  has_window_outdoor_view: boolean | null;
+  has_window_corridor: boolean | null;
+  has_window_air_well: boolean | null;
+  has_balcony: boolean | null;
+  has_ventilation_window: boolean | null;
+  has_dining_table: boolean | null;
+  has_desk: boolean | null;
+  has_dressing_table: boolean | null;
+  has_sofa: boolean | null;
+  has_tv: boolean | null;
+  has_range_hood: boolean | null;
+  has_hot_water: boolean | null;
+  washing_machine: WashingMachineType | null;
   landlord_in_building: boolean | null;
   has_elevator: boolean | null;
   has_security_guard: boolean | null;
-  has_skylight: boolean | null;
-  has_pool: boolean | null;
   has_car_parking: boolean | null;
   has_bike_parking: boolean | null;
-  has_fixed_electricity: boolean | null;
+  has_ev_parking: boolean | null;
   pets_ok: boolean | null;
   foreigners_ok: boolean | null;
   has_solar_hot_water: boolean | null;
@@ -114,13 +116,7 @@ export interface Property {
   bathrooms: number | null;
   area_sqm: number | null;
   room_type: string | null;
-  toilet_type: ToiletType | null;
-  parking_type: ParkingType | null;
-  main_gate_lock: MainGateLockType | null;
-  max_occupants: number | null;
-  max_bikes: number | null;
   floor: string | null;
-  drying_area: DryingAreaType | null;
   deposit_months: number | null;
   holding_deposit: number | null;
   description: string | null;
@@ -133,7 +129,6 @@ export interface Property {
   fee_car: string | null;
   fee_wifi: string | null;
   fee_management: string | null;
-  fee_service: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

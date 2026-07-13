@@ -247,13 +247,7 @@ export type CreatePropertyPayload = {
   bathrooms?: number;
   area_sqm?: number;
   room_type?: string;
-  toilet_type?: Property['toilet_type'];
-  parking_type?: Property['parking_type'];
-  main_gate_lock?: Property['main_gate_lock'];
-  max_occupants?: number;
-  max_bikes?: number;
   floor?: string;
-  drying_area?: Property['drying_area'];
   deposit_months?: number;
   holding_deposit?: number;
   description?: string;
@@ -266,7 +260,6 @@ export type CreatePropertyPayload = {
   fee_car?: string;
   fee_wifi?: string;
   fee_management?: string;
-  fee_service?: string;
 };
 
 export interface LocationOption {

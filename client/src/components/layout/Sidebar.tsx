@@ -116,7 +116,7 @@ export default function Sidebar({ className }: { className?: string }) {
 
   return (
     <aside
-      className={`sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 self-start border-r border-[#e8e4dc] bg-white transition-[width] duration-300 ease-in-out md:flex md:flex-col ${
+      className={`hidden h-full shrink-0 border-r border-[#e8e4dc] bg-white transition-[width] duration-300 ease-in-out md:flex md:flex-col ${
         collapsed ? 'w-[4.5rem]' : 'w-60'
       } ${className ?? ''}`}
     >

@@ -1,3 +1,6 @@
+import { FeeWaterType } from '../enums/fee-water-type.enum';
+import { PropertyStatus } from '../enums/property-status.enum';
+import { PropertyType } from '../enums/property-type.enum';
 import {
   IsEnum,
   IsInt,
@@ -9,15 +12,6 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { PropertyStatus } from '../enums/property-status.enum';
-import { PropertyType } from '../enums/property-type.enum';
-import { FeeWaterType } from '../enums/fee-water-type.enum';
-import {
-  DryingAreaType,
-  MainGateLockType,
-  ParkingType,
-  ToiletType,
-} from '../enums/room-amenity.enum';
 
 export class CreatePropertyDto {
   @IsString()
@@ -109,35 +103,9 @@ export class CreatePropertyDto {
   room_type?: string;
 
   @IsOptional()
-  @IsEnum(ToiletType)
-  toilet_type?: ToiletType;
-
-  @IsOptional()
-  @IsEnum(ParkingType)
-  parking_type?: ParkingType;
-
-  @IsOptional()
-  @IsEnum(MainGateLockType)
-  main_gate_lock?: MainGateLockType;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  max_occupants?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  max_bikes?: number;
-
-  @IsOptional()
   @IsString()
   @MaxLength(50)
   floor?: string;
-
-  @IsOptional()
-  @IsEnum(DryingAreaType)
-  drying_area?: DryingAreaType;
 
   @IsOptional()
   @IsInt()
@@ -195,11 +163,6 @@ export class CreatePropertyDto {
   @IsString()
   @MaxLength(200)
   fee_management?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  fee_service?: string;
 
   @IsOptional()
   @IsUUID()

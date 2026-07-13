@@ -22,6 +22,10 @@ import {
   utilityBillStatusStyles,
 } from './format';
 import { ROOM_TYPE_LABEL_KEYS } from './RoomTypeSelect';
+import { AMENITY_LABEL_KEYS } from './AmenityMultiSelect';
+import { FURNISHING_LABEL_KEYS } from './FurnishingMultiSelect';
+import { FURNISHING_VALUES } from '@/src/lib/furnishings';
+import { FURNISHING_COLUMN_BY_VALUE } from '@/src/lib/furnishings-selection';
 
 function BackIcon() {
   return (
@@ -68,22 +72,6 @@ type TranslateFn = (
   key: TranslationKey,
   params?: Record<string, string | number>,
 ) => string;
-
-function translatePrivateShared(
-  t: TranslateFn,
-  value: 'private' | 'shared' | null | undefined,
-): string | null {
-  if (!value) return null;
-  return value === 'private' ? t('value.private') : t('value.shared');
-}
-
-function translateMainGateLock(
-  t: TranslateFn,
-  value: 'standard' | 'none' | null | undefined,
-): string | null {
-  if (!value) return null;
-  return value === 'standard' ? t('value.standard') : t('value.none');
-}
 
 function translateDepositMonths(
   t: TranslateFn,
@@ -367,7 +355,6 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
               label: t('form.feeManagement'),
               value: property.fee_management,
             },
-            { label: t('form.feeService'), value: property.fee_service },
           ].filter((item) => item.value);
 
           if (monthlyFees.length === 0) return null;
@@ -404,25 +391,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
                     ? t(ROOM_TYPE_LABEL_KEYS[property.room_type])
                     : property.room_type,
               },
-              {
-                label: t('detail.toilet'),
-                value: translatePrivateShared(t, property.toilet_type),
-              },
-              {
-                label: t('detail.parking'),
-                value: translatePrivateShared(t, property.parking_type),
-              },
-              {
-                label: t('detail.mainGateLock'),
-                value: translateMainGateLock(t, property.main_gate_lock),
-              },
-              { label: t('detail.maxOccupants'), value: property.max_occupants },
-              { label: t('detail.maxBikes'), value: property.max_bikes },
               { label: t('detail.floor'), value: property.floor },
-              {
-                label: t('detail.dryingArea'),
-                value: translatePrivateShared(t, property.drying_area),
-              },
               {
                 label: t('detail.depositFor'),
                 value: translateDepositMonths(t, property.deposit_months),
@@ -486,216 +455,126 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
                   </thead>
                   <tbody>
                     {(() => {
-                      const items = [
+                      const furnishings = property.furnishings;
+                      const furnitureItems = FURNISHING_VALUES.flatMap(
+                        (value) => {
+                          const key = FURNISHING_COLUMN_BY_VALUE[value];
+                          if (furnishings[key] !== true) return [];
+                          return [
+                            {
+                              label: t(FURNISHING_LABEL_KEYS[value]),
+                              value: translateFurnishingIncluded(t, true),
+                              included: true as boolean | null,
+                            },
+                          ];
+                        },
+                      );
+
+                      const amenityCandidates: Array<{
+                        label: string;
+                        value: string;
+                        included: boolean | null;
+                        show: boolean;
+                      }> = [
                         {
-                          label: t('furnishing.loft'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_loft,
-                          ),
-                          included: property.furnishings.has_loft,
+                          label: t(AMENITY_LABEL_KEYS.elevator),
+                          value: translateFurnishingIncluded(t, true),
+                          included: true,
+                          show: furnishings.has_elevator === true,
                         },
                         {
-                          label: t('furnishing.window'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_window,
-                          ),
-                          included: property.furnishings.has_window,
+                          label: t(AMENITY_LABEL_KEYS.security_guard),
+                          value: translateFurnishingIncluded(t, true),
+                          included: true,
+                          show: furnishings.has_security_guard === true,
                         },
                         {
-                          label: t('furnishing.balcony'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_balcony,
-                          ),
-                          included: property.furnishings.has_balcony,
+                          label: t(AMENITY_LABEL_KEYS.car_parking),
+                          value: translateFurnishingIncluded(t, true),
+                          included: true,
+                          show: furnishings.has_car_parking === true,
                         },
                         {
-                          label: t('furnishing.fridge'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_fridge,
-                          ),
-                          included: property.furnishings.has_fridge,
+                          label: t(AMENITY_LABEL_KEYS.motorbike_parking),
+                          value: translateFurnishingIncluded(t, true),
+                          included: true,
+                          show: furnishings.has_bike_parking === true,
                         },
                         {
-                          label: t('furnishing.tv'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_tv,
-                          ),
-                          included: property.furnishings.has_tv,
+                          label: t(AMENITY_LABEL_KEYS.ev_parking),
+                          value: translateFurnishingIncluded(t, true),
+                          included: true,
+                          show: furnishings.has_ev_parking === true,
                         },
                         {
-                          label: t('furnishing.airConditioner'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_air_conditioner,
-                          ),
-                          included: property.furnishings.has_air_conditioner,
+                          label: t(AMENITY_LABEL_KEYS.pet_friendly),
+                          value: translateFurnishingIncluded(t, true),
+                          included: true,
+                          show: furnishings.pets_ok === true,
+                        },
+                        {
+                          label: t(AMENITY_LABEL_KEYS.foreigner_friendly),
+                          value: translateFurnishingIncluded(t, true),
+                          included: true,
+                          show: furnishings.foreigners_ok === true,
+                        },
+                        {
+                          label: t(AMENITY_LABEL_KEYS.solar_water_heater),
+                          value: translateFurnishingIncluded(t, true),
+                          included: true,
+                          show: furnishings.has_solar_hot_water === true,
+                        },
+                        {
+                          label: t(AMENITY_LABEL_KEYS.cleaning_service),
+                          value: translateFurnishingIncluded(t, true),
+                          included: true,
+                          show: furnishings.has_cleaning_service === true,
                         },
                         {
                           label: t('furnishing.washingMachine'),
                           value: translateWashingMachine(
                             t,
-                            property.furnishings.washing_machine,
+                            furnishings.washing_machine,
                           ),
                           included: null,
-                        },
-                        {
-                          label: t('furnishing.kitchenStaff'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_kitchen_staff,
-                          ),
-                          included: property.furnishings.has_kitchen_staff,
-                        },
-                        {
-                          label: t('furnishing.hotWater'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_hot_water,
-                          ),
-                          included: property.furnishings.has_hot_water,
-                        },
-                        {
-                          label: t('furnishing.bed'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_bed,
-                          ),
-                          included: property.furnishings.has_bed,
-                        },
-                        {
-                          label: t('furnishing.mattress'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_mattress,
-                          ),
-                          included: property.furnishings.has_mattress,
-                        },
-                        {
-                          label: t('furnishing.wardrobe'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_wardrobe,
-                          ),
-                          included: property.furnishings.has_wardrobe,
-                        },
-                        {
-                          label: t('furnishing.pillow'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_pillow,
-                          ),
-                          included: property.furnishings.has_pillow,
-                        },
-                        {
-                          label: t('furnishing.blanket'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_blanket,
-                          ),
-                          included: property.furnishings.has_blanket,
+                          show:
+                            furnishings.washing_machine === 'private' ||
+                            furnishings.washing_machine === 'shared',
                         },
                         {
                           label: t('furnishing.landlord'),
                           value: translateLandlordInBuilding(
                             t,
-                            property.furnishings.landlord_in_building,
+                            furnishings.landlord_in_building,
                           ),
                           included: null,
-                        },
-                        {
-                          label: t('furnishing.elevator'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_elevator,
-                          ),
-                          included: property.furnishings.has_elevator,
-                        },
-                        {
-                          label: t('furnishing.securityGuard'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_security_guard,
-                          ),
-                          included: property.furnishings.has_security_guard,
-                        },
-                        {
-                          label: t('amenity.carParking'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_car_parking,
-                          ),
-                          included: property.furnishings.has_car_parking,
-                        },
-                        {
-                          label: t('amenity.bikeParking'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_bike_parking,
-                          ),
-                          included: property.furnishings.has_bike_parking,
-                        },
-                        {
-                          label: t('amenity.fixedElectricity'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_fixed_electricity,
-                          ),
-                          included: property.furnishings.has_fixed_electricity,
-                        },
-                        {
-                          label: t('amenity.petsOk'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.pets_ok,
-                          ),
-                          included: property.furnishings.pets_ok,
-                        },
-                        {
-                          label: t('amenity.foreignersOk'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.foreigners_ok,
-                          ),
-                          included: property.furnishings.foreigners_ok,
-                        },
-                        {
-                          label: t('amenity.solarHotWater'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_solar_hot_water,
-                          ),
-                          included: property.furnishings.has_solar_hot_water,
-                        },
-                        {
-                          label: t('amenity.cleaningService'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_cleaning_service,
-                          ),
-                          included: property.furnishings.has_cleaning_service,
-                        },
-                        {
-                          label: t('furnishing.skylight'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_skylight,
-                          ),
-                          included: property.furnishings.has_skylight,
-                        },
-                        {
-                          label: t('furnishing.pool'),
-                          value: translateFurnishingIncluded(
-                            t,
-                            property.furnishings.has_pool,
-                          ),
-                          included: property.furnishings.has_pool,
+                          show: furnishings.landlord_in_building === true,
                         },
                       ];
+
+                      const items = [
+                        ...furnitureItems,
+                        ...amenityCandidates
+                          .filter((item) => item.show)
+                          .map(({ label, value, included }) => ({
+                            label,
+                            value,
+                            included,
+                          })),
+                      ];
+
+                      if (items.length === 0) {
+                        return (
+                          <tr>
+                            <td
+                              colSpan={4}
+                              className="px-3 py-4 text-[#6b7280]"
+                            >
+                              —
+                            </td>
+                          </tr>
+                        );
+                      }
 
                       const makeBadge = (item: (typeof items)[number]) => (
                         <span

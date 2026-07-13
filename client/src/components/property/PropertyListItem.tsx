@@ -23,29 +23,27 @@ export interface PropertyListItemProps {
   className?: string;
 }
 
-const MAX_VISIBLE_TAGS = 6;
-
 const AMENITY_FLAGS: Array<{
   key: keyof PropertyFurnishings;
   labelKey: TranslationKey;
 }> = [
   { key: 'has_elevator', labelKey: AMENITY_LABEL_KEYS.elevator },
-  { key: 'has_security_guard', labelKey: AMENITY_LABEL_KEYS.security_24_7 },
-  { key: 'has_bike_parking', labelKey: AMENITY_LABEL_KEYS.bike_parking },
+  { key: 'has_security_guard', labelKey: AMENITY_LABEL_KEYS.security_guard },
   { key: 'has_car_parking', labelKey: AMENITY_LABEL_KEYS.car_parking },
-  { key: 'pets_ok', labelKey: AMENITY_LABEL_KEYS.pets_ok },
-  { key: 'foreigners_ok', labelKey: AMENITY_LABEL_KEYS.foreigners_ok },
+  {
+    key: 'has_bike_parking',
+    labelKey: AMENITY_LABEL_KEYS.motorbike_parking,
+  },
+  { key: 'has_ev_parking', labelKey: AMENITY_LABEL_KEYS.ev_parking },
+  { key: 'pets_ok', labelKey: AMENITY_LABEL_KEYS.pet_friendly },
+  { key: 'foreigners_ok', labelKey: AMENITY_LABEL_KEYS.foreigner_friendly },
+  {
+    key: 'has_solar_hot_water',
+    labelKey: AMENITY_LABEL_KEYS.solar_water_heater,
+  },
   {
     key: 'has_cleaning_service',
     labelKey: AMENITY_LABEL_KEYS.cleaning_service,
-  },
-  {
-    key: 'has_fixed_electricity',
-    labelKey: AMENITY_LABEL_KEYS.fixed_electricity,
-  },
-  {
-    key: 'has_solar_hot_water',
-    labelKey: AMENITY_LABEL_KEYS.solar_hot_water,
   },
 ];
 
@@ -53,18 +51,54 @@ const FURNISHING_FLAGS: Array<{
   key: keyof PropertyFurnishings;
   labelKey: TranslationKey;
 }> = [
-  { key: 'has_air_conditioner', labelKey: FURNISHING_LABEL_KEYS.air_conditioner },
+  {
+    key: 'has_air_conditioner',
+    labelKey: FURNISHING_LABEL_KEYS.air_conditioner,
+  },
   { key: 'has_fridge', labelKey: FURNISHING_LABEL_KEYS.fridge },
-  { key: 'has_mattress', labelKey: FURNISHING_LABEL_KEYS.mattress },
-  { key: 'has_hot_water', labelKey: FURNISHING_LABEL_KEYS.hot_water },
-  { key: 'has_bed', labelKey: FURNISHING_LABEL_KEYS.bed },
   { key: 'has_wardrobe', labelKey: FURNISHING_LABEL_KEYS.wardrobe },
-  { key: 'has_tv', labelKey: FURNISHING_LABEL_KEYS.tv },
-  { key: 'has_pillow', labelKey: FURNISHING_LABEL_KEYS.pillow },
-  { key: 'has_blanket', labelKey: FURNISHING_LABEL_KEYS.blanket },
+  {
+    key: 'has_upper_kitchen_cabinet',
+    labelKey: FURNISHING_LABEL_KEYS.upper_kitchen_cabinet,
+  },
+  {
+    key: 'has_lower_kitchen_cabinet',
+    labelKey: FURNISHING_LABEL_KEYS.lower_kitchen_cabinet,
+  },
+  {
+    key: 'has_kitchen_counter',
+    labelKey: FURNISHING_LABEL_KEYS.kitchen_counter,
+  },
+  { key: 'has_mattress', labelKey: FURNISHING_LABEL_KEYS.mattress },
+  { key: 'has_bed', labelKey: FURNISHING_LABEL_KEYS.bed },
+  { key: 'has_shoe_cabinet', labelKey: FURNISHING_LABEL_KEYS.shoe_cabinet },
+  {
+    key: 'has_window_outdoor_view',
+    labelKey: FURNISHING_LABEL_KEYS.window_outdoor_view,
+  },
+  {
+    key: 'has_window_corridor',
+    labelKey: FURNISHING_LABEL_KEYS.window_corridor,
+  },
+  {
+    key: 'has_window_air_well',
+    labelKey: FURNISHING_LABEL_KEYS.window_air_well,
+  },
   { key: 'has_balcony', labelKey: FURNISHING_LABEL_KEYS.balcony },
-  { key: 'has_window', labelKey: FURNISHING_LABEL_KEYS.window },
-  { key: 'has_loft', labelKey: FURNISHING_LABEL_KEYS.loft },
+  {
+    key: 'has_ventilation_window',
+    labelKey: FURNISHING_LABEL_KEYS.ventilation_window,
+  },
+  { key: 'has_dining_table', labelKey: FURNISHING_LABEL_KEYS.dining_table },
+  { key: 'has_desk', labelKey: FURNISHING_LABEL_KEYS.desk },
+  {
+    key: 'has_dressing_table',
+    labelKey: FURNISHING_LABEL_KEYS.dressing_table,
+  },
+  { key: 'has_sofa', labelKey: FURNISHING_LABEL_KEYS.sofa },
+  { key: 'has_tv', labelKey: FURNISHING_LABEL_KEYS.tv },
+  { key: 'has_range_hood', labelKey: FURNISHING_LABEL_KEYS.range_hood },
+  { key: 'has_hot_water', labelKey: FURNISHING_LABEL_KEYS.water_heater },
 ];
 
 function formatVnd(amount: number | null | undefined): string | null {
@@ -190,14 +224,55 @@ export default function PropertyListItem({
       ? t(ROOM_TYPE_LABEL_KEYS[property.room_type])
       : property.room_type;
 
-  const electricity = latestBillByType(property.utility_bills ?? [], 'electricity');
-  const water = latestBillByType(property.utility_bills ?? [], 'water');
-  const management = latestBillByType(property.utility_bills ?? [], 'management');
+  const electricityBill = latestBillByType(
+    property.utility_bills ?? [],
+    'electricity',
+  );
+  const waterBill = latestBillByType(property.utility_bills ?? [], 'water');
+  const managementBill = latestBillByType(
+    property.utility_bills ?? [],
+    'management',
+  );
   const includedBadge =
-    management?.status === 'waived' ||
-    management?.status === 'no_payment_needed' ||
-    electricity?.status === 'waived' ||
-    water?.status === 'waived';
+    managementBill?.status === 'waived' ||
+    managementBill?.status === 'no_payment_needed' ||
+    electricityBill?.status === 'waived' ||
+    waterBill?.status === 'waived';
+
+  const waterFeeLabel = property.fee_water
+    ? property.fee_water_type === 'fixed'
+      ? `${property.fee_water} (${t('form.feeWaterFixed')})`
+      : property.fee_water_type === 'per_m3'
+        ? `${property.fee_water} (${t('form.feeWaterPerM3')})`
+        : property.fee_water
+    : null;
+
+  const feeRows = [
+    property.fee_electricity
+      ? t('list.electricity', { amount: property.fee_electricity })
+      : electricityBill
+        ? t('list.electricity', {
+            amount: formatVnd(electricityBill.amount) ?? '',
+          })
+        : null,
+    waterFeeLabel
+      ? t('list.water', { amount: waterFeeLabel })
+      : waterBill
+        ? t('list.water', { amount: formatVnd(waterBill.amount) ?? '' })
+        : null,
+    property.fee_motorbike
+      ? t('list.motorbike', { amount: property.fee_motorbike })
+      : null,
+    property.fee_car ? t('list.car', { amount: property.fee_car }) : null,
+    property.fee_wifi ? t('list.wifi', { amount: property.fee_wifi }) : null,
+    property.fee_management
+      ? t('list.management', { amount: property.fee_management })
+      : managementBill
+        ? t('list.management', {
+            amount: formatVnd(managementBill.amount) ?? '',
+          })
+        : null,
+  ].filter(Boolean) as string[];
 
   const { amenityTags, furnishingTags } = useMemo(() => {
     const furnishings = property.furnishings;
@@ -232,8 +307,6 @@ export default function PropertyListItem({
     ...amenityTags.map((label) => ({ label, tone: 'amenity' as const })),
     ...furnishingTags.map((label) => ({ label, tone: 'furnishing' as const })),
   ];
-  const visibleTags = allTags.slice(0, MAX_VISIBLE_TAGS);
-  const hiddenTagCount = Math.max(allTags.length - visibleTags.length, 0);
 
   const detailHref = href ?? `/properties/${property.id}`;
 
@@ -243,7 +316,22 @@ export default function PropertyListItem({
       address,
       rent ? `${rent} / ${t('list.perMonth')}` : null,
       roomTypeLabel,
+      property.floor
+        ? t('list.floor', { floor: property.floor })
+        : null,
+      property.area_sqm != null
+        ? t('list.area', { area: String(property.area_sqm) })
+        : null,
+      property.bedrooms != null
+        ? t('list.bedrooms', { count: String(property.bedrooms) })
+        : null,
+      property.bathrooms != null
+        ? t('list.bathrooms', { count: String(property.bathrooms) })
+        : null,
+      ...feeRows,
+      ...allTags.map((tag) => tag.label),
       property.description,
+      property.zalo_group_link,
     ].filter(Boolean);
 
     try {
@@ -312,6 +400,9 @@ export default function PropertyListItem({
                 />
                 {t(`status.${property.status}` as TranslationKey)}
               </span>
+              <span className="text-sm font-medium text-[#6b7280]">
+                {t(`type.${property.property_type}` as TranslationKey)}
+              </span>
               {roomTypeLabel ? (
                 <span className="text-sm font-medium text-[#6b7280]">
                   {roomTypeLabel}
@@ -328,20 +419,37 @@ export default function PropertyListItem({
               </p>
             ) : null}
 
-            <p className="text-base font-semibold leading-snug text-[#1a1a1a]">
-              {address || property.name}
-            </p>
+            <div>
+              <p className="text-base font-semibold leading-snug text-[#1a1a1a]">
+                {property.name}
+              </p>
+              {address ? (
+                <p className="mt-1 text-sm text-[#6b7280]">{address}</p>
+              ) : null}
+            </div>
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#6b7280]">
               {property.floor ? (
-                <span>
-                  {t('list.floor', { floor: property.floor })}
-                </span>
+                <span>{t('list.floor', { floor: property.floor })}</span>
               ) : null}
               {property.area_sqm != null ? (
                 <span>
                   {t('list.area', {
                     area: String(property.area_sqm),
+                  })}
+                </span>
+              ) : null}
+              {property.bedrooms != null ? (
+                <span>
+                  {t('list.bedrooms', {
+                    count: String(property.bedrooms),
+                  })}
+                </span>
+              ) : null}
+              {property.bathrooms != null ? (
+                <span>
+                  {t('list.bathrooms', {
+                    count: String(property.bathrooms),
                   })}
                 </span>
               ) : null}
@@ -351,7 +459,8 @@ export default function PropertyListItem({
                     amount: formatVnd(property.holding_deposit) ?? '',
                   })}
                 </span>
-              ) : property.deposit_months != null ? (
+              ) : null}
+              {property.deposit_months != null ? (
                 <span>
                   {t('list.depositMonths', {
                     count: String(property.deposit_months),
@@ -360,29 +469,11 @@ export default function PropertyListItem({
               ) : null}
             </div>
 
-            {(electricity || water || management || includedBadge) && (
+            {(feeRows.length > 0 || includedBadge) && (
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#6b7280]">
-                {electricity ? (
-                  <span>
-                    {t('list.electricity', {
-                      amount: formatVnd(electricity.amount) ?? '',
-                    })}
-                  </span>
-                ) : null}
-                {water ? (
-                  <span>
-                    {t('list.water', {
-                      amount: formatVnd(water.amount) ?? '',
-                    })}
-                  </span>
-                ) : null}
-                {management ? (
-                  <span>
-                    {t('list.management', {
-                      amount: formatVnd(management.amount) ?? '',
-                    })}
-                  </span>
-                ) : null}
+                {feeRows.map((row) => (
+                  <span key={row}>{row}</span>
+                ))}
                 {includedBadge ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#e8f3ed] px-2 py-0.5 text-[11px] font-semibold text-[#1e4636]">
                     <CheckIcon />
@@ -392,9 +483,9 @@ export default function PropertyListItem({
               </div>
             )}
 
-            {visibleTags.length > 0 ? (
+            {allTags.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
-                {visibleTags.map((tag) => (
+                {allTags.map((tag) => (
                   <span
                     key={`${tag.tone}-${tag.label}`}
                     className={
@@ -406,18 +497,24 @@ export default function PropertyListItem({
                     {tag.label}
                   </span>
                 ))}
-                {hiddenTagCount > 0 ? (
-                  <span className="inline-flex rounded-full bg-[#f3f4f6] px-2.5 py-1 text-[11px] font-semibold text-[#6b7280]">
-                    +{hiddenTagCount}
-                  </span>
-                ) : null}
               </div>
             ) : null}
 
             {property.description ? (
-              <p className="line-clamp-1 text-sm text-[#6b7280]">
+              <p className="whitespace-pre-wrap text-sm text-[#6b7280]">
                 {property.description}
               </p>
+            ) : null}
+
+            {property.zalo_group_link ? (
+              <a
+                href={property.zalo_group_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all text-xs font-medium text-[#1e4636] underline-offset-2 hover:underline"
+              >
+                {property.zalo_group_link}
+              </a>
             ) : null}
 
             <div className="mt-auto flex flex-wrap gap-2 pt-1">

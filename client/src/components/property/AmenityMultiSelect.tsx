@@ -6,11 +6,13 @@ import {
   AMENITY_VALUES,
   type AmenityValue,
 } from '@/src/lib/amenities';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
 interface AmenityMultiSelectProps {
   value: AmenityValue[];
   onChange: (value: AmenityValue[]) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   labelClassName?: string;
   triggerClassName?: string;
 }
@@ -19,37 +21,40 @@ export const AMENITY_LABEL_KEYS: Record<AmenityValue, TranslationKey> = {
   elevator: 'amenity.elevator',
   shared_washing_machine: 'amenity.sharedWashingMachine',
   private_washing_machine: 'amenity.privateWashingMachine',
-  security_24_7: 'amenity.security247',
+  security_guard: 'amenity.securityGuard',
   car_parking: 'amenity.carParking',
-  bike_parking: 'amenity.bikeParking',
-  fixed_electricity: 'amenity.fixedElectricity',
-  pets_ok: 'amenity.petsOk',
-  foreigners_ok: 'amenity.foreignersOk',
-  solar_hot_water: 'amenity.solarHotWater',
+  motorbike_parking: 'amenity.motorbikeParking',
+  ev_parking: 'amenity.evParking',
+  pet_friendly: 'amenity.petFriendly',
+  foreigner_friendly: 'amenity.foreignerFriendly',
+  solar_water_heater: 'amenity.solarWaterHeater',
   cleaning_service: 'amenity.cleaningService',
 };
 
 export default function AmenityMultiSelect({
   value,
   onChange,
+  open,
+  onOpenChange,
   labelClassName,
   triggerClassName,
 }: AmenityMultiSelectProps) {
   const t = useTranslations();
-  const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const listId = useId();
 
   useEffect(() => {
+    if (!open) return;
+
     function handlePointerDown(event: MouseEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
+        onOpenChange(false);
       }
     }
 
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, []);
+  }, [open, onOpenChange]);
 
   const selected = new Set(value);
 
@@ -67,14 +72,14 @@ export default function AmenityMultiSelect({
   }
 
   return (
-    <div ref={rootRef} className="relative block">
+    <div ref={rootRef} className="block">
       <span className={labelClassName}>{t('properties.filterAmenity')}</span>
       <button
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => onOpenChange(!open)}
         className={
           triggerClassName ??
           'flex w-full items-center justify-between rounded-md border border-[#e5e7eb] bg-white px-3 py-2.5 text-left text-sm text-[#1a1a1a] outline-none transition focus:border-[#1e4636] focus:ring-2 focus:ring-[#1e4636]/10'
@@ -108,7 +113,7 @@ export default function AmenityMultiSelect({
           id={listId}
           role="listbox"
           aria-multiselectable="true"
-          className="absolute z-30 mt-1 max-h-72 w-full overflow-auto rounded-md border border-[#e5e7eb] bg-white py-1 shadow-lg"
+          className="mt-1 max-h-72 w-full overflow-auto rounded-md border border-[#e5e7eb] bg-white py-1"
         >
           {AMENITY_VALUES.map((option) => {
             const checked = selected.has(option);

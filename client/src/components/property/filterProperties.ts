@@ -25,19 +25,13 @@ export const RENT_FILTER_MIN = 0;
 export const RENT_FILTER_MAX_FALLBACK = 20_000_000;
 export const RENT_FILTER_STEP = 500_000;
 
-/** Keep for callers that still import the old name. */
+/** Fixed price-range ceiling: 0 – 20,000,000 VND. */
 export const RENT_FILTER_MAX = RENT_FILTER_MAX_FALLBACK;
 
 export function resolveRentFilterMax(
-  highestRent: number | null | undefined,
+  _highestRent?: number | null,
 ): number {
-  if (highestRent == null || !Number.isFinite(highestRent) || highestRent <= 0) {
-    return RENT_FILTER_MAX_FALLBACK;
-  }
-
-  const stepped =
-    Math.ceil(highestRent / RENT_FILTER_STEP) * RENT_FILTER_STEP;
-  return Math.max(stepped, RENT_FILTER_STEP);
+  return RENT_FILTER_MAX;
 }
 
 export function createDefaultPropertyFilters(

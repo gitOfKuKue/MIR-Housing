@@ -10,6 +10,7 @@ export {
   DEFAULT_PROPERTY_FILTERS,
   propertyFiltersToQueryParams,
   resolveRentFilterMax,
+  RENT_FILTER_MAX,
   RENT_FILTER_MAX_FALLBACK,
 } from './filterProperties';
 export type { PropertyCardProps } from './PropertyCard';

@@ -6,54 +6,65 @@ import {
   FURNISHING_VALUES,
   type FurnishingValue,
 } from '@/src/lib/furnishings';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
 interface FurnishingMultiSelectProps {
   value: FurnishingValue[];
   onChange: (value: FurnishingValue[]) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   labelClassName?: string;
   triggerClassName?: string;
 }
 
 export const FURNISHING_LABEL_KEYS: Record<FurnishingValue, TranslationKey> = {
-  bed: 'furnishing.bed',
-  mattress: 'furnishing.mattress',
-  wardrobe: 'furnishing.wardrobe',
-  pillow: 'furnishing.pillow',
-  blanket: 'furnishing.blanket',
-  tv: 'furnishing.tv',
-  fridge: 'furnishing.fridge',
   air_conditioner: 'furnishing.airConditioner',
-  loft: 'furnishing.loft',
-  window: 'furnishing.window',
+  fridge: 'furnishing.fridge',
+  wardrobe: 'furnishing.wardrobe',
+  upper_kitchen_cabinet: 'furnishing.upperKitchenCabinet',
+  lower_kitchen_cabinet: 'furnishing.lowerKitchenCabinet',
+  kitchen_counter: 'furnishing.kitchenCounter',
+  mattress: 'furnishing.mattress',
+  bed: 'furnishing.bed',
+  shoe_cabinet: 'furnishing.shoeCabinet',
+  window_outdoor_view: 'furnishing.windowOutdoorView',
+  window_corridor: 'furnishing.windowCorridor',
+  window_air_well: 'furnishing.windowAirWell',
   balcony: 'furnishing.balcony',
-  hot_water: 'furnishing.hotWater',
-  kitchen_staff: 'furnishing.kitchenStaff',
-  skylight: 'furnishing.skylight',
-  pool: 'furnishing.pool',
+  ventilation_window: 'furnishing.ventilationWindow',
+  dining_table: 'furnishing.diningTable',
+  desk: 'furnishing.desk',
+  dressing_table: 'furnishing.dressingTable',
+  sofa: 'furnishing.sofa',
+  tv: 'furnishing.tv',
+  range_hood: 'furnishing.rangeHood',
+  water_heater: 'furnishing.waterHeater',
 };
 
 export default function FurnishingMultiSelect({
   value,
   onChange,
+  open,
+  onOpenChange,
   labelClassName,
   triggerClassName,
 }: FurnishingMultiSelectProps) {
   const t = useTranslations();
-  const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const listId = useId();
 
   useEffect(() => {
+    if (!open) return;
+
     function handlePointerDown(event: MouseEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
+        onOpenChange(false);
       }
     }
 
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, []);
+  }, [open, onOpenChange]);
 
   const selected = new Set(value);
 
@@ -71,14 +82,14 @@ export default function FurnishingMultiSelect({
   }
 
   return (
-    <div ref={rootRef} className="relative block">
+    <div ref={rootRef} className="block">
       <span className={labelClassName}>{t('properties.filterFurnishing')}</span>
       <button
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => onOpenChange(!open)}
         className={
           triggerClassName ??
           'flex w-full items-center justify-between rounded-md border border-[#e5e7eb] bg-white px-3 py-2.5 text-left text-sm text-[#1a1a1a] outline-none transition focus:border-[#1e4636] focus:ring-2 focus:ring-[#1e4636]/10'
@@ -112,7 +123,7 @@ export default function FurnishingMultiSelect({
           id={listId}
           role="listbox"
           aria-multiselectable="true"
-          className="absolute z-30 mt-1 max-h-72 w-full overflow-auto rounded-md border border-[#e5e7eb] bg-white py-1 shadow-lg"
+          className="mt-1 max-h-72 w-full overflow-auto rounded-md border border-[#e5e7eb] bg-white py-1"
         >
           {FURNISHING_VALUES.map((option) => {
             const checked = selected.has(option);

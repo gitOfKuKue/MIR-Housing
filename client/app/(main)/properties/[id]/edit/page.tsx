@@ -90,5 +90,9 @@ export default function EditPropertyPage() {
     );
   }
 
-  return <CreatePropertyForm property={property} />;
+  return (
+    <div className="relative h-full min-h-0">
+      <CreatePropertyForm property={property} />
+    </div>
+  );
 }

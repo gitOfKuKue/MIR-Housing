@@ -110,7 +110,7 @@ function applyAmenityFilters(
     filtered = filtered.eq('furnishings.has_elevator', true);
   }
 
-  if (selected.has(AmenityFilter.Security247)) {
+  if (selected.has(AmenityFilter.SecurityGuard)) {
     filtered = filtered.eq('furnishings.has_security_guard', true);
   }
 
@@ -118,23 +118,23 @@ function applyAmenityFilters(
     filtered = filtered.eq('furnishings.has_car_parking', true);
   }
 
-  if (selected.has(AmenityFilter.BikeParking)) {
+  if (selected.has(AmenityFilter.MotorbikeParking)) {
     filtered = filtered.eq('furnishings.has_bike_parking', true);
   }
 
-  if (selected.has(AmenityFilter.FixedElectricity)) {
-    filtered = filtered.eq('furnishings.has_fixed_electricity', true);
+  if (selected.has(AmenityFilter.EvParking)) {
+    filtered = filtered.eq('furnishings.has_ev_parking', true);
   }
 
-  if (selected.has(AmenityFilter.PetsOk)) {
+  if (selected.has(AmenityFilter.PetFriendly)) {
     filtered = filtered.eq('furnishings.pets_ok', true);
   }
 
-  if (selected.has(AmenityFilter.ForeignersOk)) {
+  if (selected.has(AmenityFilter.ForeignerFriendly)) {
     filtered = filtered.eq('furnishings.foreigners_ok', true);
   }
 
-  if (selected.has(AmenityFilter.SolarHotWater)) {
+  if (selected.has(AmenityFilter.SolarWaterHeater)) {
     filtered = filtered.eq('furnishings.has_solar_hot_water', true);
   }
 
