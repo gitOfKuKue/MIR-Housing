@@ -139,7 +139,7 @@ export function expandPropertiesToRoomListings(
     }));
   }
 
-  return properties.flatMap((property) => {
+  return properties.flatMap((property): PropertyRoomListing[] => {
     const rooms = property.rooms ?? [];
     if (rooms.length === 0) {
       return [{ key: property.id, property, focusedRoom: null }];
