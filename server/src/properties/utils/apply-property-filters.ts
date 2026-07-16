@@ -15,7 +15,10 @@ export function applyPropertyFilters(
   let filtered = builder;
 
   if (query.status) {
-    filtered = filtered.eq('status', query.status);
+    // List by room availability so a building with mixed rooms still appears;
+    // only matching rooms are embedded (via rooms!inner). Detail uses findOne
+    // without this filter and returns every room.
+    filtered = filtered.eq('rooms.status', query.status);
   }
 
   if (query.property_type) {
@@ -98,7 +101,8 @@ export function propertySelectNeedsRoomsInner(
   query: QueryPropertiesDto,
 ): boolean {
   return Boolean(
-    query.furnishings?.length ||
+    query.status ||
+      query.furnishings?.length ||
       query.room_type ||
       query.min_rent !== undefined ||
       query.max_rent !== undefined ||
