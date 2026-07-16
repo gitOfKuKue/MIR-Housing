@@ -1,6 +1,7 @@
 import { FeeWaterType } from '../enums/fee-water-type.enum';
 import { PropertyStatus } from '../enums/property-status.enum';
 import { PropertyType } from '../enums/property-type.enum';
+import { WashingMachineType } from '../enums/washing-machine-type.enum';
 
 export interface Property {
   id: string;
@@ -35,6 +36,17 @@ export interface Property {
   fee_car: string | null;
   fee_wifi: string | null;
   fee_management: string | null;
+  has_elevator: boolean | null;
+  has_security_guard: boolean | null;
+  has_car_parking: boolean | null;
+  has_bike_parking: boolean | null;
+  has_ev_parking: boolean | null;
+  pets_ok: boolean | null;
+  foreigners_ok: boolean | null;
+  has_solar_hot_water: boolean | null;
+  has_cleaning_service: boolean | null;
+  washing_machine: WashingMachineType | null;
+  landlord_in_building: boolean | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

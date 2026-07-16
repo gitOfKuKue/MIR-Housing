@@ -1,16 +1,27 @@
--- MIR Housing — mock property furnishings for seeded HCMC properties
--- Prerequisites: migrations 010 + 015–020 applied; 009_seed_20_properties_full.sql run
+-- MIR Housing — mock rooms for seeded HCMC properties
+-- Prerequisites: migrations 021 + 023 applied; 009_seed_20_properties_full.sql run
 -- Run in Supabase Dashboard → SQL Editor
 
-delete from public.property_furnishings
+delete from public.rooms
 where property_id in (
   select id
   from public.properties
   where internal_notes like '%SEED:HCMC-20%'
 );
 
-insert into public.property_furnishings (
+insert into public.rooms (
   property_id,
+  name,
+  room_type,
+  floor,
+  area_sqm,
+  rent_amount,
+  rent_currency,
+  status,
+  holding_deposit,
+  deposit_months,
+  bedrooms,
+  bathrooms,
   has_air_conditioner,
   has_fridge,
   has_wardrobe,
@@ -31,37 +42,22 @@ insert into public.property_furnishings (
   has_sofa,
   has_tv,
   has_range_hood,
-  has_hot_water,
-  washing_machine,
-  landlord_in_building,
-  has_elevator,
-  has_security_guard,
-  has_car_parking,
-  has_bike_parking,
-  has_ev_parking,
-  pets_ok,
-  foreigners_ok,
-  has_solar_hot_water,
-  has_cleaning_service
+  has_hot_water
 )
-values
-  ('aaaaaaaa-0001-4000-8000-000000000001', true, true, true, true, true, true, true, true, true, true, false, false, true, false, true, true, false, true, true, true, true, 'private', false, true, true, true, true, false, true, true, false, true),
-  ('aaaaaaaa-0001-4000-8000-000000000002', true, true, true, true, true, true, true, true, true, true, false, false, true, false, true, true, false, true, true, true, true, 'private', false, true, true, true, true, false, true, true, false, true),
-  ('aaaaaaaa-0001-4000-8000-000000000003', true, true, true, true, true, true, true, true, false, true, false, false, true, true, true, true, true, true, true, true, true, 'private', false, true, true, true, true, true, true, true, true, false),
-  ('aaaaaaaa-0001-4000-8000-000000000004', true, true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, true, 'private', false, false, false, false, true, false, false, false, false, false),
-  ('aaaaaaaa-0001-4000-8000-000000000005', true, true, true, true, true, true, true, true, true, true, false, false, true, false, true, false, false, true, true, true, true, 'shared', true, true, true, false, true, false, true, true, true, true),
-  ('aaaaaaaa-0001-4000-8000-000000000006', true, true, true, false, true, true, true, true, true, false, true, false, false, false, true, true, false, true, true, false, true, 'shared', false, true, true, true, true, true, false, true, false, true),
-  ('aaaaaaaa-0001-4000-8000-000000000007', true, true, true, true, true, true, true, true, true, true, false, false, true, false, true, true, true, true, true, true, true, 'private', false, false, true, true, true, false, true, true, true, true),
-  ('aaaaaaaa-0001-4000-8000-000000000008', true, true, true, true, true, true, true, true, true, true, false, false, true, false, true, true, false, true, true, true, true, 'private', false, true, true, true, true, false, true, true, false, true),
-  ('aaaaaaaa-0001-4000-8000-000000000009', true, true, true, true, true, true, true, true, false, true, false, true, true, true, true, true, false, true, true, true, true, 'shared', false, true, true, true, true, false, true, true, true, false),
-  ('aaaaaaaa-0001-4000-8000-000000000010', true, true, true, false, false, false, false, false, false, false, true, false, false, false, false, true, false, false, false, false, true, 'shared', true, false, false, false, true, false, false, false, false, false),
-  ('aaaaaaaa-0001-4000-8000-000000000011', true, true, true, true, true, true, true, true, true, true, false, false, true, false, true, true, false, true, true, true, true, 'private', false, true, true, true, true, false, true, true, false, true),
-  ('aaaaaaaa-0001-4000-8000-000000000012', true, true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, true, 'not_available', false, false, false, false, true, false, false, false, false, false),
-  ('aaaaaaaa-0001-4000-8000-000000000013', true, true, true, false, true, true, true, true, true, false, true, false, false, false, false, true, false, false, false, false, true, 'shared', true, true, true, false, true, false, true, true, true, true),
-  ('aaaaaaaa-0001-4000-8000-000000000014', true, true, true, true, true, true, true, true, true, true, false, false, true, false, true, false, false, true, true, true, true, 'shared', false, true, true, false, true, false, true, true, false, false),
-  ('aaaaaaaa-0001-4000-8000-000000000015', true, true, false, false, false, false, true, true, false, false, false, true, false, true, false, true, false, false, false, false, true, 'shared', true, false, false, false, true, false, false, false, true, false),
-  ('aaaaaaaa-0001-4000-8000-000000000016', true, true, true, true, true, true, true, true, true, true, false, false, true, false, true, true, true, true, true, true, true, 'private', false, false, true, true, true, false, true, true, true, true),
-  ('aaaaaaaa-0001-4000-8000-000000000017', true, true, true, false, true, true, true, true, true, false, true, false, false, false, true, true, false, true, true, false, true, 'shared', false, true, true, false, true, true, false, true, false, false),
-  ('aaaaaaaa-0001-4000-8000-000000000018', true, true, true, false, false, false, false, false, false, false, true, false, false, false, false, true, false, false, false, false, true, 'private', true, false, false, false, true, false, false, false, false, false),
-  ('aaaaaaaa-0001-4000-8000-000000000019', true, true, true, true, true, true, true, true, true, true, false, false, true, true, true, true, true, true, true, true, true, 'private', false, true, true, true, true, true, true, true, true, true),
-  ('aaaaaaaa-0001-4000-8000-000000000020', true, true, true, true, true, true, true, true, true, true, false, false, true, false, true, true, false, true, true, true, true, 'private', false, false, true, true, true, false, true, true, false, true);
+select
+  p.id,
+  p.name,
+  p.room_type,
+  p.floor,
+  p.area_sqm,
+  p.rent_amount,
+  coalesce(p.rent_currency, 'VND'),
+  p.status,
+  p.holding_deposit,
+  p.deposit_months,
+  p.bedrooms,
+  p.bathrooms,
+  true, true, true, true, true, true, true, true, true,
+  true, false, false, true, false, true, true, false, true, true, true, true
+from public.properties p
+where p.internal_notes like '%SEED:HCMC-20%';

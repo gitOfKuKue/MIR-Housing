@@ -24,7 +24,7 @@ export enum FurnishingFilter {
 
 export const FURNISHING_FILTER_VALUES = Object.values(FurnishingFilter);
 
-/** Maps filter values to property_furnishings boolean columns. */
+/** Maps filter values to room_furnishings boolean columns. */
 export const FURNISHING_FILTER_COLUMNS: Record<FurnishingFilter, string> = {
   [FurnishingFilter.AirConditioner]: 'has_air_conditioner',
   [FurnishingFilter.Fridge]: 'has_fridge',

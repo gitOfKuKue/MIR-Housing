@@ -1,7 +1,8 @@
 export const PROPERTIES_TABLE = 'properties';
 export const PROPERTY_IMAGES_TABLE = 'property_images';
 export const PROPERTY_UTILITY_BILLS_TABLE = 'property_utility_bills';
-export const PROPERTY_FURNISHINGS_TABLE = 'property_furnishings';
+export const ROOMS_TABLE = 'rooms';
+export const ROOM_IMAGES_TABLE = 'room_images';
 export const PROPERTY_IMAGES_BUCKET = 'property-images';
 
 export const PROPERTY_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
@@ -49,5 +50,53 @@ export const PROPERTY_SELECT_WITH_IMAGES = `
     created_at,
     updated_at
   ),
-  furnishings:property_furnishings (*)
+  rooms:rooms (
+    id,
+    property_id,
+    name,
+    room_type,
+    floor,
+    area_sqm,
+    rent_amount,
+    rent_currency,
+    status,
+    holding_deposit,
+    deposit_months,
+    bedrooms,
+    bathrooms,
+    has_air_conditioner,
+    has_fridge,
+    has_wardrobe,
+    has_upper_kitchen_cabinet,
+    has_lower_kitchen_cabinet,
+    has_kitchen_counter,
+    has_mattress,
+    has_bed,
+    has_shoe_cabinet,
+    has_window_outdoor_view,
+    has_window_corridor,
+    has_window_air_well,
+    has_balcony,
+    has_ventilation_window,
+    has_dining_table,
+    has_desk,
+    has_dressing_table,
+    has_sofa,
+    has_tv,
+    has_range_hood,
+    has_hot_water,
+    description,
+    internal_notes,
+    created_by,
+    created_at,
+    updated_at,
+    deleted_at,
+    images:room_images (
+      id,
+      room_id,
+      storage_path,
+      sort_order,
+      created_at
+    )
+  )
 `;

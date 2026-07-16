@@ -41,7 +41,7 @@ import {
 import { UtilityBillStatus } from './enums/utility-bill-status.enum';
 import {
   PROPERTIES_TABLE,
-  PROPERTY_FURNISHINGS_TABLE,
+  ROOMS_TABLE,
   PROPERTY_IMAGE_MAX_UPLOAD_COUNT,
   PROPERTY_IMAGES_BUCKET,
   PROPERTY_IMAGES_TABLE,
@@ -50,12 +50,17 @@ import {
 } from './properties.constants';
 import {
   applyPropertyFilters,
-  propertySelectNeedsFurnishingsInner,
+  propertySelectNeedsRoomsInner,
 } from './utils/apply-property-filters';
-import { buildFurnishingsUpsertRow } from './utils/build-furnishings-upsert-row';
+import {
+  buildPropertyAmenitiesPatch,
+  buildRoomFurniturePatch,
+} from './utils/build-room-and-amenities-patch';
 import { resolveImageFile } from './utils/resolve-image-file';
 import { UpsertPropertyFurnishingsDto } from './dto/upsert-property-furnishings.dto';
-import { PropertyFurnishings } from './entities/property-furnishings.entity';
+import { Room } from './entities/room.entity';
+import { RoomFurnishings } from './entities/room-furnishings.entity';
+import { buildFurnishingsView } from './entities/property-with-images.entity';
 
 @Injectable()
 export class PropertiesService {
@@ -69,10 +74,10 @@ export class PropertiesService {
     const { page, limit, from, to } = resolvePagination(query.page, query.limit);
 
     const select = (
-      propertySelectNeedsFurnishingsInner(query)
+      propertySelectNeedsRoomsInner(query)
         ? PROPERTY_SELECT_WITH_IMAGES.replace(
-            'furnishings:property_furnishings (',
-            'furnishings:property_furnishings!inner (',
+            'rooms:rooms (',
+            'rooms:rooms!inner (',
           )
         : PROPERTY_SELECT_WITH_IMAGES
     ) as typeof PROPERTY_SELECT_WITH_IMAGES;
@@ -234,27 +239,88 @@ export class PropertiesService {
     propertyId: string,
     dto: UpsertPropertyFurnishingsDto,
     accessToken: string,
-  ): Promise<PropertyFurnishings> {
-    await this.findOne(propertyId, accessToken);
-
+  ): Promise<RoomFurnishings> {
+    const property = await this.findOne(propertyId, accessToken);
     const supabase = this.supabaseService.getClient(accessToken);
-    const row = buildFurnishingsUpsertRow(
-      propertyId,
-      dto.amenities ?? [],
-      dto.furnishings ?? [],
-    );
 
-    const { data, error } = await supabase
-      .from(PROPERTY_FURNISHINGS_TABLE)
-      .upsert(row, { onConflict: 'property_id' })
-      .select('*')
-      .single();
+    const amenitiesPatch = buildPropertyAmenitiesPatch(dto.amenities ?? []);
+    const furniturePatch = buildRoomFurniturePatch(dto.furnishings ?? []);
 
-    if (error) {
-      this.handleSupabaseError(error);
+    const { error: propertyError } = await supabase
+      .from(PROPERTIES_TABLE)
+      .update(amenitiesPatch)
+      .eq('id', propertyId)
+      .is('deleted_at', null);
+
+    if (propertyError) {
+      this.handleSupabaseError(propertyError);
     }
 
-    return data as PropertyFurnishings;
+    const { data: existingRooms, error: roomsError } = await supabase
+      .from(ROOMS_TABLE)
+      .select('*')
+      .eq('property_id', propertyId)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: true })
+      .limit(1);
+
+    if (roomsError) {
+      this.handleSupabaseError(roomsError);
+    }
+
+    const existingRoom = (existingRooms?.[0] as Room | undefined) ?? null;
+
+    const roomPayload = {
+      property_id: propertyId,
+      name: property.name,
+      room_type: property.room_type,
+      floor: property.floor,
+      area_sqm: property.area_sqm,
+      rent_amount: property.rent_amount,
+      rent_currency: property.rent_currency,
+      status: property.status,
+      holding_deposit: property.holding_deposit,
+      deposit_months: property.deposit_months,
+      bedrooms: property.bedrooms,
+      bathrooms: property.bathrooms,
+      description: property.description,
+      internal_notes: property.internal_notes,
+      ...furniturePatch,
+      updated_at: new Date().toISOString(),
+    };
+
+    let room: Room;
+
+    if (existingRoom) {
+      const { data, error } = await supabase
+        .from(ROOMS_TABLE)
+        .update(roomPayload)
+        .eq('id', existingRoom.id)
+        .select('*')
+        .single();
+
+      if (error) {
+        this.handleSupabaseError(error);
+      }
+      room = data as Room;
+    } else {
+      const { data, error } = await supabase
+        .from(ROOMS_TABLE)
+        .insert(roomPayload)
+        .select('*')
+        .single();
+
+      if (error) {
+        this.handleSupabaseError(error);
+      }
+      room = data as Room;
+    }
+
+    const refreshed = await this.findOne(propertyId, accessToken);
+    return (
+      refreshed.furnishings ??
+      buildFurnishingsView({ ...property, ...amenitiesPatch }, room)!
+    );
   }
 
   async remove(
@@ -671,7 +737,7 @@ export class PropertiesService {
       error.message.includes('has_cleaning_service')
     ) {
       throw new InternalServerErrorException(
-        'Property amenity columns are missing. Run migrations 015_property_amenity_flags.sql and 019_property_ev_parking_amenity.sql in Supabase.',
+        'Property amenity columns are missing. Run migration 023_properties_rooms_connection.sql in Supabase.',
       );
     }
 

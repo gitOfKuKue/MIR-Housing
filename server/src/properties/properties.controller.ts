@@ -31,7 +31,7 @@ import { UpdatePropertyDto } from './dto/update-property.dto';
 import { UpdatePropertyUtilityBillDto } from './dto/update-property-utility-bill.dto';
 import { UpsertPropertyFurnishingsDto } from './dto/upsert-property-furnishings.dto';
 import { Property } from './entities/property.entity';
-import { PropertyFurnishings } from './entities/property-furnishings.entity';
+import { RoomFurnishings } from './entities/room-furnishings.entity';
 import { PropertyUtilityBill } from './entities/property-utility-bill.entity';
 import { PropertyWithImages } from './entities/property-with-images.entity';
 import { PropertiesService } from './properties.service';
@@ -181,7 +181,7 @@ export class PropertiesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpsertPropertyFurnishingsDto,
     @AccessToken() accessToken: string,
-  ): Promise<PropertyFurnishings> {
+  ): Promise<RoomFurnishings> {
     return this.propertiesService.upsertFurnishings(id, dto, accessToken);
   }
 

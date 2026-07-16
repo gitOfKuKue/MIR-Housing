@@ -5,8 +5,8 @@ import {
 } from '../enums/furnishing-filter.enum';
 import { WashingMachineType } from '../enums/washing-machine-type.enum';
 
-export type PropertyFurnishingsUpsertRow = {
-  property_id: string;
+/** Building-level amenity columns on `properties`. */
+export type PropertyAmenitiesPatch = {
   has_elevator: boolean;
   has_security_guard: boolean;
   has_car_parking: boolean;
@@ -17,6 +17,10 @@ export type PropertyFurnishingsUpsertRow = {
   has_solar_hot_water: boolean;
   has_cleaning_service: boolean;
   washing_machine: WashingMachineType | null;
+};
+
+/** Furniture columns written to `rooms`. */
+export type RoomFurniturePatch = {
   has_air_conditioner: boolean;
   has_fridge: boolean;
   has_wardrobe: boolean;
@@ -40,13 +44,10 @@ export type PropertyFurnishingsUpsertRow = {
   has_hot_water: boolean;
 };
 
-export function buildFurnishingsUpsertRow(
-  propertyId: string,
+export function buildPropertyAmenitiesPatch(
   amenities: AmenityFilter[] = [],
-  furnishings: FurnishingFilter[] = [],
-): PropertyFurnishingsUpsertRow {
+): PropertyAmenitiesPatch {
   const amenitySet = new Set(amenities);
-  const furnishingSet = new Set(furnishings);
 
   let washingMachine: WashingMachineType | null = null;
   if (amenitySet.has(AmenityFilter.PrivateWashingMachine)) {
@@ -55,8 +56,7 @@ export function buildFurnishingsUpsertRow(
     washingMachine = WashingMachineType.Shared;
   }
 
-  const row: PropertyFurnishingsUpsertRow = {
-    property_id: propertyId,
+  return {
     has_elevator: amenitySet.has(AmenityFilter.Elevator),
     has_security_guard: amenitySet.has(AmenityFilter.SecurityGuard),
     has_car_parking: amenitySet.has(AmenityFilter.CarParking),
@@ -67,6 +67,14 @@ export function buildFurnishingsUpsertRow(
     has_solar_hot_water: amenitySet.has(AmenityFilter.SolarWaterHeater),
     has_cleaning_service: amenitySet.has(AmenityFilter.CleaningService),
     washing_machine: washingMachine,
+  };
+}
+
+export function buildRoomFurniturePatch(
+  furnishings: FurnishingFilter[] = [],
+): RoomFurniturePatch {
+  const furnishingSet = new Set(furnishings);
+  const row: RoomFurniturePatch = {
     has_air_conditioner: false,
     has_fridge: false,
     has_wardrobe: false,
@@ -91,9 +99,9 @@ export function buildFurnishingsUpsertRow(
   };
 
   for (const [value, column] of Object.entries(FURNISHING_FILTER_COLUMNS)) {
-    row[column as keyof PropertyFurnishingsUpsertRow] = furnishingSet.has(
+    row[column as keyof RoomFurniturePatch] = furnishingSet.has(
       value as FurnishingFilter,
-    ) as never;
+    );
   }
 
   return row;

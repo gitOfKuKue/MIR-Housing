@@ -93,10 +93,11 @@ export function applyPropertyFilters(
   return filtered;
 }
 
-export function propertySelectNeedsFurnishingsInner(
+/** Furnishings filters require an inner join on rooms. */
+export function propertySelectNeedsRoomsInner(
   query: QueryPropertiesDto,
 ): boolean {
-  return Boolean(query.amenities?.length || query.furnishings?.length);
+  return Boolean(query.furnishings?.length);
 }
 
 function applyAmenityFilters(
@@ -107,53 +108,50 @@ function applyAmenityFilters(
   const selected = new Set(amenities);
 
   if (selected.has(AmenityFilter.Elevator)) {
-    filtered = filtered.eq('furnishings.has_elevator', true);
+    filtered = filtered.eq('has_elevator', true);
   }
 
   if (selected.has(AmenityFilter.SecurityGuard)) {
-    filtered = filtered.eq('furnishings.has_security_guard', true);
+    filtered = filtered.eq('has_security_guard', true);
   }
 
   if (selected.has(AmenityFilter.CarParking)) {
-    filtered = filtered.eq('furnishings.has_car_parking', true);
+    filtered = filtered.eq('has_car_parking', true);
   }
 
   if (selected.has(AmenityFilter.MotorbikeParking)) {
-    filtered = filtered.eq('furnishings.has_bike_parking', true);
+    filtered = filtered.eq('has_bike_parking', true);
   }
 
   if (selected.has(AmenityFilter.EvParking)) {
-    filtered = filtered.eq('furnishings.has_ev_parking', true);
+    filtered = filtered.eq('has_ev_parking', true);
   }
 
   if (selected.has(AmenityFilter.PetFriendly)) {
-    filtered = filtered.eq('furnishings.pets_ok', true);
+    filtered = filtered.eq('pets_ok', true);
   }
 
   if (selected.has(AmenityFilter.ForeignerFriendly)) {
-    filtered = filtered.eq('furnishings.foreigners_ok', true);
+    filtered = filtered.eq('foreigners_ok', true);
   }
 
   if (selected.has(AmenityFilter.SolarWaterHeater)) {
-    filtered = filtered.eq('furnishings.has_solar_hot_water', true);
+    filtered = filtered.eq('has_solar_hot_water', true);
   }
 
   if (selected.has(AmenityFilter.CleaningService)) {
-    filtered = filtered.eq('furnishings.has_cleaning_service', true);
+    filtered = filtered.eq('has_cleaning_service', true);
   }
 
   const wantsShared = selected.has(AmenityFilter.SharedWashingMachine);
   const wantsPrivate = selected.has(AmenityFilter.PrivateWashingMachine);
 
   if (wantsShared && wantsPrivate) {
-    filtered = filtered.in('furnishings.washing_machine', [
-      'shared',
-      'private',
-    ]);
+    filtered = filtered.in('washing_machine', ['shared', 'private']);
   } else if (wantsShared) {
-    filtered = filtered.eq('furnishings.washing_machine', 'shared');
+    filtered = filtered.eq('washing_machine', 'shared');
   } else if (wantsPrivate) {
-    filtered = filtered.eq('furnishings.washing_machine', 'private');
+    filtered = filtered.eq('washing_machine', 'private');
   }
 
   return filtered;
@@ -167,7 +165,7 @@ function applyFurnishingFilters(
 
   for (const item of furnishings) {
     const column = FURNISHING_FILTER_COLUMNS[item];
-    filtered = filtered.eq(`furnishings.${column}`, true);
+    filtered = filtered.eq(`rooms.${column}`, true);
   }
 
   return filtered;

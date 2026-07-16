@@ -1,8 +1,19 @@
-import { WashingMachineType } from '../enums/washing-machine-type.enum';
+import { PropertyStatus } from '../enums/property-status.enum';
 
-export interface PropertyFurnishings {
+export interface Room {
   id: string;
   property_id: string;
+  name: string | null;
+  room_type: string | null;
+  floor: string | null;
+  area_sqm: number | null;
+  rent_amount: number | null;
+  rent_currency: string;
+  status: PropertyStatus;
+  holding_deposit: number | null;
+  deposit_months: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
   has_air_conditioner: boolean | null;
   has_fridge: boolean | null;
   has_wardrobe: boolean | null;
@@ -24,17 +35,23 @@ export interface PropertyFurnishings {
   has_tv: boolean | null;
   has_range_hood: boolean | null;
   has_hot_water: boolean | null;
-  washing_machine: WashingMachineType | null;
-  landlord_in_building: boolean | null;
-  has_elevator: boolean | null;
-  has_security_guard: boolean | null;
-  has_car_parking: boolean | null;
-  has_bike_parking: boolean | null;
-  has_ev_parking: boolean | null;
-  pets_ok: boolean | null;
-  foreigners_ok: boolean | null;
-  has_solar_hot_water: boolean | null;
-  has_cleaning_service: boolean | null;
+  description: string | null;
+  internal_notes: string | null;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface RoomImage {
+  id: string;
+  room_id: string;
+  storage_path: string;
+  sort_order: number;
+  created_at: string;
+  public_url?: string;
+}
+
+export interface RoomWithImages extends Room {
+  images: RoomImage[];
 }

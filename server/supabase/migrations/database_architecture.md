@@ -54,6 +54,17 @@ CREATE TABLE public.properties (
   fee_management text,
   fee_service text,
   fee_water_type USER-DEFINED,
+  has_elevator boolean,
+  has_security_guard boolean,
+  has_car_parking boolean,
+  has_bike_parking boolean,
+  has_ev_parking boolean,
+  pets_ok boolean,
+  foreigners_ok boolean,
+  has_solar_hot_water boolean,
+  has_cleaning_service boolean,
+  washing_machine USER-DEFINED,
+  landlord_in_building boolean,
   CONSTRAINT properties_pkey PRIMARY KEY (id),
   CONSTRAINT properties_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
 );
@@ -87,9 +98,20 @@ CREATE TABLE public.property_utility_bills (
   CONSTRAINT property_utility_bills_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id),
   CONSTRAINT property_utility_bills_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
 );
-CREATE TABLE public.property_furnishings (
+CREATE TABLE public.rooms (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  property_id uuid NOT NULL UNIQUE,
+  property_id uuid NOT NULL,
+  name text,
+  room_type text,
+  floor text,
+  area_sqm numeric CHECK (area_sqm IS NULL OR area_sqm > 0::numeric),
+  rent_amount numeric CHECK (rent_amount IS NULL OR rent_amount >= 0::numeric),
+  rent_currency text NOT NULL DEFAULT 'VND'::text,
+  status USER-DEFINED NOT NULL DEFAULT 'available'::property_status,
+  holding_deposit numeric CHECK (holding_deposit IS NULL OR holding_deposit >= 0::numeric),
+  deposit_months integer CHECK (deposit_months IS NULL OR deposit_months >= 0),
+  bedrooms integer CHECK (bedrooms IS NULL OR bedrooms >= 0),
+  bathrooms numeric CHECK (bathrooms IS NULL OR bathrooms >= 0::numeric),
   has_air_conditioner boolean,
   has_fridge boolean,
   has_wardrobe boolean,
@@ -111,19 +133,22 @@ CREATE TABLE public.property_furnishings (
   has_tv boolean,
   has_range_hood boolean,
   has_hot_water boolean,
-  washing_machine USER-DEFINED,
-  landlord_in_building boolean,
-  has_elevator boolean,
-  has_security_guard boolean,
-  has_car_parking boolean,
-  has_bike_parking boolean,
-  has_ev_parking boolean,
-  pets_ok boolean,
-  foreigners_ok boolean,
-  has_solar_hot_water boolean,
-  has_cleaning_service boolean,
+  description text,
+  internal_notes text,
+  created_by uuid,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT property_furnishings_pkey PRIMARY KEY (id),
-  CONSTRAINT property_furnishings_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id)
+  deleted_at timestamp with time zone,
+  CONSTRAINT rooms_pkey PRIMARY KEY (id),
+  CONSTRAINT rooms_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id),
+  CONSTRAINT rooms_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.room_images (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  room_id uuid NOT NULL,
+  storage_path text NOT NULL UNIQUE,
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT room_images_pkey PRIMARY KEY (id),
+  CONSTRAINT room_images_room_id_fkey FOREIGN KEY (room_id) REFERENCES public.rooms(id)
 );

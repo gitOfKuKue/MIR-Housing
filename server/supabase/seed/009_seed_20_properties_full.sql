@@ -6,7 +6,8 @@
 --   • 20 properties (fixed UUIDs)
 --   • 3 property_images rows per property (60 total) — metadata only
 --   • 7 utility bill types per property for March 2026 (140 total)
---   • Furnishings: run seed/010_property_furnishings_mock.sql after this script
+--   • Rooms: run seed/010_property_furnishings_mock.sql after this script
+--     (inserts into rooms from seeded properties)
 --
 -- Images: metadata is inserted here. SQL cannot upload binary files to Storage.
 -- After this script, run from server/:
