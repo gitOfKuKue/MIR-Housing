@@ -8,6 +8,7 @@ export { default as PropertyPagination } from './PropertyPagination';
 export { default as PropertyToolbar } from './PropertyToolbar';
 export {
   DEFAULT_PROPERTY_FILTERS,
+  expandPropertiesToRoomListings,
   propertyFiltersToQueryParams,
   resolveRentFilterMax,
   RENT_FILTER_MAX,
@@ -18,5 +19,6 @@ export type { PropertyListItemProps } from './PropertyListItem';
 export type {
   PropertyFilters,
   PropertyQueryParams,
+  PropertyRoomListing,
   PropertyViewMode,
 } from './filterProperties';

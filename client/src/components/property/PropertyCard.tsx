@@ -5,7 +5,7 @@ import type { TranslationKey } from '@/src/i18n';
 import type { Property, Room } from '@/src/types/property';
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { formatRentRange, statusStyles } from './format';
+import { formatRent, formatRentRange, statusStyles } from './format';
 import PropertyImageSlideshow, {
   collectPropertySlideshowImages,
 } from './PropertyImageSlideshow';
@@ -75,6 +75,8 @@ function primaryRoom(property: Property): Room | null {
 
 export interface PropertyCardProps {
   property: Property;
+  /** When set, show this room only (filtered room listing). */
+  focusedRoom?: Room | null;
   imageUrl?: string;
   imageAlt?: string;
   actionLabel?: string;
@@ -87,6 +89,7 @@ export interface PropertyCardProps {
 
 export default function PropertyCard({
   property,
+  focusedRoom = null,
   imageUrl,
   imageAlt,
   actionLabel,
@@ -98,24 +101,39 @@ export default function PropertyCard({
 }: PropertyCardProps) {
   const t = useTranslations();
   const resolvedActionLabel = actionLabel ?? t('properties.viewDetails');
-  const rent = formatRentRange(
-    property.rooms ?? [],
-    property.rent_amount,
-    property.rent_currency,
-  );
-  const address = formatCardAddress(property);
   const rooms = property.rooms ?? [];
+  const room = focusedRoom ?? primaryRoom(property);
+  const isFocusedRoom = Boolean(focusedRoom);
+
+  const rent = isFocusedRoom
+    ? formatRent(
+        room?.rent_amount ?? null,
+        room?.rent_currency || property.rent_currency,
+      )
+    : formatRentRange(
+        rooms,
+        property.rent_amount,
+        property.rent_currency,
+      );
+
+  const address = formatCardAddress(property);
   const availableCount = rooms.filter(
-    (room) => room.status === 'available',
+    (item) => item.status === 'available',
   ).length;
-  const room = primaryRoom(property);
+  const displayStatus = room?.status ?? property.status;
 
   const slideshowImages = useMemo(() => {
     if (imageUrl) {
       return [{ id: 'override', public_url: imageUrl }];
     }
+    if (focusedRoom?.images?.length) {
+      return focusedRoom.images.map((image) => ({
+        id: image.id,
+        public_url: image.public_url,
+      }));
+    }
     return collectPropertySlideshowImages(property);
-  }, [imageUrl, property]);
+  }, [imageUrl, property, focusedRoom]);
 
   const roomTypeLabel =
     (room?.room_type || property.room_type) &&
@@ -127,28 +145,35 @@ export default function PropertyCard({
         )
       : room?.room_type || property.room_type;
 
+  const roomTitle =
+    focusedRoom?.name?.trim() ||
+    (isFocusedRoom ? t('form.roomTab', { n: 1 }) : null);
+
   const detailChips = [
-    rooms.length > 0
+    !isFocusedRoom && rooms.length > 0
       ? t('detail.roomsCount', { count: rooms.length })
       : null,
-    rooms.length > 0
+    !isFocusedRoom && rooms.length > 0
       ? t('detail.roomsAvailable', { count: availableCount })
       : null,
+    roomTitle,
     roomTypeLabel,
-    (room?.floor || property.floor)
-      ? t('list.floor', { floor: room?.floor || property.floor || '' })
+    (room?.floor || (!isFocusedRoom ? property.floor : null))
+      ? t('list.floor', {
+          floor: room?.floor || property.floor || '',
+        })
       : null,
-    (room?.area_sqm ?? property.area_sqm) != null
+    (room?.area_sqm ?? (!isFocusedRoom ? property.area_sqm : null)) != null
       ? t('list.area', {
           area: String(room?.area_sqm ?? property.area_sqm),
         })
       : null,
-    (room?.bedrooms ?? property.bedrooms) != null
+    (room?.bedrooms ?? (!isFocusedRoom ? property.bedrooms : null)) != null
       ? t('list.bedrooms', {
           count: String(room?.bedrooms ?? property.bedrooms),
         })
       : null,
-    (room?.bathrooms ?? property.bathrooms) != null
+    (room?.bathrooms ?? (!isFocusedRoom ? property.bathrooms : null)) != null
       ? t('list.bathrooms', {
           count: String(room?.bathrooms ?? property.bathrooms),
         })
@@ -156,38 +181,45 @@ export default function PropertyCard({
   ].filter(Boolean) as string[];
 
   const featureTags = useMemo(() => {
-    const furnishings = property.furnishings;
-    if (!furnishings) return [] as string[];
-
     const tags: string[] = [];
-    if (furnishings.has_elevator) tags.push(t(AMENITY_LABEL_KEYS.elevator));
-    if (furnishings.has_security_guard) {
+    const furnishings = property.furnishings;
+
+    if (furnishings?.has_elevator) tags.push(t(AMENITY_LABEL_KEYS.elevator));
+    if (furnishings?.has_security_guard) {
       tags.push(t(AMENITY_LABEL_KEYS.security_guard));
     }
-    if (furnishings.has_car_parking) {
+    if (furnishings?.has_car_parking) {
       tags.push(t(AMENITY_LABEL_KEYS.car_parking));
     }
-    if (furnishings.has_bike_parking) {
+    if (furnishings?.has_bike_parking) {
       tags.push(t(AMENITY_LABEL_KEYS.motorbike_parking));
     }
-    if (furnishings.pets_ok) tags.push(t(AMENITY_LABEL_KEYS.pet_friendly));
-    if (furnishings.has_cleaning_service) {
+    if (furnishings?.pets_ok) tags.push(t(AMENITY_LABEL_KEYS.pet_friendly));
+    if (furnishings?.has_cleaning_service) {
       tags.push(t(AMENITY_LABEL_KEYS.cleaning_service));
     }
 
-    for (const value of FURNISHING_VALUES) {
-      const column = FURNISHING_COLUMN_BY_VALUE[value];
-      if (furnishings[column] === true) {
-        tags.push(t(FURNISHING_LABEL_KEYS[value]));
+    const furnitureSource = room ?? furnishings;
+    if (furnitureSource) {
+      for (const value of FURNISHING_VALUES) {
+        const column = FURNISHING_COLUMN_BY_VALUE[value];
+        if (
+          (furnitureSource as unknown as Record<string, unknown>)[column] ===
+          true
+        ) {
+          tags.push(t(FURNISHING_LABEL_KEYS[value]));
+        }
+        if (tags.length >= 8) break;
       }
-      if (tags.length >= 8) break;
     }
 
     return tags.slice(0, 8);
-  }, [property.furnishings, t]);
+  }, [property.furnishings, room, t]);
 
   const actionClassName =
     'flex w-full items-center justify-center rounded-lg bg-white py-3 text-sm font-bold text-[#1a1a1a] transition hover:bg-[#f3f4f6]';
+
+  const description = room?.description || property.description;
 
   return (
     <article
@@ -196,16 +228,16 @@ export default function PropertyCard({
       <div className="relative h-52 w-full shrink-0">
         <PropertyImageSlideshow
           images={slideshowImages}
-          alt={imageAlt ?? property.name}
+          alt={imageAlt ?? roomTitle ?? property.name}
           sizes="(max-width: 640px) 100vw, 384px"
         />
 
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#353f4b] via-[#353f4b]/25 to-transparent" />
 
         <span
-          className={`absolute left-3 top-3 z-10 inline-flex rounded-md px-2.5 py-1 text-xs font-semibold ${statusStyles(property.status)}`}
+          className={`absolute left-3 top-3 z-10 inline-flex rounded-md px-2.5 py-1 text-xs font-semibold ${statusStyles(displayStatus)}`}
         >
-          {t(`status.${property.status}` as TranslationKey)}
+          {t(`status.${displayStatus}` as TranslationKey)}
         </span>
 
         {onBookmark ? (
@@ -227,7 +259,9 @@ export default function PropertyCard({
               {property.name}
             </h3>
             <p className="mt-1 text-xs font-medium text-white/65">
-              {t(`type.${property.property_type}` as TranslationKey)}
+              {roomTitle
+                ? `${roomTitle} · ${t(`type.${property.property_type}` as TranslationKey)}`
+                : t(`type.${property.property_type}` as TranslationKey)}
             </p>
           </div>
           {rent ? (
@@ -272,9 +306,9 @@ export default function PropertyCard({
           </div>
         ) : null}
 
-        {property.description ? (
+        {description ? (
           <p className="line-clamp-2 text-sm leading-relaxed text-white/65">
-            {property.description}
+            {description}
           </p>
         ) : null}
 

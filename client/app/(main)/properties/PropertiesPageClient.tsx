@@ -2,6 +2,7 @@
 
 import {
   DEFAULT_PROPERTY_FILTERS,
+  expandPropertiesToRoomListings,
   PropertyCard,
   PropertyFilterSidebar,
   PropertyListItem,
@@ -21,7 +22,7 @@ import { getAuthUser } from '@/src/lib/auth';
 import { canManageProperties } from '@/src/lib/roles';
 import type { Property } from '@/src/types/property';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const CARD_PAGE_SIZE = 12;
 const LIST_PAGE_SIZE = 10;
@@ -93,6 +94,19 @@ export default function PropertiesPageClient() {
 
   const pageSize = viewMode === 'card' ? CARD_PAGE_SIZE : LIST_PAGE_SIZE;
 
+  const filtersActive = hasActiveFilters(
+    {
+      ...appliedFilters,
+      search: debouncedSearch,
+    },
+    rentFilterMax,
+  );
+
+  const listingEntries = useMemo(
+    () => expandPropertiesToRoomListings(properties, filtersActive),
+    [properties, filtersActive],
+  );
+
   useEffect(() => {
     const user = getAuthUser();
     setUserName(user?.full_name ?? user?.email ?? null);
@@ -122,6 +136,8 @@ export default function PropertiesPageClient() {
     appliedFilters.minRent,
     appliedFilters.maxRent,
     appliedFilters.includeRented,
+    appliedFilters.amenities,
+    appliedFilters.furnishings,
     pageSize,
   ]);
 
@@ -182,9 +198,12 @@ export default function PropertiesPageClient() {
     appliedFilters.minRent,
     appliedFilters.maxRent,
     appliedFilters.includeRented,
+    appliedFilters.amenities,
+    appliedFilters.furnishings,
     rentFilterMax,
     page,
     pageSize,
+    t,
   ]);
 
   function handleSearch() {
@@ -203,13 +222,6 @@ export default function PropertiesPageClient() {
 
   const hasProperties = meta.total > 0;
   const showEmptyState = !loading && !error && !hasProperties;
-  const filtersActive = hasActiveFilters(
-    {
-      ...appliedFilters,
-      search: debouncedSearch,
-    },
-    rentFilterMax,
-  );
 
   return (
     <div className="h-full overflow-y-auto p-6 sm:p-8">
@@ -296,22 +308,24 @@ export default function PropertiesPageClient() {
         <>
           {viewMode === 'card' ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {properties.map((property) => (
+              {listingEntries.map((entry) => (
                 <PropertyCard
-                  key={property.id}
-                  property={property}
-                  href={`/properties/${property.id}`}
+                  key={entry.key}
+                  property={entry.property}
+                  focusedRoom={entry.focusedRoom}
+                  href={`/properties/${entry.property.id}`}
                   className="max-w-none"
                 />
               ))}
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {properties.map((property) => (
+              {listingEntries.map((entry) => (
                 <PropertyListItem
-                  key={property.id}
-                  property={property}
-                  href={`/properties/${property.id}`}
+                  key={entry.key}
+                  property={entry.property}
+                  focusedRoom={entry.focusedRoom}
+                  href={`/properties/${entry.property.id}`}
                 />
               ))}
             </div>

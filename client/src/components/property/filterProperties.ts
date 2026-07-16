@@ -1,7 +1,12 @@
 import type { AmenityValue } from '@/src/lib/amenities';
 import type { FurnishingValue } from '@/src/lib/furnishings';
 import type { RoomTypeValue } from '@/src/lib/room-types';
-import type { PropertyStatus, PropertyType } from '@/src/types/property';
+import type {
+  Property,
+  PropertyStatus,
+  PropertyType,
+  Room,
+} from '@/src/types/property';
 
 export type PropertyViewMode = 'card' | 'list';
 
@@ -113,4 +118,37 @@ export function propertyFiltersToQueryParams(
       ? { furnishings: filters.furnishings.join(',') }
       : {}),
   };
+}
+
+export interface PropertyRoomListing {
+  key: string;
+  property: Property;
+  focusedRoom: Room | null;
+}
+
+/** After filtering, one card/list row per matching room. */
+export function expandPropertiesToRoomListings(
+  properties: Property[],
+  filtersActive: boolean,
+): PropertyRoomListing[] {
+  if (!filtersActive) {
+    return properties.map((property) => ({
+      key: property.id,
+      property,
+      focusedRoom: null,
+    }));
+  }
+
+  return properties.flatMap((property) => {
+    const rooms = property.rooms ?? [];
+    if (rooms.length === 0) {
+      return [{ key: property.id, property, focusedRoom: null }];
+    }
+
+    return rooms.map((room) => ({
+      key: `${property.id}:${room.id}`,
+      property,
+      focusedRoom: room,
+    }));
+  });
 }

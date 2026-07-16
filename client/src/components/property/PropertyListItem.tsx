@@ -26,6 +26,8 @@ import { ROOM_TYPE_LABEL_KEYS } from './RoomTypeSelect';
 
 export interface PropertyListItemProps {
   property: Property;
+  /** When set, show this room only (filtered room listing). */
+  focusedRoom?: Room | null;
   href?: string;
   className?: string;
 }
@@ -246,11 +248,13 @@ function CheckIcon() {
 
 export default function PropertyListItem({
   property,
+  focusedRoom = null,
   href,
   className,
 }: PropertyListItemProps) {
   const t = useTranslations();
-  const rooms = property.rooms ?? [];
+  const allRooms = property.rooms ?? [];
+  const rooms = focusedRoom ? [focusedRoom] : allRooms;
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -258,14 +262,14 @@ export default function PropertyListItem({
 
   useEffect(() => {
     setActiveRoomIndex(0);
-  }, [property.id]);
+  }, [property.id, focusedRoom?.id]);
 
   const safeRoomIndex = Math.min(
     activeRoomIndex,
     Math.max(rooms.length - 1, 0),
   );
   const selectedRoom = rooms[safeRoomIndex] ?? null;
-  const hasMultipleRooms = rooms.length > 1;
+  const hasMultipleRooms = !focusedRoom && rooms.length > 1;
 
   const images = useMemo(() => {
     const roomSlides = roomImagesForSlideshow(selectedRoom);
@@ -549,6 +553,12 @@ export default function PropertyListItem({
               <p className="text-base font-semibold leading-snug text-[#1a1a1a]">
                 {property.name}
               </p>
+              {focusedRoom ? (
+                <p className="mt-0.5 text-sm font-medium text-[#1e4636]">
+                  {focusedRoom.name?.trim() ||
+                    t('form.roomTab', { n: 1 })}
+                </p>
+              ) : null}
               {address ? (
                 <p className="mt-1 text-sm text-[#6b7280]">{address}</p>
               ) : null}
