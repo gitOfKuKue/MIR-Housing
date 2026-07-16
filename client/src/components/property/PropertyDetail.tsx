@@ -162,6 +162,12 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(true);
   const [utilityBillsExpanded, setUtilityBillsExpanded] = useState(true);
+  const [activeRoomIndex, setActiveRoomIndex] = useState(0);
+  const [roomLightbox, setRoomLightbox] = useState<{
+    images: Property['rooms'][number]['images'] | Property['images'];
+    index: number;
+    name: string;
+  } | null>(null);
   const router = useRouter();
   const authUser = getAuthUser();
   const canEdit = Boolean(authUser);
@@ -507,8 +513,51 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
           {rooms.length === 0 ? (
             <p className="mt-4 text-sm text-[#6b7280]">{t('detail.noRooms')}</p>
           ) : (
-            <ul className="mt-5 space-y-5">
-              {rooms.map((room, index) => {
+            <>
+              <nav
+                className="mt-5 flex flex-wrap gap-1.5"
+                aria-label={t('detail.rooms')}
+              >
+                {rooms.map((room, index) => {
+                  const label =
+                    room.name?.trim() || t('form.roomTab', { n: index + 1 });
+                  const isActive = index === activeRoomIndex;
+                  return (
+                    <button
+                      key={room.id}
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => setActiveRoomIndex(index)}
+                      aria-pressed={isActive}
+                      className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                        isActive
+                          ? 'bg-[#1e4636] text-white'
+                          : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-[#e5e7eb]'
+                      }`}
+                    >
+                      <span>{label}</span>
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                          isActive
+                            ? 'bg-white/20 text-white'
+                            : statusStyles(room.status)
+                        }`}
+                      >
+                        {t(`status.${room.status}` as TranslationKey)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {(() => {
+                const safeIndex = Math.min(
+                  activeRoomIndex,
+                  Math.max(rooms.length - 1, 0),
+                );
+                const room = rooms[safeIndex];
+                if (!room) return null;
+
                 const roomRent = formatRent(
                   room.rent_amount,
                   room.rent_currency || property.rent_currency,
@@ -516,132 +565,161 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
                 const furniture = roomFurnitureLabels(room, t);
                 const typeLabel = roomTypeLabel(room, t);
                 const title =
-                  room.name?.trim() || t('form.roomTab', { n: index + 1 });
+                  room.name?.trim() ||
+                  t('form.roomTab', { n: safeIndex + 1 });
+                const roomPhotos =
+                  room.images?.length > 0
+                    ? room.images
+                    : rooms.length === 1
+                      ? property.images
+                      : [];
 
                 return (
-                  <li
-                    key={room.id}
-                    className="rounded-xl border border-[#f3f4f6] bg-[#fafaf9] p-5"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-semibold text-[#1a1a1a]">
-                            {title}
-                          </h3>
-                          <span
-                            className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${statusStyles(room.status)}`}
-                          >
-                            {t(`status.${room.status}` as TranslationKey)}
-                          </span>
+                  <div className="mt-5">
+                    <div className="rounded-xl border border-[#f3f4f6] bg-[#fafaf9] p-5">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-base font-semibold text-[#1a1a1a]">
+                              {title}
+                            </h3>
+                            <span
+                              className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${statusStyles(room.status)}`}
+                            >
+                              {t(`status.${room.status}` as TranslationKey)}
+                            </span>
+                          </div>
+                          {typeLabel ? (
+                            <p className="mt-1 text-sm text-[#6b7280]">
+                              {typeLabel}
+                            </p>
+                          ) : null}
                         </div>
-                        {typeLabel ? (
-                          <p className="mt-1 text-sm text-[#6b7280]">
-                            {typeLabel}
+                        {roomRent ? (
+                          <p className="text-base font-semibold text-[#1e4636]">
+                            {roomRent}
+                            <span className="ml-1 text-xs font-medium text-[#6b7280]">
+                              /{t('list.perMonth')}
+                            </span>
                           </p>
                         ) : null}
                       </div>
-                      {roomRent ? (
-                        <p className="text-base font-semibold text-[#1e4636]">
-                          {roomRent}
-                          <span className="ml-1 text-xs font-medium text-[#6b7280]">
-                            /{t('list.perMonth')}
-                          </span>
-                        </p>
+
+                      <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                        {[
+                          { label: t('detail.floor'), value: room.floor },
+                          {
+                            label: t('detail.area'),
+                            value:
+                              room.area_sqm !== null
+                                ? `${room.area_sqm} sqm`
+                                : null,
+                          },
+                          {
+                            label: t('properties.bedrooms'),
+                            value: room.bedrooms,
+                          },
+                          {
+                            label: t('properties.bathrooms'),
+                            value: room.bathrooms,
+                          },
+                          {
+                            label: t('detail.depositFor'),
+                            value: translateDepositMonths(
+                              t,
+                              room.deposit_months,
+                            ),
+                          },
+                          {
+                            label: t('detail.holdingDeposit'),
+                            value: formatRent(
+                              room.holding_deposit,
+                              room.rent_currency || property.rent_currency,
+                            ),
+                          },
+                        ].map((item) => (
+                          <div key={`${room.id}-${item.label}`}>
+                            <dt className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">
+                              {item.label}
+                            </dt>
+                            <dd className="mt-1 font-medium text-[#1a1a1a]">
+                              {item.value ?? '—'}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+
+                      {room.description ? (
+                        <div className="mt-4">
+                          <p className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">
+                            {t('detail.roomNotes')}
+                          </p>
+                          <p className="mt-1 text-sm leading-relaxed text-[#4b5563]">
+                            {room.description}
+                          </p>
+                        </div>
+                      ) : null}
+
+                      {furniture.length > 0 ? (
+                        <div className="mt-4">
+                          <p className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">
+                            {t('detail.roomFurniture')}
+                          </p>
+                          <ul className="mt-2 flex flex-wrap gap-2">
+                            {furniture.map((label) => (
+                              <li
+                                key={`${room.id}-${label}`}
+                                className="rounded-md bg-[#e8f3ed] px-2.5 py-1 text-xs font-medium text-[#1e4636]"
+                              >
+                                {label}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       ) : null}
                     </div>
 
-                    <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                      {[
-                        { label: t('detail.floor'), value: room.floor },
-                        {
-                          label: t('detail.area'),
-                          value:
-                            room.area_sqm !== null
-                              ? `${room.area_sqm} sqm`
-                              : null,
-                        },
-                        {
-                          label: t('properties.bedrooms'),
-                          value: room.bedrooms,
-                        },
-                        {
-                          label: t('properties.bathrooms'),
-                          value: room.bathrooms,
-                        },
-                        {
-                          label: t('detail.depositFor'),
-                          value: translateDepositMonths(t, room.deposit_months),
-                        },
-                        {
-                          label: t('detail.holdingDeposit'),
-                          value: formatRent(
-                            room.holding_deposit,
-                            room.rent_currency || property.rent_currency,
-                          ),
-                        },
-                      ].map((item) => (
-                        <div key={`${room.id}-${item.label}`}>
-                          <dt className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">
-                            {item.label}
-                          </dt>
-                          <dd className="mt-1 font-medium text-[#1a1a1a]">
-                            {item.value ?? '—'}
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-
-                    {room.description ? (
-                      <div className="mt-4">
-                        <p className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">
-                          {t('detail.roomNotes')}
-                        </p>
-                        <p className="mt-1 text-sm leading-relaxed text-[#4b5563]">
-                          {room.description}
-                        </p>
-                      </div>
-                    ) : null}
-
-                    {furniture.length > 0 ? (
-                      <div className="mt-4">
-                        <p className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">
-                          {t('detail.roomFurniture')}
-                        </p>
-                        <ul className="mt-2 flex flex-wrap gap-2">
-                          {furniture.map((label) => (
-                            <li
-                              key={`${room.id}-${label}`}
-                              className="rounded-md bg-[#e8f3ed] px-2.5 py-1 text-xs font-medium text-[#1e4636]"
-                            >
-                              {label}
+                    <div className="mt-4">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">
+                        {t('detail.gallery')}
+                      </p>
+                      {roomPhotos.length > 0 ? (
+                        <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                          {roomPhotos.map((image, imageIndex) => (
+                            <li key={image.id}>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setRoomLightbox({
+                                    images: roomPhotos,
+                                    index: imageIndex,
+                                    name: title,
+                                  })
+                                }
+                                className="group relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-[#e5e7eb]"
+                                aria-label={`${t('detail.showInFull')} ${imageIndex + 1}`}
+                              >
+                                <Image
+                                  src={image.public_url}
+                                  alt={`${title} ${imageIndex + 1}`}
+                                  fill
+                                  className="object-cover transition duration-300 group-hover:scale-105"
+                                  sizes="(max-width: 640px) 50vw, 240px"
+                                />
+                              </button>
                             </li>
                           ))}
                         </ul>
-                      </div>
-                    ) : null}
-
-                    {room.images?.length > 0 ? (
-                      <ul className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-                        {room.images.map((image) => (
-                          <li
-                            key={image.id}
-                            className="relative aspect-[4/3] overflow-hidden rounded-lg bg-[#e5e7eb]"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={image.public_url}
-                              alt={title}
-                              className="h-full w-full object-cover"
-                            />
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                  </li>
+                      ) : (
+                        <p className="mt-3 text-sm text-[#6b7280]">
+                          {t('detail.noRoomPhotos')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 );
-              })}
-            </ul>
+              })()}
+            </>
           )}
         </section>
 
@@ -795,6 +873,18 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
             propertyName={property.name}
             onClose={() => setLightboxIndex(null)}
             onNavigate={setLightboxIndex}
+          />
+        ) : null}
+
+        {roomLightbox ? (
+          <PropertyImageLightbox
+            images={roomLightbox.images}
+            activeIndex={roomLightbox.index}
+            propertyName={roomLightbox.name}
+            onClose={() => setRoomLightbox(null)}
+            onNavigate={(index) =>
+              setRoomLightbox((prev) => (prev ? { ...prev, index } : null))
+            }
           />
         ) : null}
 

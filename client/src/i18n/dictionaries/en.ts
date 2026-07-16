@@ -135,6 +135,7 @@ export const en = {
   'detail.furnishings': 'Furnishings',
   'detail.utilityBills': 'Utility bills',
   'detail.gallery': 'Gallery',
+  'detail.noRoomPhotos': 'No photos for this room yet.',
   'detail.recordInfo': 'Record info',
   'detail.propertyId': 'Property ID',
   'detail.created': 'Created',

@@ -102,11 +102,17 @@ tests {
     expect(res.getStatus()).to.equal(200);
   });
 
-  test("should return furnishings view for primary room", function() {
+  test("should return furnishings and rooms in request order", function() {
     const body = res.getBody();
-    expect(body).to.be.an("object");
-    expect(body.property_id).to.equal(bru.getEnvVar("propertyId"));
-    expect(body.has_air_conditioner).to.equal(true);
+    expect(body.furnishings).to.be.an("object");
+    expect(body.furnishings.property_id).to.equal(bru.getEnvVar("propertyId"));
+    expect(body.furnishings.has_air_conditioner).to.equal(true);
+    expect(body.rooms).to.be.an("array");
+    expect(body.rooms.length).to.equal(3);
+    expect(body.rooms[0].id).to.be.a("string");
+    expect(body.rooms[0].name).to.equal("Room 301");
+    expect(body.rooms[1].name).to.equal("Room 302");
+    expect(body.rooms[2].name).to.equal("Room 401");
   });
 }
 

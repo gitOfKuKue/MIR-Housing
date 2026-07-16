@@ -136,6 +136,7 @@ export const vn: { [K in keyof typeof en]: string } = {
   'detail.furnishings': 'Nội thất',
   'detail.utilityBills': 'Hóa đơn tiện ích',
   'detail.gallery': 'Thư viện ảnh',
+  'detail.noRoomPhotos': 'Chưa có ảnh cho phòng này.',
   'detail.recordInfo': 'Thông tin hồ sơ',
   'detail.propertyId': 'Mã bất động sản',
   'detail.created': 'Ngày tạo',

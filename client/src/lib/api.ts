@@ -342,8 +342,11 @@ export async function upsertPropertyFurnishings(
       furnishings?: string[];
     }>;
   },
-): Promise<PropertyFurnishings> {
-  return apiFetch<PropertyFurnishings>(`/properties/${propertyId}/furnishings`, {
+): Promise<{
+  furnishings: PropertyFurnishings;
+  rooms: Array<{ id: string; name: string | null }>;
+}> {
+  return apiFetch(`/properties/${propertyId}/furnishings`, {
     method: 'PUT',
     body: JSON.stringify(payload),
   });
@@ -411,6 +414,58 @@ export async function uploadPropertyImages(
   }
 
   return (await response.json()) as UploadPropertyImagesResponse;
+}
+
+export async function uploadRoomImages(
+  propertyId: string,
+  roomId: string,
+  files: File[],
+  sortOrder = 0,
+): Promise<{
+  data: Property['rooms'][number]['images'];
+  meta: { uploaded: number };
+}> {
+  if (files.length === 0) {
+    return { data: [], meta: { uploaded: 0 } };
+  }
+
+  const formData = new FormData();
+  files.forEach((file) => {
+    formData.append('file', file);
+  });
+  formData.append('sort_order', String(sortOrder));
+
+  const token = getAccessToken();
+
+  if (isSessionExpired()) {
+    handleSessionExpired();
+    throw new Error('Session expired. Please sign in again.');
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetch(
+      `${API_BASE_URL}/properties/${propertyId}/rooms/${roomId}/images`,
+      {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      },
+    );
+  } catch {
+    throw new Error(
+      'Cannot reach the server. Make sure the API is running on port 8000.',
+    );
+  }
+
+  if (!response.ok) {
+    await handleUnauthorized(response, Boolean(token));
+  }
+
+  return response.json();
 }
 
 async function handleUnauthorized(response: Response, hadToken: boolean): Promise<never> {

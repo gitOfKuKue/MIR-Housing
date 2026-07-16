@@ -3,7 +3,7 @@
 import {
   createProperty,
   updateProperty,
-  uploadPropertyImages,
+  uploadRoomImages,
   upsertPropertyFurnishings,
   type CreatePropertyPayload,
   type UpdatePropertyPayload,
@@ -631,7 +631,7 @@ export default function CreatePropertyForm({
         propertyId = created.id;
       }
 
-      await upsertPropertyFurnishings(propertyId, {
+      const upserted = await upsertPropertyFurnishings(propertyId, {
         amenities,
         rooms: rooms.map((room) => {
           const roomArea = parseOptionalNumber(room.areaSqm);
@@ -655,14 +655,18 @@ export default function CreatePropertyForm({
         }),
       });
 
-      const newImageFiles = rooms.flatMap((room) =>
-        room.images.map((image) => image.file),
-      );
-      if (newImageFiles.length > 0) {
-        await uploadPropertyImages(
+      // Upload images for each room draft using the matching saved room id
+      // (same order as the rooms[] payload).
+      for (let index = 0; index < rooms.length; index += 1) {
+        const draft = rooms[index];
+        const savedRoom = upserted.rooms[index];
+        if (!savedRoom || draft.images.length === 0) continue;
+
+        await uploadRoomImages(
           propertyId,
-          newImageFiles,
-          property?.images.length ?? 0,
+          savedRoom.id,
+          draft.images.map((image) => image.file),
+          0,
         );
       }
 
@@ -682,13 +686,9 @@ export default function CreatePropertyForm({
   const backHref =
     isEdit && property ? `/properties/${property.id}` : '/properties';
   const rentPreview = parseOptionalNumber(activeRoom?.rentAmount ?? '');
-  const existingRoomImages =
-    activeRoom?.id
-      ? (property?.rooms?.find((room) => room.id === activeRoom.id)?.images ??
-        [])
-      : safeActiveIndex === 0
-        ? (property?.images ?? [])
-        : [];
+  const existingRoomImages = activeRoom?.id
+    ? (property?.rooms?.find((room) => room.id === activeRoom.id)?.images ?? [])
+    : [];
 
   return (
     <div className="bg-white">

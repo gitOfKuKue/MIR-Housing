@@ -42,6 +42,7 @@ import { UtilityBillStatus } from './enums/utility-bill-status.enum';
 import {
   PROPERTIES_TABLE,
   ROOMS_TABLE,
+  ROOM_IMAGES_TABLE,
   PROPERTY_IMAGE_MAX_UPLOAD_COUNT,
   PROPERTY_IMAGES_BUCKET,
   PROPERTY_IMAGES_TABLE,
@@ -58,9 +59,13 @@ import {
 } from './utils/build-room-and-amenities-patch';
 import { resolveImageFile } from './utils/resolve-image-file';
 import { UpsertPropertyFurnishingsDto } from './dto/upsert-property-furnishings.dto';
-import { Room } from './entities/room.entity';
+import { Room, RoomImage } from './entities/room.entity';
 import { RoomFurnishings } from './entities/room-furnishings.entity';
-import { buildFurnishingsView } from './entities/property-with-images.entity';
+import {
+  buildFurnishingsView,
+  RoomImageWithUrl,
+} from './entities/property-with-images.entity';
+import { UpsertPropertyFurnishingsResponse } from './interfaces/upsert-property-furnishings-response.interface';
 
 @Injectable()
 export class PropertiesService {
@@ -239,7 +244,7 @@ export class PropertiesService {
     propertyId: string,
     dto: UpsertPropertyFurnishingsDto,
     accessToken: string,
-  ): Promise<RoomFurnishings> {
+  ): Promise<UpsertPropertyFurnishingsResponse> {
     const property = await this.findOne(propertyId, accessToken);
     const supabase = this.supabaseService.getClient(accessToken);
 
@@ -361,10 +366,17 @@ export class PropertiesService {
     }
 
     const refreshed = await this.findOne(propertyId, accessToken);
-    return (
+    const furnishings =
       refreshed.furnishings ??
-      buildFurnishingsView({ ...property, ...amenitiesPatch }, primary)!
-    );
+      buildFurnishingsView({ ...property, ...amenitiesPatch }, primary)!;
+
+    return {
+      furnishings,
+      rooms: savedRooms.map((room) => ({
+        id: room.id,
+        name: room.name,
+      })),
+    };
   }
 
   async remove(
@@ -414,6 +426,64 @@ export class PropertiesService {
       uploaded.push(
         await this.uploadSingleImage(
           propertyId,
+          file,
+          accessToken,
+          sortOrder + index,
+        ),
+      );
+    }
+
+    return {
+      data: uploaded,
+      meta: { uploaded: uploaded.length },
+    };
+  }
+
+  async uploadRoomImages(
+    propertyId: string,
+    roomId: string,
+    files: Express.Multer.File[],
+    accessToken: string,
+    sortOrder = 0,
+  ): Promise<{ data: RoomImageWithUrl[]; meta: { uploaded: number } }> {
+    await this.findOne(propertyId, accessToken);
+
+    if (!files.length) {
+      throw new BadRequestException('At least one image file is required');
+    }
+
+    if (files.length > PROPERTY_IMAGE_MAX_UPLOAD_COUNT) {
+      throw new BadRequestException(
+        `You can upload up to ${PROPERTY_IMAGE_MAX_UPLOAD_COUNT} images at once`,
+      );
+    }
+
+    const supabase = this.supabaseService.getClient(accessToken);
+    const { data: room, error: roomError } = await supabase
+      .from(ROOMS_TABLE)
+      .select('id')
+      .eq('id', roomId)
+      .eq('property_id', propertyId)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (roomError) {
+      this.handleSupabaseError(roomError);
+    }
+
+    if (!room) {
+      throw new NotFoundException(
+        `Room with id "${roomId}" not found for this property`,
+      );
+    }
+
+    const uploaded: RoomImageWithUrl[] = [];
+
+    for (const [index, file] of files.entries()) {
+      uploaded.push(
+        await this.uploadSingleRoomImage(
+          propertyId,
+          roomId,
           file,
           accessToken,
           sortOrder + index,
@@ -488,6 +558,77 @@ export class PropertiesService {
     }
 
     const image = data as PropertyImage;
+    const readClient = this.supabaseService.getClient(accessToken);
+
+    return {
+      ...image,
+      public_url: this.getPublicImageUrl(readClient, storagePath),
+    };
+  }
+
+  private async uploadSingleRoomImage(
+    propertyId: string,
+    roomId: string,
+    file: Express.Multer.File,
+    accessToken: string,
+    sortOrder: number,
+  ): Promise<RoomImageWithUrl> {
+    const resolvedImage = resolveImageFile(file);
+
+    const fileBuffer =
+      file.buffer ??
+      (file.path
+        ? (() => {
+            try {
+              return readFileSync(file.path);
+            } finally {
+              try {
+                unlinkSync(file.path);
+              } catch {
+                // ignore
+              }
+            }
+          })()
+        : undefined);
+
+    if (!fileBuffer) {
+      throw new BadRequestException(
+        'Uploaded image buffer is missing (check multer configuration).',
+      );
+    }
+
+    const serviceClient = this.supabaseService.getServiceClient();
+    const storagePath = `${propertyId}/rooms/${roomId}/${randomUUID()}.${resolvedImage.extension}`;
+
+    const { error: uploadError } = await serviceClient.storage
+      .from(PROPERTY_IMAGES_BUCKET)
+      .upload(storagePath, fileBuffer, {
+        contentType: resolvedImage.mimeType,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      this.handleStorageError(uploadError);
+    }
+
+    const { data, error } = await serviceClient
+      .from(ROOM_IMAGES_TABLE)
+      .insert({
+        room_id: roomId,
+        storage_path: storagePath,
+        sort_order: sortOrder,
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      await serviceClient.storage
+        .from(PROPERTY_IMAGES_BUCKET)
+        .remove([storagePath]);
+      this.handleSupabaseError(error);
+    }
+
+    const image = data as RoomImage;
     const readClient = this.supabaseService.getClient(accessToken);
 
     return {

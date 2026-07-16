@@ -31,7 +31,6 @@ import { UpdatePropertyDto } from './dto/update-property.dto';
 import { UpdatePropertyUtilityBillDto } from './dto/update-property-utility-bill.dto';
 import { UpsertPropertyFurnishingsDto } from './dto/upsert-property-furnishings.dto';
 import { Property } from './entities/property.entity';
-import { RoomFurnishings } from './entities/room-furnishings.entity';
 import { PropertyUtilityBill } from './entities/property-utility-bill.entity';
 import { PropertyWithImages } from './entities/property-with-images.entity';
 import { PropertiesService } from './properties.service';
@@ -46,6 +45,7 @@ import type {
   DeletePropertyUtilityBillResponse,
   ListPropertyUtilityBillsResponse,
 } from './interfaces/property-utility-bill-response.interface';
+import type { UpsertPropertyFurnishingsResponse } from './interfaces/upsert-property-furnishings-response.interface';
 
 @Controller('properties')
 @UseGuards(AuthGuard)
@@ -123,6 +123,41 @@ export class PropertiesController {
     );
   }
 
+  @Post(':id/rooms/:roomId/images')
+  @UseGuards(RolesGuard)
+  @Roles(StaffRole.Admin, StaffRole.Sale)
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'file', maxCount: PROPERTY_IMAGE_MAX_UPLOAD_COUNT },
+      { name: 'files', maxCount: PROPERTY_IMAGE_MAX_UPLOAD_COUNT },
+    ]),
+  )
+  uploadRoomImages(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('roomId', ParseUUIDPipe) roomId: string,
+    @UploadedFiles()
+    uploadedFiles: {
+      file?: Express.Multer.File[];
+      files?: Express.Multer.File[];
+    },
+    @AccessToken() accessToken: string,
+    @Body('sort_order') sortOrder?: string,
+  ) {
+    const files = [
+      ...(uploadedFiles.file ?? []),
+      ...(uploadedFiles.files ?? []),
+    ];
+    const parsedSortOrder = sortOrder ? Number(sortOrder) : 0;
+
+    return this.propertiesService.uploadRoomImages(
+      id,
+      roomId,
+      files,
+      accessToken,
+      Number.isFinite(parsedSortOrder) ? parsedSortOrder : 0,
+    );
+  }
+
   @Get(':id/utility-bills')
   listUtilityBills(
     @Param('id', ParseUUIDPipe) id: string,
@@ -181,7 +216,7 @@ export class PropertiesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpsertPropertyFurnishingsDto,
     @AccessToken() accessToken: string,
-  ): Promise<RoomFurnishings> {
+  ): Promise<UpsertPropertyFurnishingsResponse> {
     return this.propertiesService.upsertFurnishings(id, dto, accessToken);
   }
 
