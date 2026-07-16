@@ -109,6 +109,7 @@ export const vn: { [K in keyof typeof en]: string } = {
   'list.copyInfo': 'Copy thông tin',
   'list.copied': 'Đã copy',
   'list.photoGallery': 'Thư viện ảnh',
+  'list.zaloGroup': 'Nhóm Zalo',
 
   // Property detail
   'detail.backToProperties': 'Quay lại danh sách',

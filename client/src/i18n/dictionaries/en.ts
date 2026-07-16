@@ -108,6 +108,7 @@ export const en = {
   'list.copyInfo': 'Copy info',
   'list.copied': 'Copied',
   'list.photoGallery': 'Photo gallery',
+  'list.zaloGroup': 'Zalo group',
 
   // Property detail
   'detail.backToProperties': 'Back to properties',

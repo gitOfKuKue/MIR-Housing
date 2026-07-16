@@ -17,6 +17,7 @@ import {
   formatBillingPeriod,
   formatDate,
   formatRent,
+  formatRentRange,
   statusStyles,
   utilityBillStatusStyles,
 } from './format';
@@ -112,35 +113,6 @@ function roomTypeLabel(room: Room, t: TranslateFn): string | null {
     return t(ROOM_TYPE_LABEL_KEYS[room.room_type]);
   }
   return room.room_type;
-}
-
-function formatRentRange(
-  rooms: Room[],
-  fallbackAmount: number | null,
-  fallbackCurrency: string,
-): string | null {
-  const amounts = rooms
-    .map((room) => room.rent_amount)
-    .filter((amount): amount is number => amount !== null);
-
-  if (amounts.length === 0) {
-    return formatRent(fallbackAmount, fallbackCurrency);
-  }
-
-  const min = Math.min(...amounts);
-  const max = Math.max(...amounts);
-  const currency =
-    rooms.find((room) => room.rent_amount !== null)?.rent_currency ??
-    fallbackCurrency;
-
-  if (min === max) {
-    return formatRent(min, currency);
-  }
-
-  const minLabel = formatRent(min, currency);
-  const maxLabel = formatRent(max, currency);
-  if (!minLabel || !maxLabel) return null;
-  return `${minLabel} – ${maxLabel}`;
 }
 
 interface PropertyDetailProps {

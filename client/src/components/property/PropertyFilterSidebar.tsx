@@ -47,6 +47,27 @@ function SearchIcon() {
   );
 }
 
+function ChevronIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className={`transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+    >
+      <path
+        d="M6 9l6 6 6-6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function formatRentInput(amount: number): string {
   return amount.toLocaleString('en-US');
 }
@@ -135,6 +156,7 @@ export default function PropertyFilterSidebar({
   );
   const [minFocused, setMinFocused] = useState(false);
   const [maxFocused, setMaxFocused] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   useEffect(() => {
     if (!minFocused) {
@@ -180,186 +202,213 @@ export default function PropertyFilterSidebar({
 
   return (
     <aside className="rounded-xl border border-[#e8e4dc] bg-white p-5 shadow-sm">
-      <h2 className="border-b border-[#e8e4dc] pb-3 text-sm font-bold uppercase tracking-wide text-[#1a1a1a]">
-        {t('properties.filterTitle')}
-      </h2>
+      <div
+        className={`flex flex-wrap items-center justify-between gap-3 ${
+          collapsed ? '' : 'border-b border-[#e8e4dc] pb-3'
+        }`}
+      >
+        <h2 className="text-sm font-bold uppercase tracking-wide text-[#1a1a1a]">
+          {t('properties.filterTitle')}
+        </h2>
 
-      <div className="mt-5 flex flex-col gap-4">
-        <HcmcLocationSelects
-          value={{
-            districtCode: value.districtCode,
-            district: value.district,
-            ward: value.ward,
-            street: value.street,
-          }}
-          onChange={(next) =>
-            update({
-              districtCode: next.districtCode,
-              district: next.district,
-              ward: next.ward,
-              street: next.street,
-            })
-          }
-          showLabels
-          selectClassName={selectClassName}
-          labelClassName={labelClassName}
-          labels={{
-            district: t('properties.filterDistrict'),
-            ward: t('properties.filterWard'),
-            street: t('properties.filterStreet'),
-            allDistricts: t('properties.allDistricts'),
-            allWards: t('properties.allWards'),
-            allStreets: t('properties.allStreets'),
-            loadingDistricts: t('properties.loadingDistricts'),
-            loadingWards: t('properties.loadingWards'),
-            loadingStreets: t('properties.loadingStreets'),
-            selectDistrictFirst: t('properties.selectDistrictFirst'),
-            selectWardFirst: t('properties.selectWardFirst'),
-            noStreets: t('properties.noStreets'),
-          }}
-        />
-      </div>
-
-      <div className="my-5 border-t border-[#e8e4dc]" />
-
-      <div className="flex flex-col gap-4">
-        <RoomTypeSelect
-          value={value.roomType}
-          onChange={(roomType) => update({ roomType })}
-          open={openDropdown === 'roomType'}
-          onOpenChange={(open) => setDropdownOpen('roomType', open)}
-          labelClassName={labelClassName}
-          triggerClassName={
-            selectClassName + ' flex items-center justify-between text-left'
-          }
-        />
-
-        <AmenityMultiSelect
-          value={value.amenities}
-          onChange={(amenities) => update({ amenities })}
-          open={openDropdown === 'amenities'}
-          onOpenChange={(open) => setDropdownOpen('amenities', open)}
-          labelClassName={labelClassName}
-          triggerClassName={
-            selectClassName + ' flex items-center justify-between text-left'
-          }
-        />
-
-        <FurnishingMultiSelect
-          value={value.furnishings}
-          onChange={(furnishings) => update({ furnishings })}
-          open={openDropdown === 'furnishings'}
-          onOpenChange={(open) => setDropdownOpen('furnishings', open)}
-          labelClassName={labelClassName}
-          triggerClassName={
-            selectClassName + ' flex items-center justify-between text-left'
-          }
-        />
-      </div>
-
-      <div className="my-5 border-t border-[#e8e4dc]" />
-
-      <div>
-        <span className={labelClassName}>{t('properties.filterPriceRange')}</span>
-        <DualRangeSlider
-          minValue={value.minRent}
-          maxValue={value.maxRent}
-          rangeMax={rentFilterMax}
-          onMinChange={(minRent) => update({ minRent })}
-          onMaxChange={(maxRent) => update({ maxRent })}
-        />
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div>
-            <label htmlFor="filter_min_rent" className={labelClassName}>
-              {t('properties.filterPriceMin')}
-            </label>
-            <input
-              id="filter_min_rent"
-              type="text"
-              inputMode="numeric"
-              value={minRentInput}
-              onFocus={() => setMinFocused(true)}
-              onChange={(event) => {
-                const raw = event.target.value.replace(/[^\d,]/g, '');
-                setMinRentInput(raw);
-                const parsed = parseRentInput(raw);
-                if (parsed === null) return;
-                update({
-                  minRent: Math.min(
-                    clampRent(parsed, rentFilterMax),
-                    value.maxRent,
-                  ),
-                });
-              }}
-              onBlur={() => {
-                setMinFocused(false);
-                commitMinRent(minRentInput);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.currentTarget.blur();
-                }
-              }}
-              className={rentInputClassName}
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label htmlFor="filter_max_rent" className={labelClassName}>
-              {t('properties.filterPriceMax')}
-            </label>
-            <input
-              id="filter_max_rent"
-              type="text"
-              inputMode="numeric"
-              value={maxRentInput}
-              onFocus={() => setMaxFocused(true)}
-              onChange={(event) => {
-                const raw = event.target.value.replace(/[^\d,]/g, '');
-                setMaxRentInput(raw);
-                const parsed = parseRentInput(raw);
-                if (parsed === null) return;
-                update({
-                  maxRent: Math.max(
-                    clampRent(parsed, rentFilterMax),
-                    value.minRent,
-                  ),
-                });
-              }}
-              onBlur={() => {
-                setMaxFocused(false);
-                commitMaxRent(maxRentInput);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.currentTarget.blur();
-                }
-              }}
-              className={rentInputClassName}
-              placeholder={formatRentInput(rentFilterMax)}
-            />
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCollapsed((prev) => !prev)}
+            aria-expanded={!collapsed}
+            aria-controls="property-filter-panel"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#e5e7eb] bg-[#fafaf9] px-3 py-2 text-sm font-medium text-[#6b7280] transition hover:border-[#d1d5db] hover:text-[#1a1a1a]"
+          >
+            {collapsed ? t('common.expand') : t('common.collapse')}
+            <ChevronIcon expanded={!collapsed} />
+          </button>
+          <button
+            type="button"
+            onClick={onSearch}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#1e4636] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#163828]"
+          >
+            <SearchIcon />
+            {t('properties.searchAction')}
+          </button>
         </div>
       </div>
 
-      <label className="mt-5 flex cursor-pointer items-center gap-2.5 text-sm text-[#1a1a1a]">
-        <input
-          type="checkbox"
-          checked={value.includeRented}
-          onChange={(event) => update({ includeRented: event.target.checked })}
-          className="h-4 w-4 rounded border-[#d1d5db] text-[#1e4636] focus:ring-[#1e4636]"
-        />
-        {t('properties.showRented')}
-      </label>
-
-      <button
-        type="button"
-        onClick={onSearch}
-        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#1e4636] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#163828]"
+      {!collapsed ? (
+      <div
+        id="property-filter-panel"
+        className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4"
       >
-        <SearchIcon />
-        {t('properties.searchAction')}
-      </button>
+        <div className="flex flex-col gap-4 md:col-span-2 xl:col-span-1">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-1">
+            <HcmcLocationSelects
+              value={{
+                districtCode: value.districtCode,
+                district: value.district,
+                ward: value.ward,
+                street: value.street,
+              }}
+              onChange={(next) =>
+                update({
+                  districtCode: next.districtCode,
+                  district: next.district,
+                  ward: next.ward,
+                  street: next.street,
+                })
+              }
+              showLabels
+              selectClassName={selectClassName}
+              labelClassName={labelClassName}
+              labels={{
+                district: t('properties.filterDistrict'),
+                ward: t('properties.filterWard'),
+                street: t('properties.filterStreet'),
+                allDistricts: t('properties.allDistricts'),
+                allWards: t('properties.allWards'),
+                allStreets: t('properties.allStreets'),
+                loadingDistricts: t('properties.loadingDistricts'),
+                loadingWards: t('properties.loadingWards'),
+                loadingStreets: t('properties.loadingStreets'),
+                selectDistrictFirst: t('properties.selectDistrictFirst'),
+                selectWardFirst: t('properties.selectWardFirst'),
+                noStreets: t('properties.noStreets'),
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <RoomTypeSelect
+            value={value.roomType}
+            onChange={(roomType) => update({ roomType })}
+            open={openDropdown === 'roomType'}
+            onOpenChange={(open) => setDropdownOpen('roomType', open)}
+            labelClassName={labelClassName}
+            triggerClassName={
+              selectClassName + ' flex items-center justify-between text-left'
+            }
+          />
+
+          <AmenityMultiSelect
+            value={value.amenities}
+            onChange={(amenities) => update({ amenities })}
+            open={openDropdown === 'amenities'}
+            onOpenChange={(open) => setDropdownOpen('amenities', open)}
+            labelClassName={labelClassName}
+            triggerClassName={
+              selectClassName + ' flex items-center justify-between text-left'
+            }
+          />
+
+          <FurnishingMultiSelect
+            value={value.furnishings}
+            onChange={(furnishings) => update({ furnishings })}
+            open={openDropdown === 'furnishings'}
+            onOpenChange={(open) => setDropdownOpen('furnishings', open)}
+            labelClassName={labelClassName}
+            triggerClassName={
+              selectClassName + ' flex items-center justify-between text-left'
+            }
+          />
+        </div>
+
+        <div className="md:col-span-2 xl:col-span-2">
+          <span className={labelClassName}>
+            {t('properties.filterPriceRange')}
+          </span>
+          <DualRangeSlider
+            minValue={value.minRent}
+            maxValue={value.maxRent}
+            rangeMax={rentFilterMax}
+            onMinChange={(minRent) => update({ minRent })}
+            onMaxChange={(maxRent) => update({ maxRent })}
+          />
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div>
+              <label htmlFor="filter_min_rent" className={labelClassName}>
+                {t('properties.filterPriceMin')}
+              </label>
+              <input
+                id="filter_min_rent"
+                type="text"
+                inputMode="numeric"
+                value={minRentInput}
+                onFocus={() => setMinFocused(true)}
+                onChange={(event) => {
+                  const raw = event.target.value.replace(/[^\d,]/g, '');
+                  setMinRentInput(raw);
+                  const parsed = parseRentInput(raw);
+                  if (parsed === null) return;
+                  update({
+                    minRent: Math.min(
+                      clampRent(parsed, rentFilterMax),
+                      value.maxRent,
+                    ),
+                  });
+                }}
+                onBlur={() => {
+                  setMinFocused(false);
+                  commitMinRent(minRentInput);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.currentTarget.blur();
+                  }
+                }}
+                className={rentInputClassName}
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label htmlFor="filter_max_rent" className={labelClassName}>
+                {t('properties.filterPriceMax')}
+              </label>
+              <input
+                id="filter_max_rent"
+                type="text"
+                inputMode="numeric"
+                value={maxRentInput}
+                onFocus={() => setMaxFocused(true)}
+                onChange={(event) => {
+                  const raw = event.target.value.replace(/[^\d,]/g, '');
+                  setMaxRentInput(raw);
+                  const parsed = parseRentInput(raw);
+                  if (parsed === null) return;
+                  update({
+                    maxRent: Math.max(
+                      clampRent(parsed, rentFilterMax),
+                      value.minRent,
+                    ),
+                  });
+                }}
+                onBlur={() => {
+                  setMaxFocused(false);
+                  commitMaxRent(maxRentInput);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.currentTarget.blur();
+                  }
+                }}
+                className={rentInputClassName}
+                placeholder={formatRentInput(rentFilterMax)}
+              />
+            </div>
+          </div>
+
+          <label className="mt-4 flex cursor-pointer items-center gap-2.5 text-sm text-[#1a1a1a]">
+            <input
+              type="checkbox"
+              checked={value.includeRented}
+              onChange={(event) =>
+                update({ includeRented: event.target.checked })
+              }
+              className="h-4 w-4 rounded border-[#d1d5db] text-[#1e4636] focus:ring-[#1e4636]"
+            />
+            {t('properties.showRented')}
+          </label>
+        </div>
+      </div>
+      ) : null}
     </aside>
   );
 }

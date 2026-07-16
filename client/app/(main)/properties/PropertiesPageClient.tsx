@@ -236,100 +236,96 @@ export default function PropertiesPageClient() {
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <div className="w-full shrink-0 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-6.5rem)] lg:w-72 lg:overflow-y-auto lg:[scrollbar-width:none] lg:[-ms-overflow-style:none] lg:[&::-webkit-scrollbar]:hidden xl:w-80">
-          <PropertyFilterSidebar
-            value={draftFilters}
-            onChange={setDraftFilters}
-            onSearch={handleSearch}
-            rentFilterMax={rentFilterMax}
-          />
+      <PropertyToolbar
+        viewMode={viewMode}
+        page={meta.page}
+        pageSize={meta.limit}
+        total={meta.total}
+        search={appliedFilters.search}
+        onSearchChange={handleToolbarSearchChange}
+        onViewModeChange={setViewMode}
+      />
+
+      <div className="mb-6">
+        <PropertyFilterSidebar
+          value={draftFilters}
+          onChange={setDraftFilters}
+          onSearch={handleSearch}
+          rentFilterMax={rentFilterMax}
+        />
+      </div>
+
+      {loading ? (
+        viewMode === 'card' ? (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: pageSize }).map((_, index) => (
+              <div
+                key={index}
+                className="h-[36rem] animate-pulse rounded-xl bg-[#e5e7eb]"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {Array.from({ length: pageSize }).map((_, index) => (
+              <div
+                key={index}
+                className="h-48 animate-pulse rounded-lg bg-[#e5e7eb]"
+              />
+            ))}
+          </div>
+        )
+      ) : error ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {error}
         </div>
-
-        <div className="min-w-0 flex-1">
-          <PropertyToolbar
-            viewMode={viewMode}
-            page={meta.page}
-            pageSize={meta.limit}
-            total={meta.total}
-            search={appliedFilters.search}
-            onSearchChange={handleToolbarSearchChange}
-            onViewModeChange={setViewMode}
-          />
-
-          {loading ? (
-            viewMode === 'card' ? (
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {Array.from({ length: pageSize }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-[28rem] animate-pulse rounded-xl bg-[#e5e7eb]"
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                {Array.from({ length: pageSize }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-32 animate-pulse rounded-lg bg-[#e5e7eb]"
-                  />
-                ))}
-              </div>
-            )
-          ) : error ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-              {error}
-            </div>
-          ) : showEmptyState ? (
-            <div className="rounded-lg border border-[#e8e4dc] bg-white px-6 py-10 text-center">
-              <p className="text-lg font-medium text-[#1a1a1a]">
-                {filtersActive
-                  ? t('properties.emptyMatching')
-                  : t('properties.emptyNone')}
-              </p>
-              <p className="mt-2 text-sm text-[#6b7280]">
-                {filtersActive
-                  ? t('properties.emptyHint')
-                  : t('properties.emptyNoneHint')}
-              </p>
+      ) : showEmptyState ? (
+        <div className="rounded-lg border border-[#e8e4dc] bg-white px-6 py-10 text-center">
+          <p className="text-lg font-medium text-[#1a1a1a]">
+            {filtersActive
+              ? t('properties.emptyMatching')
+              : t('properties.emptyNone')}
+          </p>
+          <p className="mt-2 text-sm text-[#6b7280]">
+            {filtersActive
+              ? t('properties.emptyHint')
+              : t('properties.emptyNoneHint')}
+          </p>
+        </div>
+      ) : (
+        <>
+          {viewMode === 'card' ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {properties.map((property) => (
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  href={`/properties/${property.id}`}
+                  className="max-w-none"
+                />
+              ))}
             </div>
           ) : (
-            <>
-              {viewMode === 'card' ? (
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                  {properties.map((property) => (
-                    <PropertyCard
-                      key={property.id}
-                      property={property}
-                      href={`/properties/${property.id}`}
-                      className="max-w-none"
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {properties.map((property) => (
-                    <PropertyListItem
-                      key={property.id}
-                      property={property}
-                      href={`/properties/${property.id}`}
-                    />
-                  ))}
-                </div>
-              )}
-
-              <PropertyPagination
-                page={meta.page}
-                totalPages={meta.totalPages}
-                onPageChange={handlePageChange}
-                disabled={loading}
-                className="mt-8"
-              />
-            </>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {properties.map((property) => (
+                <PropertyListItem
+                  key={property.id}
+                  property={property}
+                  href={`/properties/${property.id}`}
+                />
+              ))}
+            </div>
           )}
-        </div>
-      </div>
+
+          <PropertyPagination
+            page={meta.page}
+            totalPages={meta.totalPages}
+            onPageChange={handlePageChange}
+            disabled={loading}
+            className="mt-8"
+          />
+        </>
+      )}
     </div>
   );
 }
