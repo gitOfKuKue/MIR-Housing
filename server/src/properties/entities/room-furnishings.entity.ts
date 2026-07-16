@@ -1,5 +1,3 @@
-import { WashingMachineType } from '../enums/washing-machine-type.enum';
-
 /**
  * Combined view of building amenities (on `properties`) + room furniture
  * (on `rooms`). Not a database table — assembled in the API mapper.
@@ -28,7 +26,6 @@ export interface RoomFurnishings {
   has_tv: boolean | null;
   has_range_hood: boolean | null;
   has_hot_water: boolean | null;
-  washing_machine: WashingMachineType | null;
   landlord_in_building: boolean | null;
   has_elevator: boolean | null;
   has_security_guard: boolean | null;
@@ -37,7 +34,6 @@ export interface RoomFurnishings {
   has_ev_parking: boolean | null;
   pets_ok: boolean | null;
   foreigners_ok: boolean | null;
-  has_solar_hot_water: boolean | null;
   has_cleaning_service: boolean | null;
   created_at: string;
   updated_at: string;

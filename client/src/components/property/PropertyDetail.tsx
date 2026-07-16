@@ -2,7 +2,7 @@
 
 import { useTranslations } from '@/src/i18n';
 import type { TranslationKey } from '@/src/i18n';
-import type { Property } from '@/src/types/property';
+import type { Property, Room } from '@/src/types/property';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -17,7 +17,6 @@ import {
   formatBillingPeriod,
   formatDate,
   formatRent,
-  furnishingStatusStyles,
   statusStyles,
   utilityBillStatusStyles,
 } from './format';
@@ -90,16 +89,6 @@ function translateFurnishingIncluded(
   return '—';
 }
 
-function translateWashingMachine(
-  t: TranslateFn,
-  value: 'private' | 'shared' | 'not_available' | null | undefined,
-): string {
-  if (value === 'private') return t('value.private');
-  if (value === 'shared') return t('value.shared');
-  if (value === 'not_available') return t('value.notAvailable');
-  return '—';
-}
-
 function translateLandlordInBuilding(
   t: TranslateFn,
   value: boolean | null | undefined,
@@ -109,16 +98,69 @@ function translateLandlordInBuilding(
   return '—';
 }
 
+function roomFurnitureLabels(room: Room, t: TranslateFn): string[] {
+  return FURNISHING_VALUES.flatMap((value) => {
+    const key = FURNISHING_COLUMN_BY_VALUE[value];
+    if (room[key as keyof Room] !== true) return [];
+    return [t(FURNISHING_LABEL_KEYS[value])];
+  });
+}
+
+function roomTypeLabel(room: Room, t: TranslateFn): string | null {
+  if (!room.room_type) return null;
+  if (isRoomTypeValue(room.room_type)) {
+    return t(ROOM_TYPE_LABEL_KEYS[room.room_type]);
+  }
+  return room.room_type;
+}
+
+function formatRentRange(
+  rooms: Room[],
+  fallbackAmount: number | null,
+  fallbackCurrency: string,
+): string | null {
+  const amounts = rooms
+    .map((room) => room.rent_amount)
+    .filter((amount): amount is number => amount !== null);
+
+  if (amounts.length === 0) {
+    return formatRent(fallbackAmount, fallbackCurrency);
+  }
+
+  const min = Math.min(...amounts);
+  const max = Math.max(...amounts);
+  const currency =
+    rooms.find((room) => room.rent_amount !== null)?.rent_currency ??
+    fallbackCurrency;
+
+  if (min === max) {
+    return formatRent(min, currency);
+  }
+
+  const minLabel = formatRent(min, currency);
+  const maxLabel = formatRent(max, currency);
+  if (!minLabel || !maxLabel) return null;
+  return `${minLabel} – ${maxLabel}`;
+}
+
 interface PropertyDetailProps {
   property: Property;
 }
 
 export default function PropertyDetail({ property }: PropertyDetailProps) {
   const t = useTranslations();
-  const rent = formatRent(property.rent_amount, property.rent_currency);
+  const rooms = property.rooms ?? [];
+  const availableRoomCount = rooms.filter(
+    (room) => room.status === 'available',
+  ).length;
+  const rent = formatRentRange(
+    rooms,
+    property.rent_amount,
+    property.rent_currency,
+  );
   const coverImage = property.images?.[0]?.public_url;
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const [furnishingsExpanded, setFurnishingsExpanded] = useState(true);
+  const [amenitiesExpanded, setAmenitiesExpanded] = useState(true);
   const [utilityBillsExpanded, setUtilityBillsExpanded] = useState(true);
   const router = useRouter();
   const authUser = getAuthUser();
@@ -127,6 +169,59 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const buildingAmenityItems = (() => {
+    const furnishings = property.furnishings;
+    if (!furnishings) return [];
+
+    return [
+      {
+        label: t(AMENITY_LABEL_KEYS.elevator),
+        value: translateFurnishingIncluded(t, true),
+        show: furnishings.has_elevator === true,
+      },
+      {
+        label: t(AMENITY_LABEL_KEYS.security_guard),
+        value: translateFurnishingIncluded(t, true),
+        show: furnishings.has_security_guard === true,
+      },
+      {
+        label: t(AMENITY_LABEL_KEYS.car_parking),
+        value: translateFurnishingIncluded(t, true),
+        show: furnishings.has_car_parking === true,
+      },
+      {
+        label: t(AMENITY_LABEL_KEYS.motorbike_parking),
+        value: translateFurnishingIncluded(t, true),
+        show: furnishings.has_bike_parking === true,
+      },
+      {
+        label: t(AMENITY_LABEL_KEYS.ev_parking),
+        value: translateFurnishingIncluded(t, true),
+        show: furnishings.has_ev_parking === true,
+      },
+      {
+        label: t(AMENITY_LABEL_KEYS.pet_friendly),
+        value: translateFurnishingIncluded(t, true),
+        show: furnishings.pets_ok === true,
+      },
+      {
+        label: t(AMENITY_LABEL_KEYS.foreigner_friendly),
+        value: translateFurnishingIncluded(t, true),
+        show: furnishings.foreigners_ok === true,
+      },
+      {
+        label: t(AMENITY_LABEL_KEYS.cleaning_service),
+        value: translateFurnishingIncluded(t, true),
+        show: furnishings.has_cleaning_service === true,
+      },
+      {
+        label: t('furnishing.landlord'),
+        value: translateLandlordInBuilding(t, furnishings.landlord_in_building),
+        show: furnishings.landlord_in_building === true,
+      },
+    ].filter((item) => item.show);
+  })();
 
   function openDeleteConfirm() {
     if (!canDelete) return;
@@ -224,11 +319,28 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
               label: t('detail.propertyType'),
               value: t(`type.${property.property_type}` as TranslationKey),
             },
-            { label: t('properties.bedrooms'), value: property.bedrooms },
-            { label: t('properties.bathrooms'), value: property.bathrooms },
+            {
+              label: t('detail.rooms'),
+              value:
+                rooms.length > 0
+                  ? t('detail.roomsCount', { count: rooms.length })
+                  : '—',
+            },
+            {
+              label: t('status.available'),
+              value:
+                rooms.length > 0
+                  ? t('detail.roomsAvailable', { count: availableRoomCount })
+                  : '—',
+            },
             {
               label: t('detail.area'),
-              value: property.area_sqm !== null ? `${property.area_sqm} sqm` : null,
+              value:
+                rooms.length === 1 && rooms[0].area_sqm !== null
+                  ? `${rooms[0].area_sqm} sqm`
+                  : property.area_sqm !== null
+                    ? `${property.area_sqm} sqm`
+                    : null,
             },
           ].map((item) => (
             <div
@@ -379,246 +491,189 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
         })()}
 
         <section className="rounded-xl border border-[#e8e4dc] bg-white p-6 lg:col-span-3">
-          <h2 className="text-lg font-semibold text-[#1a1a1a]">
-            {t('detail.roomInfo')}
-          </h2>
-          <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                label: t('detail.roomType'),
-                value:
-                  property.room_type && isRoomTypeValue(property.room_type)
-                    ? t(ROOM_TYPE_LABEL_KEYS[property.room_type])
-                    : property.room_type,
-              },
-              { label: t('detail.floor'), value: property.floor },
-              {
-                label: t('detail.depositFor'),
-                value: translateDepositMonths(t, property.deposit_months),
-              },
-              {
-                label: t('detail.area'),
-                value:
-                  property.area_sqm !== null ? `${property.area_sqm} sqm` : null,
-              },
-              {
-                label: t('detail.holdingDeposit'),
-                value: formatRent(
-                  property.holding_deposit,
-                  property.rent_currency,
-                ),
-              },
-              { label: t('properties.bedrooms'), value: property.bedrooms },
-              { label: t('properties.bathrooms'), value: property.bathrooms },
-            ].map((item) => (
-              <div key={item.label}>
-                <dt className="font-medium text-[#9ca3af]">{item.label}</dt>
-                <dd className="mt-1 font-medium text-[#1a1a1a]">
-                  {item.value ?? '—'}
-                </dd>
-              </div>
-            ))}
-          </dl>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-lg font-semibold text-[#1a1a1a]">
+              {t('detail.rooms')}
+            </h2>
+            {rooms.length > 0 ? (
+              <p className="text-sm text-[#6b7280]">
+                {t('detail.roomsCount', { count: rooms.length })}
+                {' · '}
+                {t('detail.roomsAvailable', { count: availableRoomCount })}
+              </p>
+            ) : null}
+          </div>
+
+          {rooms.length === 0 ? (
+            <p className="mt-4 text-sm text-[#6b7280]">{t('detail.noRooms')}</p>
+          ) : (
+            <ul className="mt-5 space-y-5">
+              {rooms.map((room, index) => {
+                const roomRent = formatRent(
+                  room.rent_amount,
+                  room.rent_currency || property.rent_currency,
+                );
+                const furniture = roomFurnitureLabels(room, t);
+                const typeLabel = roomTypeLabel(room, t);
+                const title =
+                  room.name?.trim() || t('form.roomTab', { n: index + 1 });
+
+                return (
+                  <li
+                    key={room.id}
+                    className="rounded-xl border border-[#f3f4f6] bg-[#fafaf9] p-5"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-base font-semibold text-[#1a1a1a]">
+                            {title}
+                          </h3>
+                          <span
+                            className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${statusStyles(room.status)}`}
+                          >
+                            {t(`status.${room.status}` as TranslationKey)}
+                          </span>
+                        </div>
+                        {typeLabel ? (
+                          <p className="mt-1 text-sm text-[#6b7280]">
+                            {typeLabel}
+                          </p>
+                        ) : null}
+                      </div>
+                      {roomRent ? (
+                        <p className="text-base font-semibold text-[#1e4636]">
+                          {roomRent}
+                          <span className="ml-1 text-xs font-medium text-[#6b7280]">
+                            /{t('list.perMonth')}
+                          </span>
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                      {[
+                        { label: t('detail.floor'), value: room.floor },
+                        {
+                          label: t('detail.area'),
+                          value:
+                            room.area_sqm !== null
+                              ? `${room.area_sqm} sqm`
+                              : null,
+                        },
+                        {
+                          label: t('properties.bedrooms'),
+                          value: room.bedrooms,
+                        },
+                        {
+                          label: t('properties.bathrooms'),
+                          value: room.bathrooms,
+                        },
+                        {
+                          label: t('detail.depositFor'),
+                          value: translateDepositMonths(t, room.deposit_months),
+                        },
+                        {
+                          label: t('detail.holdingDeposit'),
+                          value: formatRent(
+                            room.holding_deposit,
+                            room.rent_currency || property.rent_currency,
+                          ),
+                        },
+                      ].map((item) => (
+                        <div key={`${room.id}-${item.label}`}>
+                          <dt className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">
+                            {item.label}
+                          </dt>
+                          <dd className="mt-1 font-medium text-[#1a1a1a]">
+                            {item.value ?? '—'}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+
+                    {room.description ? (
+                      <div className="mt-4">
+                        <p className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">
+                          {t('detail.roomNotes')}
+                        </p>
+                        <p className="mt-1 text-sm leading-relaxed text-[#4b5563]">
+                          {room.description}
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {furniture.length > 0 ? (
+                      <div className="mt-4">
+                        <p className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">
+                          {t('detail.roomFurniture')}
+                        </p>
+                        <ul className="mt-2 flex flex-wrap gap-2">
+                          {furniture.map((label) => (
+                            <li
+                              key={`${room.id}-${label}`}
+                              className="rounded-md bg-[#e8f3ed] px-2.5 py-1 text-xs font-medium text-[#1e4636]"
+                            >
+                              {label}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    {room.images?.length > 0 ? (
+                      <ul className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+                        {room.images.map((image) => (
+                          <li
+                            key={image.id}
+                            className="relative aspect-[4/3] overflow-hidden rounded-lg bg-[#e5e7eb]"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={image.public_url}
+                              alt={title}
+                              className="h-full w-full object-cover"
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
 
-        {property.furnishings ? (
+        {buildingAmenityItems.length > 0 ? (
           <section className="rounded-xl border border-[#e8e4dc] bg-white p-6 lg:col-span-3">
             <button
               type="button"
-              onClick={() => setFurnishingsExpanded((prev) => !prev)}
-              aria-expanded={furnishingsExpanded}
+              onClick={() => setAmenitiesExpanded((prev) => !prev)}
+              aria-expanded={amenitiesExpanded}
               className="flex w-full items-center justify-between gap-3 text-left"
             >
               <h2 className="text-lg font-semibold text-[#1a1a1a]">
-                {t('detail.furnishings')}
+                {t('detail.buildingAmenities')}
               </h2>
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#1a1a1a]">
-                <CollapseIcon expanded={furnishingsExpanded} />
+                <CollapseIcon expanded={amenitiesExpanded} />
               </span>
             </button>
-            {furnishingsExpanded ? (
-              <div className="mt-4 overflow-x-auto">
-                <table className="min-w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-[#e8e4dc] text-xs uppercase tracking-wider text-[#9ca3af]">
-                      <th className="px-3 py-3 font-semibold">{t('detail.item')}</th>
-                      <th className="px-3 py-3 font-semibold">
-                        {t('detail.status')}
-                      </th>
-                      <th className="hidden px-3 py-3 font-semibold sm:table-cell">
-                        {t('detail.item')}
-                      </th>
-                      <th className="hidden px-3 py-3 font-semibold sm:table-cell">
-                        {t('detail.status')}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(() => {
-                      const furnishings = property.furnishings;
-                      const furnitureItems = FURNISHING_VALUES.flatMap(
-                        (value) => {
-                          const key = FURNISHING_COLUMN_BY_VALUE[value];
-                          if (furnishings[key] !== true) return [];
-                          return [
-                            {
-                              label: t(FURNISHING_LABEL_KEYS[value]),
-                              value: translateFurnishingIncluded(t, true),
-                              included: true as boolean | null,
-                            },
-                          ];
-                        },
-                      );
-
-                      const amenityCandidates: Array<{
-                        label: string;
-                        value: string;
-                        included: boolean | null;
-                        show: boolean;
-                      }> = [
-                        {
-                          label: t(AMENITY_LABEL_KEYS.elevator),
-                          value: translateFurnishingIncluded(t, true),
-                          included: true,
-                          show: furnishings.has_elevator === true,
-                        },
-                        {
-                          label: t(AMENITY_LABEL_KEYS.security_guard),
-                          value: translateFurnishingIncluded(t, true),
-                          included: true,
-                          show: furnishings.has_security_guard === true,
-                        },
-                        {
-                          label: t(AMENITY_LABEL_KEYS.car_parking),
-                          value: translateFurnishingIncluded(t, true),
-                          included: true,
-                          show: furnishings.has_car_parking === true,
-                        },
-                        {
-                          label: t(AMENITY_LABEL_KEYS.motorbike_parking),
-                          value: translateFurnishingIncluded(t, true),
-                          included: true,
-                          show: furnishings.has_bike_parking === true,
-                        },
-                        {
-                          label: t(AMENITY_LABEL_KEYS.ev_parking),
-                          value: translateFurnishingIncluded(t, true),
-                          included: true,
-                          show: furnishings.has_ev_parking === true,
-                        },
-                        {
-                          label: t(AMENITY_LABEL_KEYS.pet_friendly),
-                          value: translateFurnishingIncluded(t, true),
-                          included: true,
-                          show: furnishings.pets_ok === true,
-                        },
-                        {
-                          label: t(AMENITY_LABEL_KEYS.foreigner_friendly),
-                          value: translateFurnishingIncluded(t, true),
-                          included: true,
-                          show: furnishings.foreigners_ok === true,
-                        },
-                        {
-                          label: t(AMENITY_LABEL_KEYS.solar_water_heater),
-                          value: translateFurnishingIncluded(t, true),
-                          included: true,
-                          show: furnishings.has_solar_hot_water === true,
-                        },
-                        {
-                          label: t(AMENITY_LABEL_KEYS.cleaning_service),
-                          value: translateFurnishingIncluded(t, true),
-                          included: true,
-                          show: furnishings.has_cleaning_service === true,
-                        },
-                        {
-                          label: t('furnishing.washingMachine'),
-                          value: translateWashingMachine(
-                            t,
-                            furnishings.washing_machine,
-                          ),
-                          included: null,
-                          show:
-                            furnishings.washing_machine === 'private' ||
-                            furnishings.washing_machine === 'shared',
-                        },
-                        {
-                          label: t('furnishing.landlord'),
-                          value: translateLandlordInBuilding(
-                            t,
-                            furnishings.landlord_in_building,
-                          ),
-                          included: null,
-                          show: furnishings.landlord_in_building === true,
-                        },
-                      ];
-
-                      const items = [
-                        ...furnitureItems,
-                        ...amenityCandidates
-                          .filter((item) => item.show)
-                          .map(({ label, value, included }) => ({
-                            label,
-                            value,
-                            included,
-                          })),
-                      ];
-
-                      if (items.length === 0) {
-                        return (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="px-3 py-4 text-[#6b7280]"
-                            >
-                              —
-                            </td>
-                          </tr>
-                        );
-                      }
-
-                      const makeBadge = (item: (typeof items)[number]) => (
-                        <span
-                          className={`inline-flex rounded-md px-2.5 py-1 text-xs font-semibold ${
-                            item.included === null
-                              ? 'bg-[#f3f4f6] text-[#6b7280]'
-                              : furnishingStatusStyles(item.included)
-                          }`}
-                        >
-                          {item.value}
-                        </span>
-                      );
-
-                      const rows = Math.ceil(items.length / 2);
-
-                      return Array.from({ length: rows }, (_, rowIndex) => {
-                        const left = items[rowIndex * 2];
-                        const right = items[rowIndex * 2 + 1];
-                        const isLastRow = rowIndex === rows - 1;
-
-                        return (
-                          <tr
-                            key={`${left.label}-${right?.label ?? 'empty'}`}
-                            className={`border-b border-[#f3f4f6] ${
-                              isLastRow ? 'last:border-b-0' : ''
-                            }`}
-                          >
-                            <td className="px-3 py-4 font-medium text-[#1a1a1a]">
-                              {left.label}
-                            </td>
-                            <td className="px-3 py-4">{makeBadge(left)}</td>
-                            <td className="hidden px-3 py-4 font-medium text-[#1a1a1a] sm:table-cell">
-                              {right?.label ?? ''}
-                            </td>
-                            <td className="hidden px-3 py-4 sm:table-cell">
-                              {right ? makeBadge(right) : null}
-                            </td>
-                          </tr>
-                        );
-                      });
-                    })()}
-                  </tbody>
-                </table>
-              </div>
+            {amenitiesExpanded ? (
+              <ul className="mt-4 flex flex-wrap gap-2">
+                {buildingAmenityItems.map((item) => (
+                  <li
+                    key={item.label}
+                    className="rounded-md bg-[#f3f4f6] px-3 py-1.5 text-sm font-medium text-[#1a1a1a]"
+                  >
+                    {item.label}
+                    {item.label === t('furnishing.landlord')
+                      ? ` · ${item.value}`
+                      : null}
+                  </li>
+                ))}
+              </ul>
             ) : null}
           </section>
         ) : null}

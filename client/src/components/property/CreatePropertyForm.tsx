@@ -585,7 +585,6 @@ export default function CreatePropertyForm({
 
     try {
       const primaryRoom = rooms[0];
-      const areaValue = parseOptionalNumber(primaryRoom?.areaSqm ?? '');
       const basePayload: UpdatePropertyPayload = {
         name:
           name.trim() ||
@@ -605,8 +604,6 @@ export default function CreatePropertyForm({
         ward: location.ward.trim() || null,
         street: location.street.trim() || null,
         postal_code: postalCode.trim() || null,
-        room_type: primaryRoom?.roomType.trim() || null,
-        floor: primaryRoom?.floor.trim() || null,
         description: primaryRoom?.description.trim() || null,
         internal_notes: internalNotes.trim() || null,
         zalo_group_link: zaloGroupLink.trim() || null,
@@ -617,15 +614,6 @@ export default function CreatePropertyForm({
         fee_car: normalizeFeeAmount(feeCar),
         fee_wifi: normalizeFeeAmount(feeWifi),
         fee_management: normalizeFeeAmount(feeManagement),
-        rent_amount: parseOptionalNumber(primaryRoom?.rentAmount ?? '') ?? null,
-        bedrooms: parseOptionalInt(primaryRoom?.bedrooms ?? '') ?? null,
-        bathrooms: parseOptionalNumber(primaryRoom?.bathrooms ?? '') ?? null,
-        // DB constraint: area_sqm is null or > 0
-        area_sqm:
-          areaValue !== undefined && areaValue > 0 ? areaValue : null,
-        deposit_months: parseOptionalInt(primaryRoom?.depositMonths ?? '') ?? null,
-        holding_deposit:
-          parseOptionalNumber(primaryRoom?.holdingDeposit ?? '') ?? null,
       };
 
       let propertyId: string;

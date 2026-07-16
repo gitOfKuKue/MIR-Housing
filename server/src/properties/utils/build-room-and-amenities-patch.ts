@@ -3,7 +3,6 @@ import {
   FURNISHING_FILTER_COLUMNS,
   FurnishingFilter,
 } from '../enums/furnishing-filter.enum';
-import { WashingMachineType } from '../enums/washing-machine-type.enum';
 
 /** Building-level amenity columns on `properties`. */
 export type PropertyAmenitiesPatch = {
@@ -14,9 +13,7 @@ export type PropertyAmenitiesPatch = {
   has_ev_parking: boolean;
   pets_ok: boolean;
   foreigners_ok: boolean;
-  has_solar_hot_water: boolean;
   has_cleaning_service: boolean;
-  washing_machine: WashingMachineType | null;
 };
 
 /** Furniture columns written to `rooms`. */
@@ -49,13 +46,6 @@ export function buildPropertyAmenitiesPatch(
 ): PropertyAmenitiesPatch {
   const amenitySet = new Set(amenities);
 
-  let washingMachine: WashingMachineType | null = null;
-  if (amenitySet.has(AmenityFilter.PrivateWashingMachine)) {
-    washingMachine = WashingMachineType.Private;
-  } else if (amenitySet.has(AmenityFilter.SharedWashingMachine)) {
-    washingMachine = WashingMachineType.Shared;
-  }
-
   return {
     has_elevator: amenitySet.has(AmenityFilter.Elevator),
     has_security_guard: amenitySet.has(AmenityFilter.SecurityGuard),
@@ -64,9 +54,7 @@ export function buildPropertyAmenitiesPatch(
     has_ev_parking: amenitySet.has(AmenityFilter.EvParking),
     pets_ok: amenitySet.has(AmenityFilter.PetFriendly),
     foreigners_ok: amenitySet.has(AmenityFilter.ForeignerFriendly),
-    has_solar_hot_water: amenitySet.has(AmenityFilter.SolarWaterHeater),
     has_cleaning_service: amenitySet.has(AmenityFilter.CleaningService),
-    washing_machine: washingMachine,
   };
 }
 

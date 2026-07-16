@@ -38,10 +38,6 @@ const AMENITY_FLAGS: Array<{
   { key: 'pets_ok', labelKey: AMENITY_LABEL_KEYS.pet_friendly },
   { key: 'foreigners_ok', labelKey: AMENITY_LABEL_KEYS.foreigner_friendly },
   {
-    key: 'has_solar_hot_water',
-    labelKey: AMENITY_LABEL_KEYS.solar_water_heater,
-  },
-  {
     key: 'has_cleaning_service',
     labelKey: AMENITY_LABEL_KEYS.cleaning_service,
   },
@@ -285,12 +281,6 @@ export default function PropertyListItem({
       if (furnishings[flag.key] === true) {
         amenities.push(t(flag.labelKey));
       }
-    }
-    if (furnishings.washing_machine === 'shared') {
-      amenities.push(t(AMENITY_LABEL_KEYS.shared_washing_machine));
-    }
-    if (furnishings.washing_machine === 'private') {
-      amenities.push(t(AMENITY_LABEL_KEYS.private_washing_machine));
     }
 
     const furniture: string[] = [];

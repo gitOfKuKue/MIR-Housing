@@ -3,14 +3,11 @@ import { PropertyStatus } from '../enums/property-status.enum';
 import { PropertyType } from '../enums/property-type.enum';
 import {
   IsEnum,
-  IsInt,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
-  Min,
 } from 'class-validator';
 
 export class CreatePropertyDto {
@@ -73,49 +70,9 @@ export class CreatePropertyDto {
   country?: string;
 
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  rent_amount?: number;
-
-  @IsOptional()
   @IsString()
   @MaxLength(3)
   rent_currency?: string;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  bedrooms?: number;
-
-  @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 1 })
-  @Min(0)
-  bathrooms?: number;
-
-  @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01)
-  area_sqm?: number;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  room_type?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  floor?: string;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  deposit_months?: number;
-
-  @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  holding_deposit?: number;
 
   @IsOptional()
   @IsString()

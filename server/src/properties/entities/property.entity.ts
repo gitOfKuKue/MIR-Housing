@@ -1,7 +1,6 @@
 import { FeeWaterType } from '../enums/fee-water-type.enum';
 import { PropertyStatus } from '../enums/property-status.enum';
 import { PropertyType } from '../enums/property-type.enum';
-import { WashingMachineType } from '../enums/washing-machine-type.enum';
 
 export interface Property {
   id: string;
@@ -17,15 +16,7 @@ export interface Property {
   street: string | null;
   postal_code: string | null;
   country: string;
-  rent_amount: number | null;
   rent_currency: string;
-  bedrooms: number | null;
-  bathrooms: number | null;
-  area_sqm: number | null;
-  room_type: string | null;
-  floor: string | null;
-  deposit_months: number | null;
-  holding_deposit: number | null;
   description: string | null;
   internal_notes: string | null;
   zalo_group_link: string | null;
@@ -43,9 +34,7 @@ export interface Property {
   has_ev_parking: boolean | null;
   pets_ok: boolean | null;
   foreigners_ok: boolean | null;
-  has_solar_hot_water: boolean | null;
   has_cleaning_service: boolean | null;
-  washing_machine: WashingMachineType | null;
   landlord_in_building: boolean | null;
   created_by: string | null;
   created_at: string;

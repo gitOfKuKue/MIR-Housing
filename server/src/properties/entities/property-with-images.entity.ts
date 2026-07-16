@@ -16,7 +16,21 @@ export interface RoomWithImageUrls extends Omit<RoomWithImages, 'images'> {
   images: RoomImageWithUrl[];
 }
 
-export interface PropertyWithImages extends Property {
+/** Primary-room fields projected onto the property API response for list/detail. */
+export interface PrimaryRoomSummary {
+  rent_amount: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  area_sqm: number | null;
+  room_type: string | null;
+  floor: string | null;
+  deposit_months: number | null;
+  holding_deposit: number | null;
+}
+
+export interface PropertyWithImages
+  extends Property,
+    PrimaryRoomSummary {
   images: PropertyImageWithUrl[];
   utility_bills: PropertyUtilityBill[];
   rooms: RoomWithImageUrls[];
@@ -32,7 +46,9 @@ interface PropertyRowWithRelations extends Property {
   rooms?: Array<Room & { images?: RoomImage[] | null }> | null;
 }
 
-function mapSortedImages<T extends { sort_order: number; created_at: string; storage_path: string }>(
+function mapSortedImages<
+  T extends { sort_order: number; created_at: string; storage_path: string },
+>(
   imageRows: T[],
   getPublicUrl: (storagePath: string) => string,
 ): Array<T & { public_url: string }> {
@@ -57,6 +73,21 @@ function resolvePrimaryRoom(
   return [...active].sort((a, b) =>
     a.created_at.localeCompare(b.created_at),
   )[0];
+}
+
+function primaryRoomSummary(
+  room: Room | null,
+): PrimaryRoomSummary {
+  return {
+    rent_amount: room?.rent_amount ?? null,
+    bedrooms: room?.bedrooms ?? null,
+    bathrooms: room?.bathrooms ?? null,
+    area_sqm: room?.area_sqm ?? null,
+    room_type: room?.room_type ?? null,
+    floor: room?.floor ?? null,
+    deposit_months: room?.deposit_months ?? null,
+    holding_deposit: room?.holding_deposit ?? null,
+  };
 }
 
 /** Merge building amenities + room furniture into the legacy furnishings shape. */
@@ -89,7 +120,6 @@ export function buildFurnishingsView(
       has_tv: null,
       has_range_hood: null,
       has_hot_water: null,
-      washing_machine: property.washing_machine,
       landlord_in_building: property.landlord_in_building,
       has_elevator: property.has_elevator,
       has_security_guard: property.has_security_guard,
@@ -98,7 +128,6 @@ export function buildFurnishingsView(
       has_ev_parking: property.has_ev_parking,
       pets_ok: property.pets_ok,
       foreigners_ok: property.foreigners_ok,
-      has_solar_hot_water: property.has_solar_hot_water,
       has_cleaning_service: property.has_cleaning_service,
       created_at: property.created_at,
       updated_at: property.updated_at,
@@ -129,7 +158,6 @@ export function buildFurnishingsView(
     has_tv: room.has_tv,
     has_range_hood: room.has_range_hood,
     has_hot_water: room.has_hot_water,
-    washing_machine: property.washing_machine,
     landlord_in_building: property.landlord_in_building,
     has_elevator: property.has_elevator,
     has_security_guard: property.has_security_guard,
@@ -138,7 +166,6 @@ export function buildFurnishingsView(
     has_ev_parking: property.has_ev_parking,
     pets_ok: property.pets_ok,
     foreigners_ok: property.foreigners_ok,
-    has_solar_hot_water: property.has_solar_hot_water,
     has_cleaning_service: property.has_cleaning_service,
     created_at: room.created_at,
     updated_at: room.updated_at,
@@ -178,6 +205,7 @@ export function mapPropertyWithImages(
 
   return {
     ...property,
+    ...primaryRoomSummary(primaryRoom),
     images: mapSortedImages(imageRows, getPublicUrl),
     utility_bills: [...utilityBillRows].sort((a, b) => {
       const periodCompare = b.billing_period_start.localeCompare(

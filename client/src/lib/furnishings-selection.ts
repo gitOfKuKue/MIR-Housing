@@ -43,14 +43,7 @@ export function furnishingsToAmenityValues(
   if (furnishings.has_ev_parking) selected.push('ev_parking');
   if (furnishings.pets_ok) selected.push('pet_friendly');
   if (furnishings.foreigners_ok) selected.push('foreigner_friendly');
-  if (furnishings.has_solar_hot_water) selected.push('solar_water_heater');
   if (furnishings.has_cleaning_service) selected.push('cleaning_service');
-  if (furnishings.washing_machine === 'shared') {
-    selected.push('shared_washing_machine');
-  }
-  if (furnishings.washing_machine === 'private') {
-    selected.push('private_washing_machine');
-  }
 
   return selected;
 }

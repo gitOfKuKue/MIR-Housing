@@ -113,7 +113,7 @@ export class PropertiesService {
     const supabase = this.supabaseService.getClient(accessToken);
 
     const { data, error } = await supabase
-      .from(PROPERTIES_TABLE)
+      .from(ROOMS_TABLE)
       .select('rent_amount')
       .is('deleted_at', null)
       .not('rent_amount', 'is', null)
@@ -260,16 +260,8 @@ export class PropertiesService {
         ? dto.rooms
         : [
             {
-              room_type: property.room_type,
-              floor: property.floor,
-              area_sqm: property.area_sqm,
-              rent_amount: property.rent_amount,
               rent_currency: property.rent_currency,
               status: property.status,
-              holding_deposit: property.holding_deposit,
-              deposit_months: property.deposit_months,
-              bedrooms: property.bedrooms,
-              bathrooms: property.bathrooms,
               description: property.description,
               furnishings: dto.furnishings ?? [],
             },
@@ -353,21 +345,13 @@ export class PropertiesService {
       }
     }
 
-    const primary = savedRooms[0];
+    const primary = savedRooms[0] ?? null;
+
     if (primary) {
       const { error: syncError } = await supabase
         .from(PROPERTIES_TABLE)
         .update({
-          room_type: primary.room_type,
-          floor: primary.floor,
-          area_sqm: primary.area_sqm,
-          rent_amount: primary.rent_amount,
-          rent_currency: primary.rent_currency,
           status: primary.status,
-          holding_deposit: primary.holding_deposit,
-          deposit_months: primary.deposit_months,
-          bedrooms: primary.bedrooms,
-          bathrooms: primary.bathrooms,
           description: primary.description,
         })
         .eq('id', propertyId);
@@ -793,8 +777,9 @@ export class PropertiesService {
       error.message.includes('has_fixed_electricity') ||
       error.message.includes('pets_ok') ||
       error.message.includes('foreigners_ok') ||
-      error.message.includes('has_solar_hot_water') ||
-      error.message.includes('has_cleaning_service')
+      error.message.includes('has_cleaning_service') ||
+      error.message.includes('has_elevator') ||
+      error.message.includes('has_security_guard')
     ) {
       throw new InternalServerErrorException(
         'Property amenity columns are missing. Run migration 023_properties_rooms_connection.sql in Supabase.',

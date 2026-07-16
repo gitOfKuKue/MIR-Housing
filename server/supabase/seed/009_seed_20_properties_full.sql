@@ -24,6 +24,11 @@ where storage_path like 'seed/%';
 delete from public.property_utility_bills
 where notes like 'SEED:HCMC-20%';
 
+delete from public.rooms
+where property_id in (
+  select id from public.properties where internal_notes like '%SEED:HCMC-20%'
+);
+
 delete from public.properties
 where internal_notes like '%SEED:HCMC-20%';
 
@@ -48,24 +53,15 @@ insert into public.properties (
   province,
   postal_code,
   country,
-  rent_amount,
   rent_currency,
-  bedrooms,
-  bathrooms,
-  area_sqm,
   description,
   internal_notes,
   created_by,
-  room_type,
-  toilet_type,
   parking_type,
   main_gate_lock,
   max_occupants,
   max_bikes,
-  floor,
-  drying_area,
-  deposit_months,
-  holding_deposit
+  drying_area
 )
 select
   v.id,
@@ -78,24 +74,15 @@ select
   v.province,
   v.postal_code,
   v.country,
-  v.rent_amount,
   v.rent_currency,
-  v.bedrooms,
-  v.bathrooms,
-  v.area_sqm,
   v.description,
   v.internal_notes || ' | SEED:HCMC-20',
   su.user_id,
-  v.room_type,
-  v.toilet_type::public.property_toilet_type,
   v.parking_type::public.property_parking_type,
   v.main_gate_lock::public.property_main_gate_lock_type,
   v.max_occupants,
   v.max_bikes,
-  v.floor,
-  v.drying_area::public.property_drying_area_type,
-  v.deposit_months,
-  v.holding_deposit
+  v.drying_area::public.property_drying_area_type
 from seed_user su
 cross join (
   values
@@ -211,7 +198,7 @@ select
   bt.bill_type::public.utility_bill_type,
   '2026-03-01'::date,
   '2026-03-31'::date,
-  bt.amount + (p.rent_amount::bigint % 7) * 10000,
+  bt.amount + (abs(hashtext(p.id::text)) % 7) * 10000,
   'VND',
   '2026-04-10'::date,
   case

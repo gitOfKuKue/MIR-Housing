@@ -19,15 +19,12 @@ interface AmenityMultiSelectProps {
 
 export const AMENITY_LABEL_KEYS: Record<AmenityValue, TranslationKey> = {
   elevator: 'amenity.elevator',
-  shared_washing_machine: 'amenity.sharedWashingMachine',
-  private_washing_machine: 'amenity.privateWashingMachine',
   security_guard: 'amenity.securityGuard',
   car_parking: 'amenity.carParking',
   motorbike_parking: 'amenity.motorbikeParking',
   ev_parking: 'amenity.evParking',
   pet_friendly: 'amenity.petFriendly',
   foreigner_friendly: 'amenity.foreignerFriendly',
-  solar_water_heater: 'amenity.solarWaterHeater',
   cleaning_service: 'amenity.cleaningService',
 };
 

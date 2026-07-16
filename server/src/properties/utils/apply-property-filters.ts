@@ -23,7 +23,7 @@ export function applyPropertyFilters(
   }
 
   if (query.room_type) {
-    filtered = filtered.eq('room_type', query.room_type);
+    filtered = filtered.eq('rooms.room_type', query.room_type);
   }
 
   if (query.city) {
@@ -67,19 +67,19 @@ export function applyPropertyFilters(
   }
 
   if (query.min_rent !== undefined) {
-    filtered = filtered.gte('rent_amount', query.min_rent);
+    filtered = filtered.gte('rooms.rent_amount', query.min_rent);
   }
 
   if (query.max_rent !== undefined) {
-    filtered = filtered.lte('rent_amount', query.max_rent);
+    filtered = filtered.lte('rooms.rent_amount', query.max_rent);
   }
 
   if (query.bedrooms !== undefined) {
-    filtered = filtered.eq('bedrooms', query.bedrooms);
+    filtered = filtered.eq('rooms.bedrooms', query.bedrooms);
   }
 
   if (query.bathrooms !== undefined) {
-    filtered = filtered.gte('bathrooms', query.bathrooms);
+    filtered = filtered.gte('rooms.bathrooms', query.bathrooms);
   }
 
   if (query.amenities?.length) {
@@ -93,11 +93,18 @@ export function applyPropertyFilters(
   return filtered;
 }
 
-/** Furnishings filters require an inner join on rooms. */
+/** Room-scoped filters require an inner join on rooms. */
 export function propertySelectNeedsRoomsInner(
   query: QueryPropertiesDto,
 ): boolean {
-  return Boolean(query.furnishings?.length);
+  return Boolean(
+    query.furnishings?.length ||
+      query.room_type ||
+      query.min_rent !== undefined ||
+      query.max_rent !== undefined ||
+      query.bedrooms !== undefined ||
+      query.bathrooms !== undefined,
+  );
 }
 
 function applyAmenityFilters(
@@ -135,23 +142,8 @@ function applyAmenityFilters(
     filtered = filtered.eq('foreigners_ok', true);
   }
 
-  if (selected.has(AmenityFilter.SolarWaterHeater)) {
-    filtered = filtered.eq('has_solar_hot_water', true);
-  }
-
   if (selected.has(AmenityFilter.CleaningService)) {
     filtered = filtered.eq('has_cleaning_service', true);
-  }
-
-  const wantsShared = selected.has(AmenityFilter.SharedWashingMachine);
-  const wantsPrivate = selected.has(AmenityFilter.PrivateWashingMachine);
-
-  if (wantsShared && wantsPrivate) {
-    filtered = filtered.in('washing_machine', ['shared', 'private']);
-  } else if (wantsShared) {
-    filtered = filtered.eq('washing_machine', 'shared');
-  } else if (wantsPrivate) {
-    filtered = filtered.eq('washing_machine', 'private');
   }
 
   return filtered;

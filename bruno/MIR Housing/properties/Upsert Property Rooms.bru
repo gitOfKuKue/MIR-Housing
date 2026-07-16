@@ -1,0 +1,128 @@
+meta {
+  name: Upsert Property Rooms
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{base_url}}/{{version}}/properties/{{propertyId}}/furnishings
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "amenities": [
+      "elevator",
+      "motorbike_parking",
+      "security_guard"
+    ],
+    "rooms": [
+      {
+        "name": "Room 301",
+        "room_type": "studio",
+        "floor": "3",
+        "area_sqm": 28,
+        "rent_amount": 5800000,
+        "rent_currency": "VND",
+        "status": "available",
+        "holding_deposit": 500000,
+        "deposit_months": 2,
+        "bedrooms": 1,
+        "bathrooms": 1,
+        "description": "Bright studio near the stairs.",
+        "furnishings": [
+          "air_conditioner",
+          "fridge",
+          "wardrobe",
+          "bed",
+          "mattress",
+          "water_heater"
+        ]
+      },
+      {
+        "name": "Room 302",
+        "room_type": "1_bedroom",
+        "floor": "3",
+        "area_sqm": 35,
+        "rent_amount": 6500000,
+        "rent_currency": "VND",
+        "status": "available",
+        "holding_deposit": 500000,
+        "deposit_months": 2,
+        "bedrooms": 1,
+        "bathrooms": 1,
+        "description": "Corner room with balcony.",
+        "furnishings": [
+          "air_conditioner",
+          "fridge",
+          "wardrobe",
+          "bed",
+          "mattress",
+          "balcony",
+          "desk",
+          "water_heater"
+        ]
+      },
+      {
+        "name": "Room 401",
+        "room_type": "studio",
+        "floor": "4",
+        "area_sqm": 26,
+        "rent_amount": 5500000,
+        "rent_currency": "VND",
+        "status": "available",
+        "holding_deposit": 500000,
+        "deposit_months": 2,
+        "bedrooms": 1,
+        "bathrooms": 1,
+        "description": "Compact unit, quiet floor.",
+        "furnishings": [
+          "air_conditioner",
+          "wardrobe",
+          "bed",
+          "mattress"
+        ]
+      }
+    ]
+  }
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return furnishings view for primary room", function() {
+    const body = res.getBody();
+    expect(body).to.be.an("object");
+    expect(body.property_id).to.equal(bru.getEnvVar("propertyId"));
+    expect(body.has_air_conditioner).to.equal(true);
+  });
+}
+
+docs {
+  Upserts building amenities and multiple rooms for an existing property.
+
+  Run after Create Property (uses propertyId).
+  Omitting a previously saved room id soft-deletes that room.
+  Include room.id when updating an existing room.
+
+  amenities: elevator | security_guard | car_parking | motorbike_parking |
+    ev_parking | pet_friendly | foreigner_friendly | cleaning_service
+
+  room furnishings: air_conditioner | fridge | wardrobe | upper_kitchen_cabinet |
+    lower_kitchen_cabinet | kitchen_counter | mattress | bed | shoe_cabinet |
+    window_outdoor_view | window_corridor | window_air_well | balcony |
+    ventilation_window | dining_table | desk | dressing_table | sofa | tv |
+    range_hood | water_heater
+}

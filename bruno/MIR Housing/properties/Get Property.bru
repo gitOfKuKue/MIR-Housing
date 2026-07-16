@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{base_url}}/{{version}}/properties/5ca6e7d7-d487-4d1b-abd9-0241226235a3
+  url: {{base_url}}/{{version}}/properties/{{propertyId}}
   body: none
   auth: bearer
 }
@@ -18,6 +18,34 @@ auth:bearer {
   token: {{accessToken}}
 }
 
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should include multiple rooms after upsert", function() {
+    const body = res.getBody();
+    expect(body.id).to.equal(bru.getEnvVar("propertyId"));
+    expect(body.rooms).to.be.an("array");
+    expect(body.rooms.length).to.be.at.least(3);
+
+    const names = body.rooms.map((room) => room.name);
+    expect(names).to.include("Room 301");
+    expect(names).to.include("Room 302");
+    expect(names).to.include("Room 401");
+
+    const room301 = body.rooms.find((room) => room.name === "Room 301");
+    expect(room301.rent_amount).to.equal(5800000);
+    expect(room301.status).to.equal("available");
+    expect(room301.has_air_conditioner).to.equal(true);
+
+    const room302 = body.rooms.find((room) => room.name === "Room 302");
+    expect(room302.rent_amount).to.equal(6500000);
+    expect(room302.has_balcony).to.equal(true);
+  });
+}
+
 docs {
-  Get a single property by UUID. Set propertyId in the local environment.
+  Get a single property by UUID (propertyId from Create Property).
+  After Upsert Property Rooms, response.rooms should list all units.
 }

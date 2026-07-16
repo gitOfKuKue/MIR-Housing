@@ -135,7 +135,6 @@ export interface RoomFurnishings {
   has_tv: boolean | null;
   has_range_hood: boolean | null;
   has_hot_water: boolean | null;
-  washing_machine: WashingMachineType | null;
   landlord_in_building: boolean | null;
   has_elevator: boolean | null;
   has_security_guard: boolean | null;
@@ -144,7 +143,6 @@ export interface RoomFurnishings {
   has_ev_parking: boolean | null;
   pets_ok: boolean | null;
   foreigners_ok: boolean | null;
-  has_solar_hot_water: boolean | null;
   has_cleaning_service: boolean | null;
   created_at: string;
   updated_at: string;
@@ -167,8 +165,10 @@ export interface Property {
   street: string | null;
   postal_code: string | null;
   country: string;
+  /** Projected from primary room (not a properties column). */
   rent_amount: number | null;
   rent_currency: string;
+  /** Projected from primary room (not a properties column). */
   bedrooms: number | null;
   bathrooms: number | null;
   area_sqm: number | null;
@@ -193,9 +193,7 @@ export interface Property {
   has_ev_parking: boolean | null;
   pets_ok: boolean | null;
   foreigners_ok: boolean | null;
-  has_solar_hot_water: boolean | null;
   has_cleaning_service: boolean | null;
-  washing_machine: WashingMachineType | null;
   landlord_in_building: boolean | null;
   created_by: string | null;
   created_at: string;

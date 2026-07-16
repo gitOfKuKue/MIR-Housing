@@ -241,15 +241,7 @@ export type CreatePropertyPayload = {
   street?: string;
   postal_code?: string;
   country?: string;
-  rent_amount?: number;
   rent_currency?: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  area_sqm?: number;
-  room_type?: string;
-  floor?: string;
-  deposit_months?: number;
-  holding_deposit?: number;
   description?: string;
   internal_notes?: string;
   zalo_group_link?: string;

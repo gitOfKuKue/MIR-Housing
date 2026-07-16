@@ -9,18 +9,20 @@ docs {
   2. Login
   3. Get Me
   4. Logout (optional — invalidates accessToken for later requests)
-  5. Create Property (or Bulk Create Properties / npm run seed:properties)
-  5. Get Property
-  6. Update Property
-  7. List Properties
-  8. Filter by Status
-  9. Delete Property (admin only)
-  10. Upload Property Image (requires migration 005_property_images.sql)
-  11. List Property Images
-  12. Create Property Utility Bill
-  13. List Property Utility Bills
-  14. Update Property Utility Bill
-  15. Delete Property Utility Bill
+  5. Create Property (building only; saves propertyId)
+  6. Upsert Property Rooms (amenities + multiple rooms via PUT .../furnishings)
+  7. Get Property (asserts rooms: Room 301, 302, 401)
+  8. Update Property
+  9. List Properties
+  10. Filter by Status
+  11. Delete Property (admin only)
+  12. Bulk Create Properties (optional seed)
+  13. Upload Property Image (requires migration 005_property_images.sql)
+  14. List Property Images
+  15. Create Property Utility Bill
+  16. List Property Utility Bills
+  17. Update Property Utility Bill
+  18. Delete Property Utility Bill
 
   Set email and password in the local environment before running.
 }
