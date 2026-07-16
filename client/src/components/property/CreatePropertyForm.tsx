@@ -151,6 +151,23 @@ function SectionHeading({
   );
 }
 
+function GroupBanner({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="rounded-xl border border-[#e8e4dc] bg-[#faf9f7] px-4 py-3 sm:px-5">
+      <p className="text-xs font-semibold uppercase tracking-wider text-[#1e4636]">
+        {title}
+      </p>
+      <p className="mt-1 text-sm text-[#6b7280]">{description}</p>
+    </div>
+  );
+}
+
 function CheckboxGrid<T extends string>({
   options,
   value,
@@ -272,6 +289,99 @@ function normalizeFeeAmount(value: string): string | null {
   return digits || null;
 }
 
+interface RoomDraft {
+  key: string;
+  id?: string;
+  name: string;
+  roomType: '' | RoomTypeValue;
+  floor: string;
+  areaSqm: string;
+  rentAmount: string;
+  status: PropertyStatus;
+  bedrooms: string;
+  bathrooms: string;
+  depositMonths: string;
+  holdingDeposit: string;
+  description: string;
+  furnishings: FurnishingValue[];
+  images: ImagePreview[];
+}
+
+function createEmptyRoomDraft(
+  overrides: Partial<RoomDraft> = {},
+): RoomDraft {
+  return {
+    key:
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `room-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    name: '',
+    roomType: '',
+    floor: '',
+    areaSqm: '',
+    rentAmount: '',
+    status: 'available',
+    bedrooms: '',
+    bathrooms: '',
+    depositMonths: '',
+    holdingDeposit: '',
+    description: '',
+    furnishings: [],
+    images: [],
+    ...overrides,
+  };
+}
+
+function roomDraftFromPropertyFields(property?: Property): RoomDraft {
+  return createEmptyRoomDraft({
+    roomType:
+      property?.room_type && isRoomTypeValue(property.room_type)
+        ? property.room_type
+        : '',
+    floor: property?.floor ?? '',
+    areaSqm: formatInitialNumber(property?.area_sqm ?? null),
+    rentAmount: formatInitialCurrency(property?.rent_amount ?? null),
+    status: property?.status ?? 'available',
+    bedrooms: formatInitialNumber(property?.bedrooms ?? null),
+    bathrooms: formatInitialNumber(property?.bathrooms ?? null),
+    depositMonths: formatInitialNumber(property?.deposit_months ?? null),
+    holdingDeposit: formatInitialCurrency(property?.holding_deposit ?? null),
+    description: property?.description ?? '',
+    furnishings: furnishingsToFurnishingValues(property?.furnishings),
+  });
+}
+
+function roomsFromProperty(property?: Property): RoomDraft[] {
+  const existing = property?.rooms?.filter((room) => !room.deleted_at) ?? [];
+  if (existing.length === 0) {
+    return [roomDraftFromPropertyFields(property)];
+  }
+
+  return existing.map((room) =>
+    createEmptyRoomDraft({
+      key: room.id,
+      id: room.id,
+      name: room.name ?? '',
+      roomType:
+        room.room_type && isRoomTypeValue(room.room_type)
+          ? room.room_type
+          : '',
+      floor: room.floor ?? '',
+      areaSqm: formatInitialNumber(room.area_sqm),
+      rentAmount: formatInitialCurrency(room.rent_amount),
+      status: room.status ?? 'available',
+      bedrooms: formatInitialNumber(room.bedrooms),
+      bathrooms: formatInitialNumber(room.bathrooms),
+      depositMonths: formatInitialNumber(room.deposit_months),
+      holdingDeposit: formatInitialCurrency(room.holding_deposit),
+      description: room.description ?? '',
+      furnishings: furnishingsToFurnishingValues(
+        room as unknown as Property['furnishings'],
+      ),
+    }),
+  );
+}
+
 interface CreatePropertyFormProps {
   property?: Property;
 }
@@ -286,14 +396,14 @@ export default function CreatePropertyForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [imageError, setImageError] = useState('');
-  const [images, setImages] = useState<ImagePreview[]>([]);
+  const [rooms, setRooms] = useState<RoomDraft[]>(() =>
+    roomsFromProperty(property),
+  );
+  const [activeRoomIndex, setActiveRoomIndex] = useState(0);
 
   const [name, setName] = useState(property?.name ?? '');
   const [propertyType, setPropertyType] = useState<PropertyType>(
     property?.property_type ?? 'apartment',
-  );
-  const [status, setStatus] = useState<PropertyStatus>(
-    property?.status ?? 'available',
   );
   const [addressLine1, setAddressLine1] = useState(property?.address_line1 ?? '');
   const [addressLine2, setAddressLine2] = useState(property?.address_line2 ?? '');
@@ -307,34 +417,9 @@ export default function CreatePropertyForm({
   const [province] = useState(property?.province ?? HCMC_PROVINCE);
   const [postalCode, setPostalCode] = useState(property?.postal_code ?? '');
   const [country] = useState(property?.country ?? HCMC_COUNTRY);
-  const [rentAmount, setRentAmount] = useState(
-    formatInitialCurrency(property?.rent_amount ?? null),
-  );
   const [rentCurrency, setRentCurrency] = useState(
     property?.rent_currency ?? 'VND',
   );
-  const [bedrooms, setBedrooms] = useState(
-    formatInitialNumber(property?.bedrooms ?? null),
-  );
-  const [bathrooms, setBathrooms] = useState(
-    formatInitialNumber(property?.bathrooms ?? null),
-  );
-  const [areaSqm, setAreaSqm] = useState(
-    formatInitialNumber(property?.area_sqm ?? null),
-  );
-  const [roomType, setRoomType] = useState(
-    property?.room_type && isRoomTypeValue(property.room_type)
-      ? property.room_type
-      : '',
-  );
-  const [floor, setFloor] = useState(property?.floor ?? '');
-  const [depositMonths, setDepositMonths] = useState(
-    formatInitialNumber(property?.deposit_months ?? null),
-  );
-  const [holdingDeposit, setHoldingDeposit] = useState(
-    formatInitialCurrency(property?.holding_deposit ?? null),
-  );
-  const [description, setDescription] = useState(property?.description ?? '');
   const [internalNotes, setInternalNotes] = useState(
     property?.internal_notes ?? '',
   );
@@ -365,32 +450,62 @@ export default function CreatePropertyForm({
   const [amenities, setAmenities] = useState<AmenityValue[]>(() =>
     furnishingsToAmenityValues(property?.furnishings),
   );
-  const [furnishings, setFurnishings] = useState<FurnishingValue[]>(() =>
-    furnishingsToFurnishingValues(property?.furnishings),
-  );
+
+  const safeActiveIndex = Math.min(activeRoomIndex, Math.max(rooms.length - 1, 0));
+  const activeRoom = rooms[safeActiveIndex] ?? rooms[0];
+  const images = activeRoom?.images ?? [];
 
   useEffect(() => {
     return () => {
-      setImages((prev) => {
-        prev.forEach((image) => URL.revokeObjectURL(image.url));
+      setRooms((prev) => {
+        prev.forEach((room) => {
+          room.images.forEach((image) => URL.revokeObjectURL(image.url));
+        });
         return prev;
       });
     };
   }, []);
 
-  function moveImage(index: number, direction: -1 | 1) {
-    setImages((prev) => {
-      const nextIndex = index + direction;
-      if (nextIndex < 0 || nextIndex >= prev.length) return prev;
-      const copy = [...prev];
-      const [item] = copy.splice(index, 1);
-      copy.splice(nextIndex, 0, item);
-      return copy;
+  function updateActiveRoom(patch: Partial<RoomDraft>) {
+    setRooms((prev) =>
+      prev.map((room, index) =>
+        index === safeActiveIndex ? { ...room, ...patch } : room,
+      ),
+    );
+  }
+
+  function addRoom() {
+    const nextIndex = rooms.length;
+    setRooms((prev) => [...prev, createEmptyRoomDraft()]);
+    setActiveRoomIndex(nextIndex);
+    setImageError('');
+  }
+
+  function removeActiveRoom() {
+    if (rooms.length <= 1) return;
+    const removeIndex = safeActiveIndex;
+    setRooms((prev) => {
+      const removed = prev[removeIndex];
+      removed?.images.forEach((image) => URL.revokeObjectURL(image.url));
+      return prev.filter((_, index) => index !== removeIndex);
     });
+    setActiveRoomIndex((current) =>
+      Math.max(0, Math.min(current, rooms.length - 2)),
+    );
+    setImageError('');
+  }
+
+  function moveImage(index: number, direction: -1 | 1) {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= images.length) return;
+    const copy = [...images];
+    const [item] = copy.splice(index, 1);
+    copy.splice(nextIndex, 0, item);
+    updateActiveRoom({ images: copy });
   }
 
   function handleFilesSelected(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0) {
+    if (!fileList || fileList.length === 0 || !activeRoom) {
       return;
     }
 
@@ -399,7 +514,12 @@ export default function CreatePropertyForm({
     const incoming = Array.from(fileList);
     const nextImages = [...images];
     const rejectionMessages: string[] = [];
-    const existingCount = property?.images.length ?? 0;
+    const existingCount =
+      (activeRoom.id
+        ? property?.rooms?.find((room) => room.id === activeRoom.id)?.images
+            ?.length
+        : undefined) ??
+      (safeActiveIndex === 0 ? (property?.images.length ?? 0) : 0);
 
     for (const file of incoming) {
       if (existingCount + nextImages.length >= MAX_IMAGE_COUNT) {
@@ -437,7 +557,7 @@ export default function CreatePropertyForm({
       });
     }
 
-    setImages(nextImages);
+    updateActiveRoom({ images: nextImages });
 
     if (rejectionMessages.length > 0) {
       setImageError(rejectionMessages[0]);
@@ -449,13 +569,11 @@ export default function CreatePropertyForm({
   }
 
   function removeImage(id: string) {
-    setImages((prev) => {
-      const target = prev.find((image) => image.id === id);
-      if (target) {
-        URL.revokeObjectURL(target.url);
-      }
-      return prev.filter((image) => image.id !== id);
-    });
+    const target = images.find((image) => image.id === id);
+    if (target) {
+      URL.revokeObjectURL(target.url);
+    }
+    updateActiveRoom({ images: images.filter((image) => image.id !== id) });
     setImageError('');
   }
 
@@ -466,7 +584,8 @@ export default function CreatePropertyForm({
     setSubmitting(true);
 
     try {
-      const areaValue = parseOptionalNumber(areaSqm);
+      const primaryRoom = rooms[0];
+      const areaValue = parseOptionalNumber(primaryRoom?.areaSqm ?? '');
       const basePayload: UpdatePropertyPayload = {
         name:
           name.trim() ||
@@ -475,7 +594,7 @@ export default function CreatePropertyForm({
             .join(', ') ||
           'Untitled property',
         property_type: propertyType,
-        status,
+        status: primaryRoom?.status ?? 'available',
         address_line1: addressLine1.trim(),
         city: city.trim() || HCMC_CITY,
         province: province.trim() || HCMC_PROVINCE,
@@ -486,9 +605,9 @@ export default function CreatePropertyForm({
         ward: location.ward.trim() || null,
         street: location.street.trim() || null,
         postal_code: postalCode.trim() || null,
-        room_type: roomType.trim() || null,
-        floor: floor.trim() || null,
-        description: description.trim() || null,
+        room_type: primaryRoom?.roomType.trim() || null,
+        floor: primaryRoom?.floor.trim() || null,
+        description: primaryRoom?.description.trim() || null,
         internal_notes: internalNotes.trim() || null,
         zalo_group_link: zaloGroupLink.trim() || null,
         fee_electricity: normalizeFeeAmount(feeElectricity),
@@ -498,14 +617,15 @@ export default function CreatePropertyForm({
         fee_car: normalizeFeeAmount(feeCar),
         fee_wifi: normalizeFeeAmount(feeWifi),
         fee_management: normalizeFeeAmount(feeManagement),
-        rent_amount: parseOptionalNumber(rentAmount) ?? null,
-        bedrooms: parseOptionalInt(bedrooms) ?? null,
-        bathrooms: parseOptionalNumber(bathrooms) ?? null,
+        rent_amount: parseOptionalNumber(primaryRoom?.rentAmount ?? '') ?? null,
+        bedrooms: parseOptionalInt(primaryRoom?.bedrooms ?? '') ?? null,
+        bathrooms: parseOptionalNumber(primaryRoom?.bathrooms ?? '') ?? null,
         // DB constraint: area_sqm is null or > 0
         area_sqm:
           areaValue !== undefined && areaValue > 0 ? areaValue : null,
-        deposit_months: parseOptionalInt(depositMonths) ?? null,
-        holding_deposit: parseOptionalNumber(holdingDeposit) ?? null,
+        deposit_months: parseOptionalInt(primaryRoom?.depositMonths ?? '') ?? null,
+        holding_deposit:
+          parseOptionalNumber(primaryRoom?.holdingDeposit ?? '') ?? null,
       };
 
       let propertyId: string;
@@ -525,13 +645,35 @@ export default function CreatePropertyForm({
 
       await upsertPropertyFurnishings(propertyId, {
         amenities,
-        furnishings,
+        rooms: rooms.map((room) => {
+          const roomArea = parseOptionalNumber(room.areaSqm);
+          return {
+            id: room.id,
+            name: room.name.trim() || null,
+            room_type: room.roomType.trim() || null,
+            floor: room.floor.trim() || null,
+            area_sqm:
+              roomArea !== undefined && roomArea > 0 ? roomArea : null,
+            rent_amount: parseOptionalNumber(room.rentAmount) ?? null,
+            rent_currency: rentCurrency.trim() || 'VND',
+            status: room.status,
+            holding_deposit: parseOptionalNumber(room.holdingDeposit) ?? null,
+            deposit_months: parseOptionalInt(room.depositMonths) ?? null,
+            bedrooms: parseOptionalInt(room.bedrooms) ?? null,
+            bathrooms: parseOptionalNumber(room.bathrooms) ?? null,
+            description: room.description.trim() || null,
+            furnishings: room.furnishings,
+          };
+        }),
       });
 
-      if (images.length > 0) {
+      const newImageFiles = rooms.flatMap((room) =>
+        room.images.map((image) => image.file),
+      );
+      if (newImageFiles.length > 0) {
         await uploadPropertyImages(
           propertyId,
-          images.map((image) => image.file),
+          newImageFiles,
           property?.images.length ?? 0,
         );
       }
@@ -551,7 +693,14 @@ export default function CreatePropertyForm({
 
   const backHref =
     isEdit && property ? `/properties/${property.id}` : '/properties';
-  const rentPreview = parseOptionalNumber(rentAmount);
+  const rentPreview = parseOptionalNumber(activeRoom?.rentAmount ?? '');
+  const existingRoomImages =
+    activeRoom?.id
+      ? (property?.rooms?.find((room) => room.id === activeRoom.id)?.images ??
+        [])
+      : safeActiveIndex === 0
+        ? (property?.images ?? [])
+        : [];
 
   return (
     <div className="bg-white">
@@ -583,6 +732,13 @@ export default function CreatePropertyForm({
         onSubmit={handleSubmit}
         className="w-full space-y-10 px-4 pt-8 pb-16 sm:px-8 lg:px-10"
       >
+        {/* ── Property (building) ─────────────────────────────────────── */}
+        <div className="space-y-8">
+          <GroupBanner
+            title={t('form.groupProperty')}
+            description={t('form.groupPropertyHint')}
+          />
+
           <section>
             <SectionHeading number={1} title={t('form.sectionAddress')} />
             <div className="grid gap-4 sm:grid-cols-2">
@@ -635,94 +791,33 @@ export default function CreatePropertyForm({
                   placeholder={t('form.nameOptionalPlaceholder')}
                 />
               </div>
-            </div>
-          </section>
-
-          <section>
-            <SectionHeading number={2} title={t('form.sectionBasic')} />
-            <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="room_type" className={labelClassName}>
-                  {t('form.roomType')}
+                <label htmlFor="property_type" className={labelClassName}>
+                  {t('form.propertyType')}
                 </label>
                 <select
-                  id="room_type"
-                  value={roomType}
+                  id="property_type"
+                  value={propertyType}
                   onChange={(e) =>
-                    setRoomType(
-                      e.target.value === ''
-                        ? ''
-                        : (e.target.value as RoomTypeValue),
-                    )
+                    setPropertyType(e.target.value as PropertyType)
                   }
                   className={inputClassName}
                 >
-                  <option value="">{t('form.selectRoomType')}</option>
-                  {ROOM_TYPE_VALUES.map((option) => (
-                    <option key={option} value={option}>
-                      {t(ROOM_TYPE_LABEL_KEYS[option])}
+                  {PROPERTY_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {t(`type.${type}` as TranslationKey)}
                     </option>
                   ))}
                 </select>
               </div>
-              <div>
-                <label htmlFor="floor" className={labelClassName}>
-                  {t('form.floor')}
-                </label>
-                <input
-                  id="floor"
-                  value={floor}
-                  onChange={(e) => setFloor(e.target.value)}
-                  className={inputClassName}
-                  placeholder={t('form.floorPlaceholder')}
-                />
-              </div>
-              <div>
-                <label htmlFor="area_sqm" className={labelClassName}>
-                  {t('form.areaSqm')}
-                </label>
-                <input
-                  id="area_sqm"
-                  type="number"
-                  min={0.01}
-                  step="0.01"
-                  value={areaSqm}
-                  onChange={(e) => setAreaSqm(e.target.value)}
-                  className={inputClassName}
-                  placeholder={t('form.areaPlaceholder')}
-                />
-              </div>
-              <div>
-                <label htmlFor="rent_amount" className={labelClassName}>
-                  {t('form.rentAmountVnd')}
-                </label>
-                <div className="relative">
-                  <input
-                    id="rent_amount"
-                    type="text"
-                    inputMode="decimal"
-                    value={rentAmount}
-                    onChange={(e) =>
-                      setRentAmount(formatCurrencyInput(e.target.value))
-                    }
-                    className={`${inputClassName} pr-8 font-mono`}
-                    placeholder={t('form.rentPlaceholder')}
-                  />
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#6b7280]">
-                    đ
-                  </span>
-                </div>
-                {rentPreview ? (
-                  <p className="mt-1.5 text-xs font-medium text-[#1e4636]">
-                    {rentPreview.toLocaleString('vi-VN')} đ/{t('list.perMonth')}
-                  </p>
-                ) : null}
-              </div>
             </div>
           </section>
 
           <section>
-            <SectionHeading number={3} title={t('form.sectionAmenities')} />
+            <SectionHeading number={2} title={t('form.sectionAmenities')} />
+            <p className="mb-3 text-xs text-[#9ca3af]">
+              {t('form.amenitiesHint')}
+            </p>
             <CheckboxGrid
               options={AMENITY_VALUES}
               value={amenities}
@@ -732,118 +827,7 @@ export default function CreatePropertyForm({
           </section>
 
           <section>
-            <SectionHeading number={4} title={t('form.sectionFurniture')} />
-            <CheckboxGrid
-              options={FURNISHING_VALUES}
-              value={furnishings}
-              onChange={setFurnishings}
-              labelFor={(option) => t(FURNISHING_LABEL_KEYS[option])}
-            />
-          </section>
-
-          <section>
-            <SectionHeading number={5} title={t('form.sectionImages')} />
-            {isEdit && property && property.images.length > 0 ? (
-              <ul className="mb-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
-                {property.images.map((image, index) => (
-                  <li
-                    key={image.id}
-                    className="relative aspect-[4/3] overflow-hidden rounded-lg border border-[#e5e7eb] bg-[#f3f4f6]"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={image.public_url}
-                      alt={`${t('form.existingImage')} ${index + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-                    {index === 0 ? (
-                      <span className="absolute left-1.5 top-1.5 rounded bg-amber-400 px-1.5 py-0.5 text-[9px] font-bold text-white">
-                        {t('form.cover')}
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-
-            <div className="relative h-0 w-0 overflow-hidden">
-              <input
-                ref={fileInputRef}
-                id="property_images"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                multiple
-                tabIndex={-1}
-                onChange={(event) => handleFilesSelected(event.target.files)}
-              />
-            </div>
-            <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
-              {images.map((image, index) => (
-                <li
-                  key={image.id}
-                  className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-[#e5e7eb] bg-[#f3f4f6]"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={image.url}
-                    alt={image.file.name}
-                    className="h-full w-full object-cover"
-                  />
-                  {index === 0 ? (
-                    <span className="absolute left-1.5 top-1.5 rounded bg-amber-400 px-1.5 py-0.5 text-[9px] font-bold text-white">
-                      {t('form.cover')}
-                    </span>
-                  ) : null}
-                  <div className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/40 opacity-0 transition group-hover:opacity-100">
-                    <button
-                      type="button"
-                      disabled={index === 0}
-                      onClick={() => moveImage(index, -1)}
-                      className="rounded bg-white/90 px-1.5 py-1 text-xs disabled:opacity-40"
-                      aria-label="Move left"
-                    >
-                      ←
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeImage(image.id)}
-                      className="rounded bg-white/90 px-1.5 py-1 text-xs font-semibold text-red-600"
-                    >
-                      {t('form.remove')}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={index === images.length - 1}
-                      onClick={() => moveImage(index, 1)}
-                      className="rounded bg-white/90 px-1.5 py-1 text-xs disabled:opacity-40"
-                      aria-label="Move right"
-                    >
-                      →
-                    </button>
-                  </div>
-                </li>
-              ))}
-              <li>
-                <label
-                  htmlFor="property_images"
-                  className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#d1d5db] bg-[#fafaf9] text-[#6b7280] transition hover:border-[#1e4636] hover:bg-[#f3f7f5] hover:text-[#1e4636]"
-                >
-                  <UploadIcon />
-                  <span className="text-xs font-medium">{t('form.uploadImages')}</span>
-                </label>
-              </li>
-            </ul>
-            <p className="mt-2 text-xs text-[#9ca3af]">{t('form.imageOrderHint')}</p>
-            {imageError ? (
-              <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                {imageError}
-              </div>
-            ) : null}
-          </section>
-
-          <section>
-            <SectionHeading number={6} title={t('form.sectionExtra')} />
-
+            <SectionHeading number={3} title={t('form.sectionBuildingFees')} />
             <p className={subheadingClassName}>{t('form.monthlyFees')}</p>
             <div className="mb-7 grid gap-3 sm:grid-cols-2">
               <div>
@@ -967,8 +951,247 @@ export default function CreatePropertyForm({
               </div>
             </div>
 
-            <p className={subheadingClassName}>{t('form.roomDetails')}</p>
-            <div className="mb-7 grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="zalo_group_link" className={labelClassName}>
+                  {t('form.zaloGroupLink')}
+                </label>
+                <input
+                  id="zalo_group_link"
+                  type="text"
+                  inputMode="url"
+                  value={zaloGroupLink}
+                  onChange={(e) => setZaloGroupLink(e.target.value)}
+                  className={inputClassName}
+                  placeholder={t('form.zaloGroupLinkPlaceholder')}
+                />
+              </div>
+              <div>
+                <label htmlFor="internal_notes" className={labelClassName}>
+                  {t('form.internalNotes')}
+                </label>
+                <textarea
+                  id="internal_notes"
+                  rows={2}
+                  value={internalNotes}
+                  onChange={(e) => setInternalNotes(e.target.value)}
+                  className={`${inputClassName} h-auto resize-none py-2`}
+                  placeholder={t('form.internalNotesPlaceholder')}
+                />
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* ── Room (unit) ─────────────────────────────────────────────── */}
+        <div className="space-y-8 border-t border-[#e8e4dc] pt-10">
+          <GroupBanner
+            title={t('form.groupRoom')}
+            description={t('form.groupRoomHint')}
+          />
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap gap-1.5">
+              {rooms.map((room, index) => {
+                const label =
+                  room.name.trim() ||
+                  t('form.roomTab', { n: index + 1 });
+                const isActive = index === safeActiveIndex;
+                return (
+                  <button
+                    key={room.key}
+                    type="button"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      setActiveRoomIndex(index);
+                      setImageError('');
+                    }}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                      isActive
+                        ? 'bg-[#1e4636] text-white'
+                        : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-[#e5e7eb]'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={addRoom}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-[#1e4636]/40 px-3 py-1.5 text-sm font-medium text-[#1e4636] transition hover:border-[#1e4636] hover:bg-[#f3f7f5]"
+            >
+              <span aria-hidden="true" className="text-base leading-none">
+                +
+              </span>
+              {t('form.addRoom')}
+            </button>
+            {rooms.length > 1 ? (
+              <button
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={removeActiveRoom}
+                className="ml-auto text-sm font-medium text-red-600 transition hover:text-red-700"
+              >
+                {t('form.removeRoom')}
+              </button>
+            ) : null}
+          </div>
+
+          <section>
+            <SectionHeading number={4} title={t('form.sectionBasic')} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label htmlFor="room_name" className={labelClassName}>
+                  {t('form.roomName')}
+                </label>
+                <input
+                  id="room_name"
+                  value={activeRoom?.name ?? ''}
+                  onChange={(e) => updateActiveRoom({ name: e.target.value })}
+                  className={inputClassName}
+                  placeholder={t('form.roomNamePlaceholder')}
+                />
+              </div>
+              <div>
+                <label htmlFor="room_type" className={labelClassName}>
+                  {t('form.roomType')}
+                </label>
+                <select
+                  id="room_type"
+                  value={activeRoom?.roomType ?? ''}
+                  onChange={(e) =>
+                    updateActiveRoom({
+                      roomType:
+                        e.target.value === ''
+                          ? ''
+                          : (e.target.value as RoomTypeValue),
+                    })
+                  }
+                  className={inputClassName}
+                >
+                  <option value="">{t('form.selectRoomType')}</option>
+                  {ROOM_TYPE_VALUES.map((option) => (
+                    <option key={option} value={option}>
+                      {t(ROOM_TYPE_LABEL_KEYS[option])}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="floor" className={labelClassName}>
+                  {t('form.floor')}
+                </label>
+                <input
+                  id="floor"
+                  value={activeRoom?.floor ?? ''}
+                  onChange={(e) => updateActiveRoom({ floor: e.target.value })}
+                  className={inputClassName}
+                  placeholder={t('form.floorPlaceholder')}
+                />
+              </div>
+              <div>
+                <label htmlFor="area_sqm" className={labelClassName}>
+                  {t('form.areaSqm')}
+                </label>
+                <input
+                  id="area_sqm"
+                  type="number"
+                  min={0.01}
+                  step="0.01"
+                  value={activeRoom?.areaSqm ?? ''}
+                  onChange={(e) =>
+                    updateActiveRoom({ areaSqm: e.target.value })
+                  }
+                  className={inputClassName}
+                  placeholder={t('form.areaPlaceholder')}
+                />
+              </div>
+              <div>
+                <label htmlFor="rent_amount" className={labelClassName}>
+                  {t('form.rentAmountVnd')}
+                </label>
+                <div className="relative">
+                  <input
+                    id="rent_amount"
+                    type="text"
+                    inputMode="decimal"
+                    value={activeRoom?.rentAmount ?? ''}
+                    onChange={(e) =>
+                      updateActiveRoom({
+                        rentAmount: formatCurrencyInput(e.target.value),
+                      })
+                    }
+                    className={`${inputClassName} pr-8 font-mono`}
+                    placeholder={t('form.rentPlaceholder')}
+                  />
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#6b7280]">
+                    đ
+                  </span>
+                </div>
+                {rentPreview ? (
+                  <p className="mt-1.5 text-xs font-medium text-[#1e4636]">
+                    {rentPreview.toLocaleString('vi-VN')} đ/{t('list.perMonth')}
+                  </p>
+                ) : null}
+              </div>
+              <div className="sm:col-span-2">
+                <span className={labelClassName}>{t('form.status')}</span>
+                <div className="mt-1 flex flex-wrap gap-5">
+                  {(['available', 'rented'] as PropertyStatus[]).map((item) => (
+                    <label
+                      key={item}
+                      className="flex cursor-pointer items-center gap-2 text-sm text-[#1a1a1a]"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => updateActiveRoom({ status: item })}
+                    >
+                      <input
+                        type="radio"
+                        name={`status-${activeRoom?.key ?? 'room'}`}
+                        checked={activeRoom?.status === item}
+                        readOnly
+                        className="h-4 w-4 border-[#d1d5db] text-[#1e4636] focus:ring-[#1e4636]"
+                      />
+                      {t(`status.${item}` as TranslationKey)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label htmlFor="status_extra" className={labelClassName}>
+                  {t('form.statusOther')}
+                </label>
+                <select
+                  id="status_extra"
+                  value={
+                    activeRoom?.status === 'available' ||
+                    activeRoom?.status === 'rented'
+                      ? ''
+                      : (activeRoom?.status ?? '')
+                  }
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    if (next) {
+                      updateActiveRoom({ status: next as PropertyStatus });
+                    }
+                  }}
+                  className={inputClassName}
+                >
+                  <option value="">{t('common.notSet')}</option>
+                  <option value="maintenance">
+                    {t('status.maintenance')}
+                  </option>
+                  <option value="inactive">{t('status.inactive')}</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <SectionHeading number={5} title={t('form.sectionRoomDetails')} />
+            <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <label htmlFor="holding_deposit" className={labelClassName}>
                   {t('form.holdingDeposit')}
@@ -978,9 +1201,11 @@ export default function CreatePropertyForm({
                     id="holding_deposit"
                     type="text"
                     inputMode="decimal"
-                    value={holdingDeposit}
+                    value={activeRoom?.holdingDeposit ?? ''}
                     onChange={(e) =>
-                      setHoldingDeposit(formatCurrencyInput(e.target.value))
+                      updateActiveRoom({
+                        holdingDeposit: formatCurrencyInput(e.target.value),
+                      })
                     }
                     className={`${smallInputClassName} pr-8 font-mono`}
                     placeholder={t('form.depositPlaceholder')}
@@ -999,8 +1224,10 @@ export default function CreatePropertyForm({
                   type="number"
                   min={0}
                   step={1}
-                  value={depositMonths}
-                  onChange={(e) => setDepositMonths(e.target.value)}
+                  value={activeRoom?.depositMonths ?? ''}
+                  onChange={(e) =>
+                    updateActiveRoom({ depositMonths: e.target.value })
+                  }
                   className={smallInputClassName}
                 />
               </div>
@@ -1013,8 +1240,10 @@ export default function CreatePropertyForm({
                   type="number"
                   min={0}
                   step={1}
-                  value={bedrooms}
-                  onChange={(e) => setBedrooms(e.target.value)}
+                  value={activeRoom?.bedrooms ?? ''}
+                  onChange={(e) =>
+                    updateActiveRoom({ bedrooms: e.target.value })
+                  }
                   className={smallInputClassName}
                 />
               </div>
@@ -1027,140 +1256,169 @@ export default function CreatePropertyForm({
                   type="number"
                   min={0}
                   step="0.5"
-                  value={bathrooms}
-                  onChange={(e) => setBathrooms(e.target.value)}
-                  className={smallInputClassName}
-                />
-              </div>
-              <div>
-                <label htmlFor="property_type" className={labelClassName}>
-                  {t('form.propertyType')}
-                </label>
-                <select
-                  id="property_type"
-                  value={propertyType}
+                  value={activeRoom?.bathrooms ?? ''}
                   onChange={(e) =>
-                    setPropertyType(e.target.value as PropertyType)
+                    updateActiveRoom({ bathrooms: e.target.value })
                   }
                   className={smallInputClassName}
-                >
-                  {PROPERTY_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {t(`type.${type}` as TranslationKey)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="mb-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="zalo_group_link" className={labelClassName}>
-                  {t('form.zaloGroupLink')}
-                </label>
-                <input
-                  id="zalo_group_link"
-                  type="text"
-                  inputMode="url"
-                  value={zaloGroupLink}
-                  onChange={(e) => setZaloGroupLink(e.target.value)}
-                  className={inputClassName}
-                  placeholder={t('form.zaloGroupLinkPlaceholder')}
                 />
               </div>
-              <div>
-                <span className={labelClassName}>{t('form.status')}</span>
-                <div className="mt-1 flex flex-wrap gap-5">
-                  {(['available', 'rented'] as PropertyStatus[]).map((item) => (
-                    <label
-                      key={item}
-                      className="flex cursor-pointer items-center gap-2 text-sm text-[#1a1a1a]"
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => setStatus(item)}
-                    >
-                      <input
-                        type="radio"
-                        name="status"
-                        checked={status === item}
-                        readOnly
-                        className="h-4 w-4 border-[#d1d5db] text-[#1e4636] focus:ring-[#1e4636]"
-                      />
-                      {t(`status.${item}` as TranslationKey)}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label htmlFor="status_extra" className={labelClassName}>
-                  {t('form.statusOther')}
-                </label>
-                <select
-                  id="status_extra"
-                  value={
-                    status === 'available' || status === 'rented' ? '' : status
-                  }
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    if (next) setStatus(next as PropertyStatus);
-                  }}
-                  className={inputClassName}
-                >
-                  <option value="">{t('common.notSet')}</option>
-                  <option value="maintenance">
-                    {t('status.maintenance')}
-                  </option>
-                  <option value="inactive">{t('status.inactive')}</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid gap-4">
-              <div>
+              <div className="sm:col-span-2">
                 <label htmlFor="description" className={labelClassName}>
                   {t('form.notes')}
                 </label>
                 <textarea
                   id="description"
                   rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  value={activeRoom?.description ?? ''}
+                  onChange={(e) =>
+                    updateActiveRoom({ description: e.target.value })
+                  }
                   className={`${inputClassName} h-auto resize-none py-2`}
                   placeholder={t('form.notesPlaceholder')}
-                />
-              </div>
-              <div>
-                <label htmlFor="internal_notes" className={labelClassName}>
-                  {t('form.internalNotes')}
-                </label>
-                <textarea
-                  id="internal_notes"
-                  rows={2}
-                  value={internalNotes}
-                  onChange={(e) => setInternalNotes(e.target.value)}
-                  className={`${inputClassName} h-auto resize-none py-2`}
-                  placeholder={t('form.internalNotesPlaceholder')}
                 />
               </div>
             </div>
           </section>
 
-          {error ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-              {error}
-            </div>
-          ) : null}
+          <section>
+            <SectionHeading number={6} title={t('form.sectionFurniture')} />
+            <p className="mb-3 text-xs text-[#9ca3af]">
+              {t('form.furnitureHint')}
+            </p>
+            <CheckboxGrid
+              options={FURNISHING_VALUES}
+              value={activeRoom?.furnishings ?? []}
+              onChange={(furnishings) => updateActiveRoom({ furnishings })}
+              labelFor={(option) => t(FURNISHING_LABEL_KEYS[option])}
+            />
+          </section>
 
-          <div className="flex justify-end pb-2">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#1e4636] px-6 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#163828] disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              <CheckIcon />
-              {submitting ? t('common.saving') : t('form.saveRoom')}
-            </button>
+          <section>
+            <SectionHeading number={7} title={t('form.sectionImages')} />
+            <p className="mb-3 text-xs text-[#9ca3af]">
+              {t('form.roomPhotosHint')}
+            </p>
+            {isEdit && existingRoomImages.length > 0 ? (
+              <ul className="mb-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
+                {existingRoomImages.map((image, index) => (
+                  <li
+                    key={image.id}
+                    className="relative aspect-[4/3] overflow-hidden rounded-lg border border-[#e5e7eb] bg-[#f3f4f6]"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={image.public_url}
+                      alt={`${t('form.existingImage')} ${index + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    {index === 0 ? (
+                      <span className="absolute left-1.5 top-1.5 rounded bg-amber-400 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                        {t('form.cover')}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
+            <div className="relative h-0 w-0 overflow-hidden">
+              <input
+                ref={fileInputRef}
+                id="property_images"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                tabIndex={-1}
+                onChange={(event) => handleFilesSelected(event.target.files)}
+              />
+            </div>
+            <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
+              {images.map((image, index) => (
+                <li
+                  key={image.id}
+                  className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-[#e5e7eb] bg-[#f3f4f6]"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={image.url}
+                    alt={image.file.name}
+                    className="h-full w-full object-cover"
+                  />
+                  {index === 0 ? (
+                    <span className="absolute left-1.5 top-1.5 rounded bg-amber-400 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                      {t('form.cover')}
+                    </span>
+                  ) : null}
+                  <div className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/40 opacity-0 transition group-hover:opacity-100">
+                    <button
+                      type="button"
+                      disabled={index === 0}
+                      onClick={() => moveImage(index, -1)}
+                      className="rounded bg-white/90 px-1.5 py-1 text-xs disabled:opacity-40"
+                      aria-label="Move left"
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeImage(image.id)}
+                      className="rounded bg-white/90 px-1.5 py-1 text-xs font-semibold text-red-600"
+                    >
+                      {t('form.remove')}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={index === images.length - 1}
+                      onClick={() => moveImage(index, 1)}
+                      className="rounded bg-white/90 px-1.5 py-1 text-xs disabled:opacity-40"
+                      aria-label="Move right"
+                    >
+                      →
+                    </button>
+                  </div>
+                </li>
+              ))}
+              <li>
+                <label
+                  htmlFor="property_images"
+                  className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#d1d5db] bg-[#fafaf9] text-[#6b7280] transition hover:border-[#1e4636] hover:bg-[#f3f7f5] hover:text-[#1e4636]"
+                >
+                  <UploadIcon />
+                  <span className="text-xs font-medium">
+                    {t('form.uploadImages')}
+                  </span>
+                </label>
+              </li>
+            </ul>
+            <p className="mt-2 text-xs text-[#9ca3af]">
+              {t('form.imageOrderHint')}
+            </p>
+            {imageError ? (
+              <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                {imageError}
+              </div>
+            ) : null}
+          </section>
+        </div>
+
+        {error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            {error}
           </div>
-        </form>
+        ) : null}
+
+        <div className="flex justify-end pb-2">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#1e4636] px-6 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#163828] disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            <CheckIcon />
+            {submitting ? t('common.saving') : t('form.saveRoom')}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

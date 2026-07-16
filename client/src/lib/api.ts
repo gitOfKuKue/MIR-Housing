@@ -333,6 +333,22 @@ export async function upsertPropertyFurnishings(
   payload: {
     amenities?: string[];
     furnishings?: string[];
+    rooms?: Array<{
+      id?: string;
+      name?: string | null;
+      room_type?: string | null;
+      floor?: string | null;
+      area_sqm?: number | null;
+      rent_amount?: number | null;
+      rent_currency?: string;
+      status?: string;
+      holding_deposit?: number | null;
+      deposit_months?: number | null;
+      bedrooms?: number | null;
+      bathrooms?: number | null;
+      description?: string | null;
+      furnishings?: string[];
+    }>;
   },
 ): Promise<PropertyFurnishings> {
   return apiFetch<PropertyFurnishings>(`/properties/${propertyId}/furnishings`, {

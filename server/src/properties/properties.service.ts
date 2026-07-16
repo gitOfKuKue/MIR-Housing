@@ -244,7 +244,6 @@ export class PropertiesService {
     const supabase = this.supabaseService.getClient(accessToken);
 
     const amenitiesPatch = buildPropertyAmenitiesPatch(dto.amenities ?? []);
-    const furniturePatch = buildRoomFurniturePatch(dto.furnishings ?? []);
 
     const { error: propertyError } = await supabase
       .from(PROPERTIES_TABLE)
@@ -256,70 +255,131 @@ export class PropertiesService {
       this.handleSupabaseError(propertyError);
     }
 
+    const roomInputs =
+      dto.rooms && dto.rooms.length > 0
+        ? dto.rooms
+        : [
+            {
+              room_type: property.room_type,
+              floor: property.floor,
+              area_sqm: property.area_sqm,
+              rent_amount: property.rent_amount,
+              rent_currency: property.rent_currency,
+              status: property.status,
+              holding_deposit: property.holding_deposit,
+              deposit_months: property.deposit_months,
+              bedrooms: property.bedrooms,
+              bathrooms: property.bathrooms,
+              description: property.description,
+              furnishings: dto.furnishings ?? [],
+            },
+          ];
+
     const { data: existingRooms, error: roomsError } = await supabase
       .from(ROOMS_TABLE)
       .select('*')
       .eq('property_id', propertyId)
       .is('deleted_at', null)
-      .order('created_at', { ascending: true })
-      .limit(1);
+      .order('created_at', { ascending: true });
 
     if (roomsError) {
       this.handleSupabaseError(roomsError);
     }
 
-    const existingRoom = (existingRooms?.[0] as Room | undefined) ?? null;
+    const existing = (existingRooms ?? []) as Room[];
+    const keptIds = new Set(
+      roomInputs.map((room) => room.id).filter((id): id is string => Boolean(id)),
+    );
 
-    const roomPayload = {
-      property_id: propertyId,
-      name: property.name,
-      room_type: property.room_type,
-      floor: property.floor,
-      area_sqm: property.area_sqm,
-      rent_amount: property.rent_amount,
-      rent_currency: property.rent_currency,
-      status: property.status,
-      holding_deposit: property.holding_deposit,
-      deposit_months: property.deposit_months,
-      bedrooms: property.bedrooms,
-      bathrooms: property.bathrooms,
-      description: property.description,
-      internal_notes: property.internal_notes,
-      ...furniturePatch,
-      updated_at: new Date().toISOString(),
-    };
-
-    let room: Room;
-
-    if (existingRoom) {
-      const { data, error } = await supabase
-        .from(ROOMS_TABLE)
-        .update(roomPayload)
-        .eq('id', existingRoom.id)
-        .select('*')
-        .single();
-
-      if (error) {
-        this.handleSupabaseError(error);
+    for (const room of existing) {
+      if (!keptIds.has(room.id)) {
+        const { error } = await supabase
+          .from(ROOMS_TABLE)
+          .update({ deleted_at: new Date().toISOString() })
+          .eq('id', room.id);
+        if (error) {
+          this.handleSupabaseError(error);
+        }
       }
-      room = data as Room;
-    } else {
-      const { data, error } = await supabase
-        .from(ROOMS_TABLE)
-        .insert(roomPayload)
-        .select('*')
-        .single();
+    }
 
-      if (error) {
-        this.handleSupabaseError(error);
+    const savedRooms: Room[] = [];
+
+    for (const [index, input] of roomInputs.entries()) {
+      const furniturePatch = buildRoomFurniturePatch(input.furnishings ?? []);
+      const roomPayload = {
+        property_id: propertyId,
+        name:
+          input.name?.trim() ||
+          `${property.name || 'Room'} — ${index + 1}`,
+        room_type: input.room_type ?? null,
+        floor: input.floor ?? null,
+        area_sqm: input.area_sqm ?? null,
+        rent_amount: input.rent_amount ?? null,
+        rent_currency: input.rent_currency ?? property.rent_currency ?? 'VND',
+        status: input.status ?? property.status,
+        holding_deposit: input.holding_deposit ?? null,
+        deposit_months: input.deposit_months ?? null,
+        bedrooms: input.bedrooms ?? null,
+        bathrooms: input.bathrooms ?? null,
+        description: input.description ?? null,
+        ...furniturePatch,
+        deleted_at: null,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (input.id) {
+        const { data, error } = await supabase
+          .from(ROOMS_TABLE)
+          .update(roomPayload)
+          .eq('id', input.id)
+          .eq('property_id', propertyId)
+          .select('*')
+          .single();
+        if (error) {
+          this.handleSupabaseError(error);
+        }
+        savedRooms.push(data as Room);
+      } else {
+        const { data, error } = await supabase
+          .from(ROOMS_TABLE)
+          .insert(roomPayload)
+          .select('*')
+          .single();
+        if (error) {
+          this.handleSupabaseError(error);
+        }
+        savedRooms.push(data as Room);
       }
-      room = data as Room;
+    }
+
+    const primary = savedRooms[0];
+    if (primary) {
+      const { error: syncError } = await supabase
+        .from(PROPERTIES_TABLE)
+        .update({
+          room_type: primary.room_type,
+          floor: primary.floor,
+          area_sqm: primary.area_sqm,
+          rent_amount: primary.rent_amount,
+          rent_currency: primary.rent_currency,
+          status: primary.status,
+          holding_deposit: primary.holding_deposit,
+          deposit_months: primary.deposit_months,
+          bedrooms: primary.bedrooms,
+          bathrooms: primary.bathrooms,
+          description: primary.description,
+        })
+        .eq('id', propertyId);
+      if (syncError) {
+        this.handleSupabaseError(syncError);
+      }
     }
 
     const refreshed = await this.findOne(propertyId, accessToken);
     return (
       refreshed.furnishings ??
-      buildFurnishingsView({ ...property, ...amenitiesPatch }, room)!
+      buildFurnishingsView({ ...property, ...amenitiesPatch }, primary)!
     );
   }
 

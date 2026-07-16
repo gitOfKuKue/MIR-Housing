@@ -13,17 +13,17 @@ import { UtilityBillType } from '../enums/utility-bill-type.enum';
 
 export class CreatePropertyUtilityBillDto {
   @IsEnum(UtilityBillType)
-  bill_type: UtilityBillType;
+  bill_type!: UtilityBillType;
 
   @IsDateString()
-  billing_period_start: string;
+  billing_period_start!: string;
 
   @IsDateString()
-  billing_period_end: string;
+  billing_period_end!: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  amount: number;
+  amount!: number;
 
   @IsOptional()
   @IsString()
