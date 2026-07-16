@@ -3,9 +3,12 @@
 import { useTranslations } from '@/src/i18n';
 import type { TranslationKey } from '@/src/i18n';
 import type { Property } from '@/src/types/property';
-import Image from 'next/image';
 import Link from 'next/link';
+import { useMemo } from 'react';
 import { formatRent } from './format';
+import PropertyImageSlideshow, {
+  collectPropertySlideshowImages,
+} from './PropertyImageSlideshow';
 
 function BookmarkIcon({ filled }: { filled?: boolean }) {
   return (
@@ -72,7 +75,12 @@ export default function PropertyCard({
   const t = useTranslations();
   const resolvedActionLabel = actionLabel ?? t('properties.viewDetails');
   const rent = formatRent(property.rent_amount, property.rent_currency);
-  const resolvedImageUrl = imageUrl ?? property.images?.[0]?.public_url;
+  const slideshowImages = useMemo(() => {
+    if (imageUrl) {
+      return [{ id: 'override', public_url: imageUrl }];
+    }
+    return collectPropertySlideshowImages(property);
+  }, [imageUrl, property]);
   const description =
     property.description ??
     [
@@ -105,27 +113,20 @@ export default function PropertyCard({
       className={`flex w-full max-w-sm flex-col overflow-hidden rounded-xl bg-[#353f4b] shadow-[0_20px_50px_rgba(15,23,42,0.18)] ${className ?? ''}`}
     >
       <div className="relative h-56 w-full shrink-0">
-        {resolvedImageUrl ? (
-          <Image
-            src={resolvedImageUrl}
-            alt={imageAlt ?? property.name}
-            fill
-            loading="lazy"
-            className="object-cover"
-            sizes="(max-width: 640px) 100vw, 384px"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#4b6a8a] via-[#5b7f9d] to-[#8eb4c9]" />
-        )}
+        <PropertyImageSlideshow
+          images={slideshowImages}
+          alt={imageAlt ?? property.name}
+          sizes="(max-width: 640px) 100vw, 384px"
+        />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-[#353f4b] via-[#353f4b]/20 to-transparent" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#353f4b] via-[#353f4b]/20 to-transparent" />
 
         {onBookmark ? (
           <button
             type="button"
             onClick={onBookmark}
             aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark property'}
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-lg bg-black/25 text-white backdrop-blur-sm transition hover:bg-black/40"
+            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-lg bg-black/25 text-white backdrop-blur-sm transition hover:bg-black/40"
           >
             <BookmarkIcon filled={bookmarked} />
           </button>

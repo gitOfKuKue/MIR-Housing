@@ -9,12 +9,14 @@ import type {
   PropertyUtilityBill,
   UtilityBillType,
 } from '@/src/types/property';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { AMENITY_LABEL_KEYS } from './AmenityMultiSelect';
 import { FURNISHING_LABEL_KEYS } from './FurnishingMultiSelect';
 import PropertyImageLightbox from './PropertyImageLightbox';
+import PropertyImageSlideshow, {
+  collectPropertySlideshowImages,
+} from './PropertyImageSlideshow';
 import { ROOM_TYPE_LABEL_KEYS } from './RoomTypeSelect';
 
 export interface PropertyListItemProps {
@@ -209,8 +211,10 @@ export default function PropertyListItem({
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [copied, setCopied] = useState(false);
 
-  const images = property.images ?? [];
-  const imageUrl = images[0]?.public_url;
+  const images = useMemo(
+    () => collectPropertySlideshowImages(property),
+    [property],
+  );
   const extraImageCount = Math.max(images.length - 1, 0);
   const address = formatListAddress(property);
   const rent = formatVnd(property.rent_amount);
@@ -346,22 +350,18 @@ export default function PropertyListItem({
       >
         <div className="flex flex-col md:flex-row">
           <div className="relative h-52 w-full shrink-0 overflow-hidden bg-gradient-to-br from-[#4b6a8a] via-[#5b7f9d] to-[#8eb4c9] md:h-auto md:min-h-[220px] md:w-56 lg:w-64">
-            {imageUrl ? (
-              <Image
-                src={imageUrl}
-                alt={property.name}
-                fill
-                loading="lazy"
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 256px"
-              />
-            ) : null}
+            <PropertyImageSlideshow
+              images={images}
+              alt={property.name}
+              sizes="(max-width: 768px) 100vw, 256px"
+              showDots={false}
+            />
 
             {extraImageCount > 0 ? (
               <button
                 type="button"
                 onClick={openGallery}
-                className="absolute bottom-3 right-3 rounded-md bg-black/55 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm transition hover:bg-black/70"
+                className="absolute bottom-3 right-3 z-10 rounded-md bg-black/55 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm transition hover:bg-black/70"
               >
                 {t('list.morePhotos', { count: String(extraImageCount) })}
               </button>
