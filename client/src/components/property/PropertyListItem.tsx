@@ -23,6 +23,8 @@ import PropertyImageSlideshow, {
 } from './PropertyImageSlideshow';
 import { formatRent, formatRentRange, statusStyles } from './format';
 import { ROOM_TYPE_LABEL_KEYS } from './RoomTypeSelect';
+import { getAuthUser } from '@/src/lib/auth';
+import { canViewZaloGroupLink } from '@/src/lib/roles';
 
 export interface PropertyListItemProps {
   property: Property;
@@ -253,6 +255,7 @@ export default function PropertyListItem({
   className,
 }: PropertyListItemProps) {
   const t = useTranslations();
+  const canSeeZalo = canViewZaloGroupLink(getAuthUser()?.role);
   const allRooms = property.rooms ?? [];
   const rooms = focusedRoom ? [focusedRoom] : allRooms;
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -421,7 +424,7 @@ export default function PropertyListItem({
       ...feeRows,
       ...allTags.map((tag) => tag.label),
       property.description,
-      property.zalo_group_link,
+      canSeeZalo ? property.zalo_group_link : null,
     ].filter(Boolean);
 
     try {
@@ -671,7 +674,7 @@ export default function PropertyListItem({
                 <GalleryIcon />
                 {t('list.photoGallery')}
               </button>
-              {property.zalo_group_link ? (
+              {canSeeZalo && property.zalo_group_link ? (
                 <a
                   href={property.zalo_group_link}
                   target="_blank"

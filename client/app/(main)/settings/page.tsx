@@ -2,6 +2,7 @@
 
 import ChangePasswordForm from '@/src/components/settings/ChangePasswordForm';
 import CreateUserForm from '@/src/components/settings/CreateUserForm';
+import ManageUsersForm from '@/src/components/settings/ManageUsersForm';
 import SettingsAccordionSection from '@/src/components/settings/SettingsAccordionSection';
 import { LanguageSwitcher, useTranslations } from '@/src/i18n';
 import { getAuthUser } from '@/src/lib/auth';
@@ -38,12 +39,21 @@ export default function SettingsPage() {
         </SettingsAccordionSection>
 
         {showCreateUser ? (
-          <SettingsAccordionSection
-            title={t('settings.createUser')}
-            description={t('settings.createUserHint')}
-          >
-            <CreateUserForm />
-          </SettingsAccordionSection>
+          <>
+            <SettingsAccordionSection
+              title={t('settings.createUser')}
+              description={t('settings.createUserHint')}
+            >
+              <CreateUserForm />
+            </SettingsAccordionSection>
+
+            <SettingsAccordionSection
+              title={t('settings.manageUsers')}
+              description={t('settings.manageUsersHint')}
+            >
+              <ManageUsersForm />
+            </SettingsAccordionSection>
+          </>
         ) : null}
       </div>
     </div>

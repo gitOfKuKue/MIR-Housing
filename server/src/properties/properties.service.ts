@@ -878,10 +878,13 @@ export class PropertiesService {
   private handleSupabaseError(error: PostgrestError): never {
     if (
       error.message.includes('Only admins can delete properties') ||
-      error.message.includes('Only admin or sale can delete properties')
+      error.message.includes('Only admin or sale can delete properties') ||
+      error.message.includes(
+        'Only super_admin, admin or sale can delete properties',
+      )
     ) {
       throw new ForbiddenException(
-        'Only admin or sale can delete properties',
+        'Only super_admin, admin or sale can delete properties',
       );
     }
 

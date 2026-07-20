@@ -11,7 +11,7 @@ import PropertyImageLightbox from './PropertyImageLightbox';
 import { deleteProperty } from '@/src/lib/api';
 import { getAuthUser } from '@/src/lib/auth';
 import { isRoomTypeValue } from '@/src/lib/room-types';
-import { canManageProperties } from '@/src/lib/roles';
+import { canEditProperties, canManageProperties } from '@/src/lib/roles';
 import {
   formatAddress,
   formatBillingPeriod,
@@ -142,8 +142,9 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
   } | null>(null);
   const router = useRouter();
   const authUser = getAuthUser();
-  const canEdit = Boolean(authUser);
+  const canEdit = canEditProperties(authUser?.role);
   const canDelete = canManageProperties(authUser?.role);
+  const canSeeZalo = canManageProperties(authUser?.role);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -406,7 +407,7 @@ export default function PropertyDetail({ property }: PropertyDetailProps) {
           </section>
         ) : null}
 
-        {property.zalo_group_link ? (
+        {canSeeZalo && property.zalo_group_link ? (
           <section className="rounded-xl border border-[#e8e4dc] bg-white p-6 lg:col-span-3">
             <h2 className="text-lg font-semibold text-[#1a1a1a]">
               {t('detail.zaloGroupLink')}

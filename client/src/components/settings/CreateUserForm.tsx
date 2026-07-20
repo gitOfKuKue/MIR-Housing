@@ -43,6 +43,7 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 const ROLE_LABEL_KEYS: Record<StaffRole, TranslationKey> = {
+  super_admin: 'settings.roleSuperAdmin',
   admin: 'settings.roleAdmin',
   sale: 'settings.roleSale',
   contributor: 'settings.roleContributor',

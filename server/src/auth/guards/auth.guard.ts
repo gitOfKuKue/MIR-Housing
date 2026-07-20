@@ -35,16 +35,37 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Invalid or expired access token');
     }
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, is_active')
       .eq('id', data.user.id)
       .maybeSingle();
+
+    let role = StaffRole.Contributor;
+    let isActive = true;
+
+    if (profileError?.message?.includes('is_active')) {
+      const { data: fallback } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .maybeSingle();
+      role = (fallback?.role as StaffRole) ?? StaffRole.Contributor;
+    } else if (profile) {
+      role = (profile.role as StaffRole) ?? StaffRole.Contributor;
+      isActive = profile.is_active !== false;
+    }
+
+    if (!isActive) {
+      throw new UnauthorizedException(
+        'This account has been deactivated. Contact your administrator.',
+      );
+    }
 
     request.user = {
       id: data.user.id,
       email: data.user.email,
-      role: (profile?.role as StaffRole) ?? StaffRole.Contributor,
+      role,
     };
     request.headers['x-access-token'] = token;
 

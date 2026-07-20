@@ -1,4 +1,5 @@
 import { getAccessToken, handleSessionExpired, isSessionExpired } from './auth';
+import type { StaffRole } from './roles';
 import type { Property, PropertyFurnishings } from '@/src/types/property';
 
 const API_BASE_URL =
@@ -25,7 +26,7 @@ export interface LoginResponse {
     id: string;
     email: string;
     full_name: string | null;
-    role: 'admin' | 'sale' | 'contributor';
+    role: StaffRole;
   };
 }
 
@@ -101,7 +102,7 @@ export interface CreateUserPayload {
   email: string;
   password: string;
   full_name?: string;
-  role?: 'admin' | 'sale' | 'contributor';
+  role?: StaffRole;
 }
 
 export interface CreateUserResponse {
@@ -115,6 +116,41 @@ export async function createUser(
   return apiFetch<CreateUserResponse>('/auth/users', {
     method: 'POST',
     body: JSON.stringify(payload),
+  });
+}
+
+export interface ManagedUser {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: StaffRole;
+  is_active: boolean;
+  deactivated_at: string | null;
+  created_at: string | null;
+}
+
+export async function listManagedUsers(): Promise<{ data: ManagedUser[] }> {
+  return apiFetch<{ data: ManagedUser[] }>('/auth/users');
+}
+
+export async function setUserActive(
+  userId: string,
+  isActive: boolean,
+): Promise<{ message: string; user: ManagedUser }> {
+  return apiFetch<{ message: string; user: ManagedUser }>(
+    `/auth/users/${userId}/active`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ is_active: isActive }),
+    },
+  );
+}
+
+export async function deleteAdminUser(
+  userId: string,
+): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>(`/auth/users/${userId}`, {
+    method: 'DELETE',
   });
 }
 

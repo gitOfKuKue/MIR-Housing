@@ -18,7 +18,7 @@ import { PROPERTY_IMAGE_MAX_UPLOAD_COUNT } from './properties.constants';
 import { AccessToken } from '../auth/decorators/access-token.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { StaffRole } from '../auth/enums/staff-role.enum';
+import { canViewZaloGroupLink, StaffRole } from '../auth/enums/staff-role.enum';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface';
@@ -55,9 +55,15 @@ export class PropertiesController {
   @Get()
   findAll(
     @Query() query: QueryPropertiesDto,
+    @CurrentUser() user: AuthUser,
     @AccessToken() accessToken: string,
   ): Promise<PaginatedResponse<PropertyWithImages>> {
-    return this.propertiesService.findAll(query, accessToken);
+    return this.propertiesService.findAll(query, accessToken).then((response) => ({
+      ...response,
+      data: response.data.map((property) =>
+        redactPropertyForRole(property, user.role),
+      ),
+    }));
   }
 
   @Get('rent-bounds')
@@ -69,7 +75,7 @@ export class PropertiesController {
 
   @Post('bulk')
   @UseGuards(RolesGuard)
-  @Roles(StaffRole.Admin, StaffRole.Sale)
+  @Roles(StaffRole.SuperAdmin, StaffRole.Admin, StaffRole.Sale)
   createBulk(
     @Body() dto: BulkCreatePropertiesDto,
     @CurrentUser() user: AuthUser,
@@ -92,7 +98,7 @@ export class PropertiesController {
 
   @Post(':id/images')
   @UseGuards(RolesGuard)
-  @Roles(StaffRole.Admin, StaffRole.Sale)
+  @Roles(StaffRole.SuperAdmin, StaffRole.Admin, StaffRole.Sale)
   @UseInterceptors(
     FileFieldsInterceptor([
       { name: 'file', maxCount: PROPERTY_IMAGE_MAX_UPLOAD_COUNT },
@@ -125,7 +131,7 @@ export class PropertiesController {
 
   @Post(':id/rooms/:roomId/images')
   @UseGuards(RolesGuard)
-  @Roles(StaffRole.Admin, StaffRole.Sale)
+  @Roles(StaffRole.SuperAdmin, StaffRole.Admin, StaffRole.Sale)
   @UseInterceptors(
     FileFieldsInterceptor([
       { name: 'file', maxCount: PROPERTY_IMAGE_MAX_UPLOAD_COUNT },
@@ -169,7 +175,7 @@ export class PropertiesController {
 
   @Post(':id/utility-bills')
   @UseGuards(RolesGuard)
-  @Roles(StaffRole.Admin, StaffRole.Sale)
+  @Roles(StaffRole.SuperAdmin, StaffRole.Admin, StaffRole.Sale)
   createUtilityBill(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreatePropertyUtilityBillDto,
@@ -185,6 +191,8 @@ export class PropertiesController {
   }
 
   @Patch(':id/utility-bills/:billId')
+  @UseGuards(RolesGuard)
+  @Roles(StaffRole.SuperAdmin, StaffRole.Admin, StaffRole.Sale)
   updateUtilityBill(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('billId', ParseUUIDPipe) billId: string,
@@ -195,6 +203,8 @@ export class PropertiesController {
   }
 
   @Delete(':id/utility-bills/:billId')
+  @UseGuards(RolesGuard)
+  @Roles(StaffRole.SuperAdmin, StaffRole.Admin, StaffRole.Sale)
   removeUtilityBill(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('billId', ParseUUIDPipe) billId: string,
@@ -206,12 +216,17 @@ export class PropertiesController {
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
     @AccessToken() accessToken: string,
   ): Promise<PropertyWithImages> {
-    return this.propertiesService.findOne(id, accessToken);
+    return this.propertiesService
+      .findOne(id, accessToken)
+      .then((property) => redactPropertyForRole(property, user.role));
   }
 
   @Put(':id/furnishings')
+  @UseGuards(RolesGuard)
+  @Roles(StaffRole.SuperAdmin, StaffRole.Admin, StaffRole.Sale)
   upsertFurnishings(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpsertPropertyFurnishingsDto,
@@ -222,7 +237,7 @@ export class PropertiesController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles(StaffRole.Admin, StaffRole.Sale)
+  @Roles(StaffRole.SuperAdmin, StaffRole.Admin, StaffRole.Sale)
   create(
     @Body() dto: CreatePropertyDto,
     @CurrentUser() user: AuthUser,
@@ -232,6 +247,8 @@ export class PropertiesController {
   }
 
   @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles(StaffRole.SuperAdmin, StaffRole.Admin, StaffRole.Sale)
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePropertyDto,
@@ -242,11 +259,26 @@ export class PropertiesController {
 
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles(StaffRole.Admin, StaffRole.Sale)
+  @Roles(StaffRole.SuperAdmin, StaffRole.Admin, StaffRole.Sale)
   remove(
     @Param('id', ParseUUIDPipe) id: string,
     @AccessToken() accessToken: string,
   ): Promise<DeletePropertyResponse> {
     return this.propertiesService.remove(id, accessToken);
   }
+}
+
+/** Sales Partners (L4) must not see landlord Zalo / contact fields. */
+function redactPropertyForRole(
+  property: PropertyWithImages,
+  role: StaffRole | string,
+): PropertyWithImages {
+  if (canViewZaloGroupLink(role)) {
+    return property;
+  }
+
+  return {
+    ...property,
+    zalo_group_link: null,
+  };
 }

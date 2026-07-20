@@ -3,6 +3,8 @@
 import { useTranslations } from '@/src/i18n';
 import type { TranslationKey } from '@/src/i18n';
 import type { Property, Room } from '@/src/types/property';
+import { getAuthUser } from '@/src/lib/auth';
+import { canViewZaloGroupLink } from '@/src/lib/roles';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { formatRent, formatRentRange, statusStyles } from './format';
@@ -100,6 +102,7 @@ export default function PropertyCard({
   className,
 }: PropertyCardProps) {
   const t = useTranslations();
+  const canSeeZalo = canViewZaloGroupLink(getAuthUser()?.role);
   const resolvedActionLabel = actionLabel ?? t('properties.viewDetails');
   const rooms = property.rooms ?? [];
   const room = focusedRoom ?? primaryRoom(property);
@@ -313,7 +316,7 @@ export default function PropertyCard({
         ) : null}
 
         <div className="mt-auto flex flex-col gap-2">
-          {property.zalo_group_link ? (
+          {canSeeZalo && property.zalo_group_link ? (
             <a
               href={property.zalo_group_link}
               target="_blank"

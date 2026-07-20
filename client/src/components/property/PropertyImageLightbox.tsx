@@ -38,6 +38,20 @@ function ChevronLeftIcon() {
   );
 }
 
+function DownloadIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 4v10M8 10l4 4 4-4M5 18h14"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function PropertyImageLightbox({
   images,
   activeIndex,
@@ -77,6 +91,27 @@ export default function PropertyImageLightbox({
     return null;
   }
 
+  async function handleDownload() {
+    try {
+      const response = await fetch(activeImage.public_url);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const extension =
+        blob.type.split('/')[1]?.split(';')[0] ||
+        activeImage.public_url.split('.').pop()?.split('?')[0] ||
+        'jpg';
+      link.href = url;
+      link.download = `${propertyName.replace(/\s+/g, '-')}-${activeIndex + 1}.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open(activeImage.public_url, '_blank', 'noopener,noreferrer');
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 sm:p-8"
@@ -85,14 +120,28 @@ export default function PropertyImageLightbox({
       aria-modal="true"
       aria-label={`${propertyName} image viewer`}
     >
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 sm:right-8 sm:top-8"
-        aria-label="Close image viewer"
-      >
-        <CloseIcon />
-      </button>
+      <div className="absolute right-4 top-4 flex items-center gap-2 sm:right-8 sm:top-8">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            void handleDownload();
+          }}
+          className="inline-flex h-11 items-center gap-2 rounded-lg bg-white/10 px-3 text-sm font-medium text-white transition hover:bg-white/20"
+          aria-label="Download image"
+        >
+          <DownloadIcon />
+          <span className="hidden sm:inline">Download</span>
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
+          aria-label="Close image viewer"
+        >
+          <CloseIcon />
+        </button>
+      </div>
 
       {hasPrevious ? (
         <button

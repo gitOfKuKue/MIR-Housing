@@ -32,6 +32,21 @@ export const en = {
   // Nav
   'nav.properties': 'Properties',
   'nav.settings': 'Settings',
+  'nav.profile': 'Profile',
+
+  // Profile
+  'profile.title': 'Profile',
+  'profile.subtitle': 'Your account details and quick actions.',
+  'profile.fullName': 'Full name',
+  'profile.email': 'Email',
+  'profile.role': 'Role',
+  'profile.noName': 'No display name',
+  'profile.loadFailed': 'Failed to load profile',
+  'profile.openSettings': 'Open settings',
+  'profile.changePassword': 'Change password',
+  'profile.logout': 'Log out',
+  'profile.accountSection': 'Account',
+  'profile.actionsSection': 'Quick actions',
 
   // Properties list
   'properties.title': 'Properties',
@@ -329,10 +344,28 @@ export const en = {
     'You are not allowed to create an account with that role.',
   'settings.createUserNoAccess':
     'You do not have permission to create user accounts.',
-  'settings.roleAdmin': 'Admin',
-  'settings.roleSale': 'Sale',
-  'settings.roleContributor': 'Contributor',
-  'settings.roleStaff': 'Staff',
+  'settings.roleSuperAdmin': 'Level 1 – Super Administrator',
+  'settings.roleAdmin': 'Level 2 – Administrator',
+  'settings.roleSale': 'Level 3 – Sales Staff',
+  'settings.roleContributor': 'Level 4 – Sales Partner',
+  'settings.roleStaff': 'Sales Staff',
+  'settings.manageUsers': 'Manage accounts',
+  'settings.manageUsersHint':
+    'Deactivate accounts that no longer work with the company, or delete Administrator accounts (Super Admin only).',
+  'settings.manageUsersEmpty': 'No accounts to manage.',
+  'settings.manageUsersLoadFailed': 'Failed to load accounts',
+  'settings.userActive': 'Active',
+  'settings.userInactive': 'Deactivated',
+  'settings.deactivateUser': 'Deactivate',
+  'settings.reactivateUser': 'Reactivate',
+  'settings.deleteAdmin': 'Delete',
+  'settings.deleteAdminConfirm':
+    'Delete this Administrator account permanently? This cannot be undone.',
+  'settings.userActionFailed': 'Failed to update account',
+  'settings.userDeactivated': 'Account deactivated.',
+  'settings.userReactivated': 'Account reactivated.',
+  'settings.userDeleted': 'Administrator account deleted.',
+  'settings.noEmail': 'No email',
 
   // Not found
   'notFound.title': 'Page not found',

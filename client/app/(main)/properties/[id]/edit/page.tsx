@@ -2,6 +2,8 @@
 
 import { CreatePropertyForm } from '@/src/components/property';
 import { getProperty } from '@/src/lib/api';
+import { getAuthUser } from '@/src/lib/auth';
+import { canEditProperties } from '@/src/lib/roles';
 import type { Property } from '@/src/types/property';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -14,8 +16,18 @@ export default function EditPropertyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notFound, setNotFound] = useState(false);
+  const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
+    setAllowed(canEditProperties(getAuthUser()?.role));
+  }, []);
+
+  useEffect(() => {
+    if (!allowed) {
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     async function loadProperty() {
@@ -53,7 +65,25 @@ export default function EditPropertyPage() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, allowed]);
+
+  if (!allowed) {
+    return (
+      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center p-6 sm:p-8">
+        <div className="max-w-md rounded-lg border border-[#e8e4dc] bg-white px-6 py-10 text-center">
+          <p className="text-lg font-semibold text-[#1a1a1a]">
+            You do not have permission to edit properties.
+          </p>
+          <Link
+            href={`/properties/${id}`}
+            className="mt-6 inline-flex rounded-lg bg-[#1e4636] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#163828]"
+          >
+            Back to property
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AccessToken } from './decorators/access-token.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -6,6 +16,7 @@ import { Roles } from './decorators/roles.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
+import { SetUserActiveDto } from './dto/set-user-active.dto';
 import { StaffRole } from './enums/staff-role.enum';
 import { AuthGuard } from './guards/auth.guard';
 import { RolesGuard } from './guards/roles.guard';
@@ -42,14 +53,42 @@ export class AuthController {
     return this.authService.getMe(user.id, accessToken);
   }
 
+  @Get('users')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(StaffRole.SuperAdmin, StaffRole.Admin, StaffRole.Sale)
+  listUsers(@CurrentUser() user: AuthUser) {
+    return this.authService.listManagedUsers(user);
+  }
+
   @Post('users')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(StaffRole.Admin, StaffRole.Sale)
+  @Roles(StaffRole.SuperAdmin, StaffRole.Admin, StaffRole.Sale)
   createUser(
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateUserDto,
   ): Promise<CreateUserResponse> {
     return this.authService.createUser(user, dto);
+  }
+
+  @Patch('users/:id/active')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(StaffRole.SuperAdmin, StaffRole.Admin, StaffRole.Sale)
+  setUserActive(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetUserActiveDto,
+  ) {
+    return this.authService.setUserActive(user, id, dto.is_active);
+  }
+
+  @Delete('users/:id')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(StaffRole.SuperAdmin)
+  deleteAdmin(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.authService.deleteAdminAccount(user, id);
   }
 
   @Post('change-password')

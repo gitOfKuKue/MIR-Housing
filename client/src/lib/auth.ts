@@ -1,8 +1,14 @@
+export type StaffRole =
+  | 'super_admin'
+  | 'admin'
+  | 'sale'
+  | 'contributor';
+
 export interface AuthUser {
   id: string;
   email: string;
   full_name: string | null;
-  role: 'admin' | 'sale' | 'contributor';
+  role: StaffRole;
 }
 
 export interface AuthSession {
@@ -44,6 +50,10 @@ export function getAuthUser(): AuthUser | null {
   } catch {
     return null;
   }
+}
+
+export function setAuthUser(user: AuthUser): void {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
 export function clearSession(): void {

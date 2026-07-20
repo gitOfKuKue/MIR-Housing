@@ -34,6 +34,21 @@ export const vn: { [K in keyof typeof en]: string } = {
   // Nav
   'nav.properties': 'Bất động sản',
   'nav.settings': 'Cài đặt',
+  'nav.profile': 'Hồ sơ',
+
+  // Profile
+  'profile.title': 'Hồ sơ',
+  'profile.subtitle': 'Thông tin tài khoản và thao tác nhanh.',
+  'profile.fullName': 'Họ và tên',
+  'profile.email': 'Email',
+  'profile.role': 'Vai trò',
+  'profile.noName': 'Chưa có tên hiển thị',
+  'profile.loadFailed': 'Không tải được hồ sơ',
+  'profile.openSettings': 'Mở cài đặt',
+  'profile.changePassword': 'Đổi mật khẩu',
+  'profile.logout': 'Đăng xuất',
+  'profile.accountSection': 'Tài khoản',
+  'profile.actionsSection': 'Thao tác nhanh',
 
   // Properties list
   'properties.title': 'Bất động sản',
@@ -328,10 +343,28 @@ export const vn: { [K in keyof typeof en]: string } = {
   'settings.createUserRoleForbidden':
     'Bạn không được phép tạo tài khoản với vai trò này.',
   'settings.createUserNoAccess': 'Bạn không có quyền tạo tài khoản người dùng.',
-  'settings.roleAdmin': 'Quản trị',
-  'settings.roleSale': 'Sale',
-  'settings.roleContributor': 'Cộng tác viên',
-  'settings.roleStaff': 'Nhân viên',
+  'settings.roleSuperAdmin': 'Cấp 1 – Siêu quản trị',
+  'settings.roleAdmin': 'Cấp 2 – Quản trị viên',
+  'settings.roleSale': 'Cấp 3 – Nhân viên Sale',
+  'settings.roleContributor': 'Cấp 4 – Cộng tác viên Sale',
+  'settings.roleStaff': 'Nhân viên Sale',
+  'settings.manageUsers': 'Quản lý tài khoản',
+  'settings.manageUsersHint':
+    'Vô hiệu hóa tài khoản không còn làm việc với công ty, hoặc xóa tài khoản Quản trị viên (chỉ Siêu quản trị).',
+  'settings.manageUsersEmpty': 'Không có tài khoản để quản lý.',
+  'settings.manageUsersLoadFailed': 'Không tải được danh sách tài khoản',
+  'settings.userActive': 'Đang hoạt động',
+  'settings.userInactive': 'Đã vô hiệu hóa',
+  'settings.deactivateUser': 'Vô hiệu hóa',
+  'settings.reactivateUser': 'Kích hoạt lại',
+  'settings.deleteAdmin': 'Xóa',
+  'settings.deleteAdminConfirm':
+    'Xóa vĩnh viễn tài khoản Quản trị viên này? Thao tác không thể hoàn tác.',
+  'settings.userActionFailed': 'Cập nhật tài khoản thất bại',
+  'settings.userDeactivated': 'Đã vô hiệu hóa tài khoản.',
+  'settings.userReactivated': 'Đã kích hoạt lại tài khoản.',
+  'settings.userDeleted': 'Đã xóa tài khoản Quản trị viên.',
+  'settings.noEmail': 'Không có email',
 
   // Not found
   'notFound.title': 'Không tìm thấy trang',

@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
@@ -12,7 +13,12 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
-import { canCreateRole, StaffRole } from './enums/staff-role.enum';
+import {
+  canCreateRole,
+  canManageAccount,
+  getCreatableRoles,
+  StaffRole,
+} from './enums/staff-role.enum';
 import type { AuthUser } from './interfaces/auth-user.interface';
 import {
   ChangePasswordResponse,
@@ -25,6 +31,17 @@ import {
 interface ProfileRow {
   full_name: string | null;
   role: StaffRole;
+  is_active?: boolean | null;
+}
+
+export interface ManagedUser {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: StaffRole;
+  is_active: boolean;
+  deactivated_at: string | null;
+  created_at: string | null;
 }
 
 @Injectable()
@@ -48,6 +65,15 @@ export class AuthService {
       data.user.id,
       data.session.access_token,
     );
+
+    if (profile && profile.is_active === false) {
+      await this.supabaseService
+        .getClient(data.session.access_token)
+        .auth.signOut();
+      throw new UnauthorizedException(
+        'This account has been deactivated. Contact your administrator.',
+      );
+    }
 
     return {
       access_token: data.session.access_token,
@@ -109,6 +135,8 @@ export class AuthService {
       .update({
         full_name: fullName,
         role,
+        is_active: true,
+        deactivated_at: null,
       })
       .eq('id', data.user.id);
 
@@ -125,6 +153,156 @@ export class AuthService {
         role,
       },
     };
+  }
+
+  async listManagedUsers(actor: AuthUser): Promise<{ data: ManagedUser[] }> {
+    const allowedRoles = getCreatableRoles(actor.role as StaffRole);
+    if (allowedRoles.length === 0) {
+      throw new ForbiddenException('You are not allowed to manage accounts');
+    }
+
+    const admin = this.supabaseService.getServiceClient();
+    const { data: profiles, error } = await admin
+      .from('profiles')
+      .select('id, full_name, role, is_active, deactivated_at, created_at')
+      .in('role', allowedRoles)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    const { data: authUsers, error: authError } =
+      await admin.auth.admin.listUsers({ perPage: 1000 });
+
+    if (authError) {
+      throw new InternalServerErrorException(authError.message);
+    }
+
+    const emailById = new Map(
+      (authUsers.users ?? []).map((user) => [user.id, user.email ?? '']),
+    );
+
+    return {
+      data: (profiles ?? []).map((profile) => ({
+        id: profile.id as string,
+        email: emailById.get(profile.id as string) ?? '',
+        full_name: (profile.full_name as string | null) ?? null,
+        role: profile.role as StaffRole,
+        is_active: profile.is_active !== false,
+        deactivated_at: (profile.deactivated_at as string | null) ?? null,
+        created_at: (profile.created_at as string | null) ?? null,
+      })),
+    };
+  }
+
+  async setUserActive(
+    actor: AuthUser,
+    userId: string,
+    isActive: boolean,
+  ): Promise<{ message: string; user: ManagedUser }> {
+    if (userId === actor.id) {
+      throw new BadRequestException('You cannot deactivate your own account');
+    }
+
+    const admin = this.supabaseService.getServiceClient();
+    const { data: profile, error } = await admin
+      .from('profiles')
+      .select('id, full_name, role, is_active, deactivated_at, created_at')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+    if (!profile) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!canManageAccount(actor.role, profile.role as StaffRole)) {
+      throw new ForbiddenException(
+        'You are not allowed to manage this account',
+      );
+    }
+
+    const { data: updated, error: updateError } = await admin
+      .from('profiles')
+      .update({
+        is_active: isActive,
+        deactivated_at: isActive ? null : new Date().toISOString(),
+      })
+      .eq('id', userId)
+      .select('id, full_name, role, is_active, deactivated_at, created_at')
+      .single();
+
+    if (updateError || !updated) {
+      throw new InternalServerErrorException(
+        updateError?.message ?? 'Failed to update account',
+      );
+    }
+
+    if (!isActive) {
+      await admin.auth.admin.updateUserById(userId, { ban_duration: '876000h' });
+    } else {
+      await admin.auth.admin.updateUserById(userId, { ban_duration: 'none' });
+    }
+
+    const { data: authUser } = await admin.auth.admin.getUserById(userId);
+
+    return {
+      message: isActive
+        ? 'Account reactivated successfully'
+        : 'Account deactivated successfully',
+      user: {
+        id: updated.id as string,
+        email: authUser.user?.email ?? '',
+        full_name: (updated.full_name as string | null) ?? null,
+        role: updated.role as StaffRole,
+        is_active: updated.is_active !== false,
+        deactivated_at: (updated.deactivated_at as string | null) ?? null,
+        created_at: (updated.created_at as string | null) ?? null,
+      },
+    };
+  }
+
+  async deleteAdminAccount(
+    actor: AuthUser,
+    userId: string,
+  ): Promise<{ message: string }> {
+    if (actor.role !== StaffRole.SuperAdmin) {
+      throw new ForbiddenException(
+        'Only Super Administrators can delete Administrator accounts',
+      );
+    }
+    if (userId === actor.id) {
+      throw new BadRequestException('You cannot delete your own account');
+    }
+
+    const admin = this.supabaseService.getServiceClient();
+    const { data: profile, error } = await admin
+      .from('profiles')
+      .select('id, role')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+    if (!profile) {
+      throw new NotFoundException('User not found');
+    }
+    if (profile.role !== StaffRole.Admin) {
+      throw new ForbiddenException(
+        'Only Administrator accounts can be deleted by Super Administrators',
+      );
+    }
+
+    const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
+    if (deleteError) {
+      throw new InternalServerErrorException(deleteError.message);
+    }
+
+    return { message: 'Administrator account deleted successfully' };
   }
 
   async changePassword(
@@ -156,8 +334,6 @@ export class AuthService {
       throw new UnauthorizedException('Current password is incorrect');
     }
 
-    // `updateUser` requires an active auth session. The initial accessToken
-    // header isn't guaranteed to hydrate the auth client session, so we set it.
     await this.supabase.auth.setSession({
       access_token: signInData.session.access_token,
       refresh_token: signInData.session.refresh_token,
@@ -186,6 +362,12 @@ export class AuthService {
 
     const profile = await this.getProfile(userId, accessToken);
 
+    if (profile && profile.is_active === false) {
+      throw new UnauthorizedException(
+        'This account has been deactivated. Contact your administrator.',
+      );
+    }
+
     return {
       user: {
         id: userData.user.id,
@@ -204,11 +386,25 @@ export class AuthService {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('full_name, role')
+      .select('full_name, role, is_active')
       .eq('id', userId)
       .maybeSingle();
 
     if (error) {
+      // Older DBs may not have is_active yet — fall back.
+      if (error.message.includes('is_active')) {
+        const fallback = await supabase
+          .from('profiles')
+          .select('full_name, role')
+          .eq('id', userId)
+          .maybeSingle();
+        if (fallback.error) {
+          throw new InternalServerErrorException(fallback.error.message);
+        }
+        return fallback.data
+          ? { ...fallback.data, is_active: true }
+          : null;
+      }
       throw new InternalServerErrorException(error.message);
     }
 

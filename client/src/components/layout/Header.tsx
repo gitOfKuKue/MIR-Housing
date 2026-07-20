@@ -75,24 +75,30 @@ export default function Header({ className }: { className?: string }) {
 
           {authReady && isAuthenticated ? (
             <>
-              <nav className="flex items-center gap-6 md:hidden">
+              <nav className="flex items-center gap-4 sm:gap-6">
                 <Link
                   href="/properties"
                   className={`${navLinkClass} ${
                     pathname.startsWith('/properties')
                       ? 'font-semibold text-[#1e4636]'
                       : ''
-                  }`}
+                  } md:hidden`}
                 >
                   {t('nav.properties')}
                 </Link>
+                {displayName ? (
+                  <Link
+                    href="/profile"
+                    className={`max-w-[10rem] truncate text-sm transition hover:text-[#1e4636] sm:max-w-[12rem] ${
+                      pathname.startsWith('/profile')
+                        ? 'font-semibold text-[#1e4636]'
+                        : 'text-[#6b7280]'
+                    }`}
+                  >
+                    {displayName}
+                  </Link>
+                ) : null}
               </nav>
-
-              {displayName ? (
-                <span className="hidden max-w-[12rem] truncate text-sm text-[#6b7280] md:inline">
-                  {displayName}
-                </span>
-              ) : null}
 
               <button
                 type="button"
