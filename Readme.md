@@ -2,7 +2,7 @@
 
 **An internal property management system for MIR Housing staff.**
 
-MIR Housing is a private web application — not a public rental marketplace. It helps your team keep company-owned rental properties, photos, room details, furnishings, and utility bills in one secure place.
+MIR Housing is a private web application — not a public rental marketplace. It helps your team keep company-owned rental properties, rooms, photos, furnishings, utility bills, and contacts in one secure place.
 
 ---
 
@@ -13,16 +13,18 @@ MIR Housing is a private web application — not a public rental marketplace. It
 Think of MIR Housing as a **digital filing cabinet** for your rental properties. Instead of spreadsheets, chat messages, and scattered photos, staff can:
 
 - **Sign in** with a company email and password
-- **Browse** all properties in a searchable, filterable dashboard (card or list view)
-- **Create** new property listings with photos
-- **Edit** any property details from the browser
-- **Open any property** to see full details on a single page
-- **View photos** in a gallery with full-screen lightbox
-- **Check utility bills** (electricity, water, Wi‑Fi, management fees, and more)
-- **See room, furnishing, and building info** — bedrooms, parking, deposits, and similar details
+- **Browse** properties in a searchable, filterable dashboard (card or list view)
+- **Filter by room** (status, rent range) so mixed buildings still show matching units
+- **Create / edit** property listings with multiple rooms and photos (per property or per room)
+- **Open any property** for full details: description, location, gallery, bills, furnishings, rooms
+- **View photos** in a gallery with full-screen lightbox (download where allowed)
+- **Copy room info** for sharing (role-dependent)
+- **Open Zalo / landlord contacts** (managers only — not visible to collaborators)
+- **Use HCMC location picks** (district → ward → street), including Gò Vấp and Quận 7
 - **Switch language** between English (EN) and Vietnamese (VN)
-- **Change password** from the Settings page
-- **Delete properties** (admins only)
+- **Manage your profile** (account details, quick links) from the sidebar or header
+- **Change password** and (for managers) **manage team accounts** under Settings
+- **Deactivate or delete accounts** according to role level
 
 Only people with a login can see property data. Nothing is shown to the public without signing in.
 
@@ -30,8 +32,10 @@ Only people with a login can see property data. Nothing is shown to the public w
 
 | Audience | How they use it |
 |----------|-----------------|
-| **Office / operations staff** | Look up, create, and update properties during daily work |
-| **Managers / admins** | Review the portfolio, manage listings, and delete properties |
+| **Sales partners (contributors)** | Browse, copy, and download listing info — view only |
+| **Sales staff** | Full property create/edit/delete; create/deactivate contributors |
+| **Administrators** | Full property access; manage sale + contributor accounts |
+| **Super administrators** | Full access; create/deactivate/delete admins |
 | **Developers / IT** | Install, configure, deploy, and maintain the system (see [For developers](#for-developers) below) |
 
 ### Typical day-to-day flow
@@ -39,11 +43,12 @@ Only people with a login can see property data. Nothing is shown to the public w
 1. Open the website in your browser
 2. Click **Login** and enter your company credentials
 3. You land on the **Properties** page — search, filter, and paginate results
-4. Optionally switch **EN / VN** in the header (or under **Settings → Language**)
-5. Click **Create New** to add a property, or open an existing one
-6. On the detail page, review description, location, gallery, utility bills, furnishings, and room info
-7. Click **Edit** to update a property, or go to **Settings** to change your password
-8. Click **Logout** in the header when you are done
+4. Use the **sidebar** for Properties, Settings, and Profile (collapse control sits next to the Menu title)
+5. Optionally switch **EN / VN** in the header
+6. Click **Create New** to add a property (with rooms), or open an existing one
+7. On the detail page, review description, location, gallery, utility bills, furnishings, and rooms
+8. Click **Edit** to update a property (if your role allows), or go to **Settings** / **Profile** as needed
+9. Click **Logout** in the header when you are done
 
 ### Languages
 
@@ -54,7 +59,7 @@ Only people with a login can see property data. Nothing is shown to the public w
 
 Your language choice is saved in the browser and applied across the app (navigation, forms, property details, settings, and more).
 
-### Property statuses
+### Property / room statuses
 
 | Status (EN) | Status (VN) | Meaning |
 |-------------|-------------|---------|
@@ -63,12 +68,16 @@ Your language choice is saved in the browser and applied across the app (navigat
 | **Maintenance** | Bảo trì | Under repair or not ready for tenants |
 | **Inactive** | Ngưng hoạt động | Not in active use |
 
-### User roles
+### User roles (4 levels)
 
-| Role | Capabilities |
-|------|----------------|
-| **staff** | View, create, and edit properties |
-| **admin** | Everything staff can do, plus delete properties |
+| Level | Role | Capabilities |
+|-------|------|----------------|
+| **1** | **super_admin** | Full property access; create / deactivate / delete **admin** accounts |
+| **2** | **admin** | Full property access; create / deactivate **sale** and **contributor** accounts |
+| **3** | **sale** | Full property access (including delete); create / deactivate **contributor** accounts; see Zalo / contacts |
+| **4** | **contributor** | View, copy, and download only — **no** create/edit/delete, **no** Zalo / landlord contacts, **no** account management |
+
+Inactive (deactivated) users cannot sign in.
 
 ### Session security
 
@@ -93,10 +102,11 @@ Access tokens from login are valid for about **1 hour** (Supabase default JWT ex
 ```
 MIR Housing/
 ├── client/                 # Next.js web app
+│   ├── app/                # App Router pages (properties, settings, profile, …)
 │   └── src/
-│       ├── components/     # UI components
+│       ├── components/     # UI components (layout, auth, properties, …)
 │       ├── i18n/           # EN/VN dictionaries + LanguageProvider
-│       ├── lib/            # API client + auth helpers
+│       ├── lib/            # API client, auth, roles, HCMC locations
 │       └── types/          # Shared TypeScript types
 ├── server/                 # NestJS REST API
 │   └── supabase/
@@ -122,21 +132,18 @@ cd "MIR Housing"
 ### 2. Set up Supabase
 
 1. Create a project at [supabase.com](https://supabase.com)
-2. Open **SQL Editor** and run each migration **in order** from `server/supabase/migrations/`:
-   - `001_phase1.sql`
-   - `002_fix_properties_rls.sql`
-   - `003_soft_delete_rpc.sql`
-   - `004_admin_only_delete.sql`
-   - `005_property_images.sql`
-   - `006_property_utility_bills.sql`
-   - `008_property_room_info.sql`
-   - `009_rename_utility_bill_status.sql`
-   - `010_property_furnishings.sql`
-   - `011_fix_storage_rls.sql` *(run if image upload fails with RLS errors)*
+2. Open **SQL Editor** and run each migration **in order** from `server/supabase/migrations/` (numeric prefix order). Important recent ones include:
+   - `012_property_hcmc_location.sql` — district / ward / street fields
+   - `013`–`014` — `sale` / `contributor` roles
+   - `016_property_zalo_group_link.sql` — Zalo group link
+   - `021`–`024` — multi-room model and related cleanups
+   - `025_super_admin_and_profile_active.sql` — `super_admin` role + `profiles.is_active`
 3. (Optional) Run seed scripts in `server/supabase/seed/` for sample data
 4. Create at least one user under **Authentication → Users**
-5. Set the user's role to `admin` in `public.profiles` if they need delete access
+5. In `public.profiles`, set that user’s `role` to `super_admin` (or `admin`) as needed
 6. Copy keys from **Project Settings → API** (URL, anon key, service role key)
+
+> After pulling role changes, always re-run any new migrations and **restart the Nest API** so new routes (e.g. `GET /auth/users`) are registered.
 
 ### 3. Configure environment variables
 
@@ -152,7 +159,7 @@ API_VERSION=v1
 PORT=8000
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` is required for property creation with images and for image uploads on the API.
+`SUPABASE_SERVICE_ROLE_KEY` is required for property creation with images, image uploads, and user management APIs.
 
 **Client** — create `client/.env.local`:
 
@@ -192,6 +199,8 @@ Open [http://localhost:3000](http://localhost:3000).
 - API base URL: `http://localhost:8000/api/v1`
 - Health check: `GET http://localhost:8000/api/v1`
 
+Prefer `start:dev` locally so route changes reload automatically. Plain `npm run start` only compiles once.
+
 ### 6. Test the API with Bruno
 
 1. Install [Bruno](https://www.usebruno.com/)
@@ -202,32 +211,37 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### Main API endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/auth/login` | No | Sign in |
+| Method | Endpoint | Auth / role | Description |
+|--------|----------|-------------|-------------|
+| `POST` | `/auth/login` | No | Sign in (blocked if profile is inactive) |
 | `POST` | `/auth/logout` | Yes | Sign out |
 | `GET` | `/auth/me` | Yes | Current user profile |
+| `GET` | `/auth/users` | Manager roles | List managed users |
+| `POST` | `/auth/users` | Manager roles | Create a user (role limited by actor) |
+| `PATCH` | `/auth/users/:id/active` | Manager roles | Activate / deactivate a user |
+| `DELETE` | `/auth/users/:id` | Super admin | Delete an admin account |
 | `POST` | `/auth/change-password` | Yes | Change password |
 | `GET` | `/properties` | Yes | List properties (paginated, filterable) |
-| `GET` | `/properties/:id` | Yes | Single property with images, bills, furnishings |
-| `POST` | `/properties` | Yes | Create property |
-| `PATCH` | `/properties/:id` | Yes | Update property |
-| `DELETE` | `/properties/:id` | Admin | Soft-delete property |
-| `GET` | `/properties/:id/images` | Yes | List property images |
-| `POST` | `/properties/:id/images` | Yes | Upload images (JPG, PNG, WebP) |
-| `GET` | `/properties/:id/utility-bills` | Yes | List utility bills |
-| `POST` | `/properties/:id/utility-bills` | Yes | Add utility bill |
-| `PATCH` | `/properties/:id/utility-bills/:billId` | Yes | Update utility bill |
-| `DELETE` | `/properties/:id/utility-bills/:billId` | Yes | Delete utility bill |
+| `GET` | `/properties/:id` | Yes | Single property with rooms, images, bills, furnishings |
+| `POST` | `/properties` | Managers | Create property (incl. rooms / images) |
+| `PATCH` | `/properties/:id` | Managers | Update property |
+| `DELETE` | `/properties/:id` | Managers | Soft-delete property |
+| `GET` / `POST` | `/properties/:id/images` | Yes / Managers | List or upload property images |
+| `POST` | `/properties/:id/rooms/:roomId/images` | Managers | Upload room images |
+| `GET` / `POST` / `PATCH` / `DELETE` | `/properties/:id/utility-bills…` | Yes / Managers | Utility bill CRUD |
 
 All authenticated routes require `Authorization: Bearer <access_token>` from login.
 
-### Frontend i18n notes
+Zalo / landlord contact fields are **redacted in API responses** for contributors.
 
-- Dictionaries: `client/src/i18n/dictionaries/en.ts` and `vn.ts`
-- Provider: `LanguageProvider` (wrapped in `client/src/components/Providers.tsx`)
-- Switcher: header + Settings page
-- Preference key in `localStorage`: `mir_housing_locale` (`en` or `vn`)
+### Frontend notes
+
+- **Roles helpers:** `client/src/lib/roles.ts`
+- **HCMC locations (static):** `client/src/lib/hcmc-locations.ts`
+- **i18n dictionaries:** `client/src/i18n/dictionaries/en.ts` and `vn.ts`
+- **Provider:** `LanguageProvider` (via `client/src/components/Providers.tsx`)
+- **Locale preference key:** `mir_housing_locale` (`en` or `vn`) in `localStorage`
+- **Sidebar collapse key:** `mir_housing_sidebar_collapsed`
 - To add a new string: add the key to **both** dictionaries, then use `t('your.key')` via `useTranslations()`
 
 ### Production build
@@ -284,6 +298,7 @@ Do **not** set `PORT` — Render provides it automatically.
 | Build succeeds but app won't start | Check Render logs; confirm all env vars are set |
 | CORS errors | Set `CLIENT_URL` to your exact frontend URL (no trailing slash) |
 | Image upload fails | Add `SUPABASE_SERVICE_ROLE_KEY` |
+| `GET /auth/users` returns 404 | Redeploy/restart API after pulling user-management routes; run migration `025` |
 
 ---
 
@@ -333,6 +348,7 @@ NEXT_PUBLIC_API_BASE_URL=https://your-api.onrender.com/api/v1
 ## Documentation
 
 - [`docs/purpose.md`](docs/purpose.md) — product goals, phase 1 scope, and implementation plan
+- [`docs/database-architecture.md`](docs/database-architecture.md) — database notes
 
 ---
 
